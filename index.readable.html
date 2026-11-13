@@ -338,6 +338,46 @@ body[data-mode=duel] #tl>div:nth-child(3){display:none}
 #start .cspec em{flex-basis:100%;font-style:normal;font-size:10.5px;color:#aeb7c6;text-shadow:0 1px 3px #000,0 0 6px #000}
 #start .cspec em b{color:#f2c230;font-weight:700}
 @media (max-height:480px) and (orientation:landscape){#start .cspec{font-size:10px;gap:3px 4px;margin-top:-6px}#start .cspec span{padding:1px 6px}#start .cspec em{font-size:9.5px}}
+/* ===== 폰 가로 화면 전용 (화면 높이 500px 이하). PC·태블릿은 높이가 더 커서 영향 없음 ===== */
+@media (orientation:landscape) and (max-height:500px){
+  /* 홈: 왼쪽(차·맵·플레이) / 오른쪽(조작 설정) 두 칸으로, 각 칸은 따로 스크롤 */
+  #start{grid-template-columns:minmax(0,1.3fr) minmax(220px,.7fr);grid-template-rows:minmax(0,1fr);align-content:stretch;overflow:hidden;gap:10px;
+    padding:6px max(10px,env(safe-area-inset-right)) 6px max(10px,env(safe-area-inset-left));--cmh:max(60px,min(22vh,100px))}
+  #start .hero{justify-content:flex-start;gap:8px;padding:38px 0 12px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  #start .hero::-webkit-scrollbar{display:none}
+  #start .hero>*{flex:none}
+  #start .panel{max-height:100%;overflow:auto;align-self:stretch;padding:12px;gap:12px;border-radius:12px}
+  #start .modebar{top:8px;left:max(10px,env(safe-area-inset-left));font-size:12px;gap:6px;max-width:calc(65% - 20px)}
+  #start .cspec{margin-top:0}
+  #start .maps{gap:6px}
+  #start .btn{height:44px}
+  #start .duelinfo div{padding:5px 8px}
+  /* 운전 화면: 미니맵·글자 작게, 콕핏을 아래로 내려서 도로가 더 넓게 보이게 */
+  #mm{width:116px;height:76px;left:max(8px,env(safe-area-inset-left));top:6px;border-radius:9px}
+  #nit{left:max(8px,env(safe-area-inset-left));top:86px;width:116px;padding:3px 8px;gap:6px;font-size:10.5px;border-radius:8px}
+  #dh{left:max(8px,env(safe-area-inset-left));top:114px;padding:4px 8px;gap:10px}
+  #dh b{font-size:14px}#dh b#dhPos{font-size:22px}#dh small{font-size:9.5px}
+  #hh{left:max(8px,env(safe-area-inset-left));top:114px;width:150px;padding:5px 8px}
+  .hud{top:4px}.hud b{font-size:16px}.hud span{font-size:10px}#tl{gap:10px}
+  #tr{right:max(8px,env(safe-area-inset-right))}#bar{width:80px}#snd{font-size:10px!important;margin-top:3px!important}
+  #bt{top:44px;right:max(8px,env(safe-area-inset-right));padding:4px 9px;font-size:11px}
+  #lbp{top:78px;right:max(8px,env(safe-area-inset-right));max-height:calc(100vh - 88px);overflow:auto;padding:10px}
+  .cab{transform:translate(-54%,26%)}
+  #gg{top:60%!important;left:54%!important;--g:clamp(96px,32vh,150px)}
+  #start .cta{position:sticky;bottom:-12px;z-index:3;padding:8px 10px 12px;margin-top:auto;background:linear-gradient(0deg,#090a16 55%,#090a1600)}
+}
+@media (orientation:landscape) and (max-height:500px){
+  /* 모드 선택·이름·1대1 로비: 위가 잘리지 않게 위에서부터 쌓고, 카드 3장은 한 줄로 */
+  #modes{justify-content:flex-start;gap:10px;padding:10px max(12px,env(safe-area-inset-right)) 14px max(12px,env(safe-area-inset-left))}
+  #modes h1{font-size:20px}#modes h1 small{margin-bottom:2px}
+  .mcards{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+  .mc{min-height:0;padding:12px;gap:5px}.mc i{font-size:30px}.mc b{font-size:16px}.mc p{display:none}.mc .tag{top:8px;right:8px;font-size:10.5px}
+  .mname{padding:14px;gap:9px}.dmaps img{aspect-ratio:3/1}.dpick button{min-height:0;padding:12px}.dcode{font-size:40px;padding:8px 0 8px .3em}
+}
+@media (orientation:landscape) and (max-height:500px) and (max-width:640px){
+  #start .cspec em{display:none}
+  #jh{top:44px;padding:5px 12px}
+}
 </style>
 </head>
 <body>
