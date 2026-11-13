@@ -1746,11 +1746,11 @@ function setOppColor(){
    · 서스펜션: 코너에서는 바깥쪽으로 기울고(롤), 가속하면 뒤가 내려앉고(스쿼트) 브레이크를 밟으면 앞이 숙여져요(다이브).
      실제 차처럼 스프링+댐퍼로 계산해서 살짝 출렁였다가 자리를 잡아요. 바퀴는 땅에 붙어 있고 차체 윗부분만 움직여요.
    · 브레이크 등, 드리프트 타이어 연기, 니트로 배기 불꽃. */
-const REAR={gt3:'DATAURI',chal:'DATAURI',f40:'DATAURI',mcl:'DATAURI'}; /* GT-R 뒷모습은 아직 없어요 */
+const REAR={gtr:'DATAURI',gt3:'DATAURI',chal:'DATAURI',f40:'DATAURI',mcl:'DATAURI'};
 /* len: 차 길이(m), h: 사진 속 차 높이(m, 지붕·날개 포함). 사진 좌표는 왼쪽 위가 (0,0), 오른쪽 아래가 (1,1)
    u: 범퍼 가운데의 가로 위치, side: 사진에 보이는 옆면(L/R), tl: 미등, ex: 배기구 */
 const CARV={
-  gtr:{len:4.6,h:1.62,front:{u:.2,side:'L'}},
+  gtr:{len:4.6,h:1.62,rear:{u:.77,side:'L',asp:2.3792,tl:[[.61,.37],[.934,.37],[.79,.27]],ex:[[.653,.82]]},front:{u:.2,side:'L'}},
   gt3:{len:4.57,h:1.72,rear:{u:.675,side:'L',asp:2.2695,tl:[[.45,.445],[.9,.445],[.675,.445]],ex:[[.765,.85]]},front:{u:.3,side:'L'}},
   chal:{len:5.02,h:1.85,rear:{u:.704,side:'L',asp:1.9632,tl:[[.525,.443],[.883,.431]],ex:[[.51,.84],[.89,.84]]},front:{u:.3,side:'L'}},
   f40:{len:4.36,h:1.5,rear:{u:.755,side:'L',asp:2.3273,tl:[[.58,.44],[.93,.44]],ex:[[.766,.75]]},front:{u:.78,side:'R'}},
