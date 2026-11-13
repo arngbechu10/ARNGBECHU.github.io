@@ -1066,7 +1066,7 @@ function step(dt){
   if(off)vl*=Math.exp(-1.2*dt);
   vf-=Math.sign(vf)*Math.min(Math.abs(vf),.5*dt);
   const sf=Math.min(Math.abs(vf)/5,1);
-  c.h+=steer*2.4/(1+speed/22)*(keys.hand?1.45:1)*sf*dt*(vf>=0?1:-1);
+  c.h+=steer*2.4/(1+speed/22)*(keys.hand?1.7:1)*sf*dt*(vf>=0?1:-1);
   c.vx=vf*fx+vl*rx;c.vz=vf*fz+vl*rz;
   c.x+=c.vx*dt;c.z+=c.vz*dt;
   slip=Math.abs(vl);
@@ -1121,8 +1121,7 @@ async function initAudio(){
     const nb=AC.createBuffer(1,AC.sampleRate*2,AC.sampleRate),nd=nb.getChannelData(0);
     for(let i=0;i<nd.length;i++)nd[i]=Math.random()*2-1;
     const ns=AC.createBufferSource();ns.buffer=nb;ns.loop=true;
-    const bp=AC.createBiquadFilter();bp.type='bandpass';bp.frequency.value=1700;bp.Q.value=2.5;
-    const sk=AC.createGain();sk.gain.value=0;ns.connect(bp);bp.connect(sk);sk.connect(AC.destination);ns.start();
+    const sk=AC.createGain();sk.gain.value=0;sk.connect(AC.destination);ns.start();SKID=buildSkid(ns,sk);
     NBUF=nb;const hp=AC.createBiquadFilter();hp.type='highpass';hp.frequency.value=2600;
     const zg=AC.createGain();zg.gain.value=0;const ns2=AC.createBufferSource();ns2.buffer=nb;ns2.loop=true;
     ns2.connect(hp);hp.connect(zg);zg.connect(AC.destination);ns2.start();nzg=zg;
@@ -1132,6 +1131,36 @@ async function initAudio(){
 }
 addEventListener('pointerdown',()=>{if(AC&&AC.state!=='running')AC.resume()});
 addEventListener('keydown',()=>{if(AC&&AC.state!=='running')AC.resume()});
+/* ---------- 타이어 스키드(드리프트) 소리 ----------
+   실제 타이어 '끼이익' 소리는 고무 블록이 노면에 붙었다 미끄러졌다(stick-slip)를 1초에 수백 번 반복하면서 나요.
+   ① 700~1200Hz쯤의 또렷한 음(+배음)  ② 음 높이가 불규칙하게 떨림  ③ 크기도 들쭉날쭉(채터)
+   ④ 고무가 노면을 긁는 낮은 '우르르' 소리 + 높은 '쉬익' 소리.  미끄러질수록 음이 조금 높아지고 긁는 소리가 커져요. */
+let SKID=null;
+function buildSkid(ns,out){
+  const A=AC,F=(t,f,q)=>{const b=A.createBiquadFilter();b.type=t;b.frequency.value=f;if(q!=null)b.Q.value=q;return b},G=v=>{const g=A.createGain();g.gain.value=v;return g};
+  const sq=G(0),roar=G(0),hiss=G(0);[sq,roar,hiss].forEach(g=>g.connect(out));
+  const am=G(1);am.connect(sq);
+  /* 느리게 출렁이는 랜덤 신호 → 음 높이 떨림 / 크기 채터 */
+  const jit=F('lowpass',30,.7);ns.connect(jit);
+  const chat=F('bandpass',22,1.2);ns.connect(chat);const cd=G(14);chat.connect(cd);cd.connect(am.gain);
+  const oscs=[[1,'triangle',.55],[2.01,'sine',.2],[3.02,'sine',.07]].map(([m,t,v])=>{
+    const o=A.createOscillator();o.type=t;o.frequency.value=900*m;
+    const d=G(900*m);jit.connect(d);d.connect(o.frequency);
+    const g=G(v);o.connect(g);g.connect(am);o.start();return{o,m}});
+  const rn=F('bandpass',900,9);ns.connect(rn);const rg=G(2.2);rn.connect(rg);rg.connect(am);
+  const rb=F('bandpass',380,.8);const rl=F('lowshelf',200);rl.gain.value=6;ns.connect(rb);rb.connect(rl);rl.connect(roar);
+  const hp=F('highpass',3600,.7);ns.connect(hp);hp.connect(hiss);
+  return{oscs,rn,sq,roar,hiss,f:850};
+}
+function skidMix(k,kmh,dt){
+  if(!SKID)return;const S=SKID;
+  const f0=clamp(760+300*k+kmh*.8,700,1250);S.f+=(f0-S.f)*Math.min(1,dt*3);
+  S.oscs.forEach(x=>x.o.frequency.value=S.f*x.m);S.rn.frequency.value=S.f;
+  const spd=clamp(kmh/90,.35,1);
+  S.sq.gain.value=.22*Math.pow(k,.85)*(1-.3*k*k);   /* 아주 크게 미끄러지면 끽 소리보다 긁는 소리가 커져요 */
+  S.roar.gain.value=.5*k*spd;
+  S.hiss.gain.value=.12*k*spd;
+}
 let needle=0,skG=0;
 const EDGE=[0,55,100,145,195,265];
 function drive(dt){
@@ -1145,7 +1174,8 @@ function drive(dt){
   if(eng&&sg){
     eng.playbackRate.value=.3+.75*rpm+.12*nitroK;ef.frequency.value=900+5000*rpm;
     eg.gain.value=(DEAD?0:1)*(.25+.45*rpm*(keys.gas?1:.55))*(1+.3*nitroK)*clamp((AC.currentTime-t0a-1.4)/.8,0,1);
-    skG+=((keys.hand&&kmh>15?clamp((slip-3)/9,0,1)*.35:0)-skG)*Math.min(1,dt*12);sg.gain.value=skG;
+    const sl=keys.hand&&kmh>15?clamp((slip-2.5)/10,0,1):0;
+    skG+=(sl-skG)*Math.min(1,dt*(sl>skG?10:4));sg.gain.value=DEAD?0:1;skidMix(skG,kmh,dt);
     if(nzg)nzg.gain.value=nitroK*.22;
   }
   needle+=(clamp(kmh,0,300)-needle)*Math.min(1,dt*14);
