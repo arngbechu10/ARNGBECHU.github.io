@@ -1870,13 +1870,13 @@ function oppVisual(dt,now){
   if(!V.init){V.ph=O.h;V.pv=v;V.init=true}
   let dh=O.h-V.ph;dh=Math.atan2(Math.sin(dh),Math.cos(dh));V.ph=O.h;
   const idt=1/Math.max(dt,1e-3);
-  V.yawR+=(dh*idt-V.yawR)*Math.min(1,dt*6);
+  V.yawR+=(dh*idt-V.yawR)*Math.min(1,dt*2.5);
   V.acc+=((v-V.pv)*idt-V.acc)*Math.min(1,dt*4);V.pv=v;
   const aLat=clamp(v*V.yawR,-15,15),aLon=clamp(V.acc,-15,12);
   /* 스프링+댐퍼 (고유진동 약 1.3Hz, 감쇠비 약 0.5): 1g 코너에서 약 2.5도 기울어요 */
   const spring=(x,xv,target)=>{const a=70*(target-x)-8.5*xv;xv+=a*dt;return[x+xv*dt,xv]};
-  [V.roll,V.rollV]=spring(V.roll,V.rollV,-clamp(aLat/9.8,-1.3,1.3)*.044);
-  [V.pit,V.pitV]=spring(V.pit,V.pitV,clamp(-aLon/9.8,-1.2,1.2)*.035);     /* +면 앞이 숙여짐(브레이크) */
+  [V.roll,V.rollV]=spring(V.roll,V.rollV,Math.abs(aLat)<1.5?0:-clamp(aLat/9.8,-1.3,1.3)*.04);
+  [V.pit,V.pitV]=spring(V.pit,V.pitV,(braking&&v>3?.028:0)-((fl&2)&&!braking&&v<60?.01:0));     /* +면 앞이 숙여짐(브레이크) */
   /* 카메라가 차의 어느 쪽에 있는지 */
   const cx=cam.position.x-O.x,cz=cam.position.z-O.z,dist=Math.hypot(cx,cz)||1,along=(cx*fx+cz*fz)/dist,lat=(cx*rx+cz*rz)/dist;
   if(V.view==='rear'&&along>.2)V.view='front';else if(V.view==='front'&&along<-.2)V.view='rear';
@@ -1892,9 +1892,9 @@ function oppVisual(dt,now){
   /* 범퍼 위치에 사진을 세우고 카메라 쪽으로 돌리기 */
   const off=(P.len/2-.3)*(rear?-1:1),ax=O.x+fx*off,az=O.z+fz*off;
   const th=Math.atan2(cam.position.x-ax,cam.position.z-az),crx=Math.cos(th),crz=-Math.sin(th);
-  OPPC.position.set(ax,O.y+.02,az);OPPC.rotation.set(0,th,0);
+  OPPC.position.set(ax,groundAt(ax,az,O.ci)+.01,az);OPPC.rotation.set(0,th,0);
   /* 차체 높이: 앞이 숙여지면 앞모습은 낮아지고 뒷모습은 높아져요 + 노면 진동 */
-  const vib=(Math.sin(now*.031)*.6+Math.sin(now*.053+1.7)*.4)*.006*Math.min(v/30,1);
+  const vib=(Math.sin(now*.031)*.6+Math.sin(now*.053+1.7)*.4)*.0015*Math.min(v/30,1);
   const H=P.h*(1+(rear?1:-1)*V.pit+vib),W=P.h*asp;
   const shift=(rx*crx+rz*crz)*V.roll*H; /* 롤: 바퀴는 그대로, 위쪽만 옆으로 */
   const p=cardGeo.attributes.position,uv=cardGeo.attributes.uv;
@@ -2073,7 +2073,7 @@ function duelCountdown(){
   document.body.classList.remove('dready');$('lbp').classList.remove('on','top');$('start').style.display='none';
   reset();const n=TN[0],my=laneOf(D.role),op=laneOf(D.role==='host'?'guest':'host');
   c.x+=n[0]*my;c.z+=n[1]*my;
-  Object.assign(O,{x:sx+n[0]*op,z:sz+n[1]*op,y:TY[0]||0,h:sh,vx:0,vz:0,ci:0,lap:0,pr:0,at:performance.now(),seen:true});
+  Object.assign(O,{buf:[],off:null,offT:null,ls:0,x:sx+n[0]*op,z:sz+n[1]*op,y:TY[0]||0,h:sh,vx:0,vz:0,ci:0,lap:0,pr:0,at:performance.now(),seen:true});
   O.tx=O.x;O.tz=O.z;O.ty=O.y;O.th=O.h;
   setOppColor();OPPM.visible=true;started=true;HOLD=true;DEAD=false;
   if(!AC)initAudio();
@@ -2135,11 +2135,44 @@ function updDH(){
   $('dhLap').textContent=Math.min(D.done+1,D.laps)+' / '+D.laps;
   $('dhOpp').textContent=D.oppLeft?'나갔어요':D.oppFin!=null?'완주':'LAP '+Math.min(O.lap+1,D.laps);
 }
+/* 상대 위치 받기: 받은 위치를 시간과 함께 모아 두고(스냅샷), 화면에는 0.12초 전 모습을 두 스냅샷 사이 곡선으로 부드럽게 그려요.
+   (온라인 레이싱 게임에서 쓰는 '스냅샷 보간' 방식. 예측했다가 고치는 방식보다 떨림이 없어요) */
+const OPP_DELAY=120;
 function oppPos(m){
   if(!isFinite(m.x)||!isFinite(m.z))return;
-  O.tx=m.x;O.tz=m.z;O.ty=+m.y||0;O.th=+m.h||0;O.vx=+m.vx||0;O.vz=+m.vz||0;O.ci=clamp(m.ci|0,0,N-1);O.lap=m.lap|0;O.pr=+m.pr||0;O.fl=m.f|0;O.at=performance.now();
-  if(!O.seen||Math.hypot(O.tx-O.x,O.tz-O.z)>25){O.x=O.tx;O.z=O.tz;O.y=O.ty;O.h=O.th}
+  const now=performance.now(),st=isFinite(m.t)?+m.t:now;
+  const s={t:st,x:+m.x,z:+m.z,y:+m.y||0,h:+m.h||0,vx:+m.vx||0,vz:+m.vz||0,ci:clamp(m.ci|0,0,N-1)};
+  let B=O.buf||(O.buf=[]);
+  const last=B[B.length-1];
+  if(last&&st<=last.t){if(st<last.t-2000){B=O.buf=[];O.off=O.offT=null}else return}  /* 늦게 온 메시지는 버리고, 상대가 새로고침했으면 새로 시작 */
+  if(last&&Math.hypot(s.x-last.x,s.z-last.z)>40){B=O.buf=[]}                      /* 순간이동(리셋)이면 이어 그리지 않음 */
+  const off=now-st;if(O.off==null){O.off=O.offT=off}else if(off<O.offT)O.offT=off;
+  B.push(s);while(B.length>40)B.shift();
+  O.lap=m.lap|0;O.pr=+m.pr||0;O.fl=m.f|0;O.at=now;
+  if(!O.seen||B.length===1){O.x=s.x;O.z=s.z;O.y=s.y;O.h=s.h;O.vx=s.vx;O.vz=s.vz;O.ci=s.ci}
   O.seen=true;
+}
+function oppSample(now){
+  const B=O.buf;if(!B||!B.length||O.off==null)return;
+  const el=O.ls?now-O.ls:0;O.ls=now;
+  O.offT+=el*.002;                                   /* 시계 차이가 조금씩 변해도 따라가게 */
+  O.off+=(O.offT-O.off)*Math.min(1,el/1000*1.5);      /* 갑자기 건너뛰지 않고 천천히 맞춰요 */
+  const rt=now-O.off-OPP_DELAY;
+  let a=null,b=null;for(let i=B.length-1;i>=0;i--)if(B[i].t<=rt){a=B[i];b=B[i+1]||null;break}
+  if(!a){a=B[0];O.x=a.x;O.z=a.z;O.y=a.y;O.h=a.h;O.vx=a.vx;O.vz=a.vz;O.ci=a.ci;return}
+  if(!b){const e=Math.min((rt-a.t)/1000,.25);O.x=a.x+a.vx*e;O.z=a.z+a.vz*e;O.y=a.y;O.h=a.h;O.vx=a.vx;O.vz=a.vz;O.ci=a.ci;return}
+  const T=(b.t-a.t)/1000,u=(rt-a.t)/(b.t-a.t),u2=u*u,u3=u2*u,h00=2*u3-3*u2+1,h10=u3-2*u2+u,h01=-2*u3+3*u2,h11=u3-u2;
+  O.x=h00*a.x+h10*T*a.vx+h01*b.x+h11*T*b.vx;O.z=h00*a.z+h10*T*a.vz+h01*b.z+h11*T*b.vz;
+  O.y=a.y+(b.y-a.y)*u;let dh=b.h-a.h;dh=Math.atan2(Math.sin(dh),Math.cos(dh));O.h=a.h+dh*u;
+  O.vx=a.vx+(b.vx-a.vx)*u;O.vz=a.vz+(b.vz-a.vz)*u;O.ci=u<.5?a.ci:b.ci;
+}
+/* 그 자리의 도로 높이 (코스 선 위에 투영해서 정확히) */
+function groundAt(x,z,ci){
+  let bi=ci,bd=1e18;for(let k=-40;k<=40;k++){const i=(ci+k+N)%N,dx=x-TP[i][0],dz=z-TP[i][1],d=dx*dx+dz*dz;if(d<bd){bd=d;bi=i}}
+  const seg=(i,j)=>{const ax=TP[j][0]-TP[i][0],az=TP[j][1]-TP[i][1],l=ax*ax+az*az||1;return((x-TP[i][0])*ax+(z-TP[i][1])*az)/l};
+  const n=(bi+1)%N,p=(bi+N-1)%N;let t=seg(bi,n);
+  if(t>=0)return TY[bi]+(TY[n]-TY[bi])*Math.min(t,1);
+  t=seg(p,bi);return TY[p]+(TY[bi]-TY[p])*clamp(t,0,1);
 }
 /* 매 프레임: 내 위치 보내기 + 상대 차 부드럽게 움직이기 */
 function duelFrame(dt,now){
@@ -2148,14 +2181,12 @@ function duelFrame(dt,now){
   if(!live){hideOpp();return}
   if(D.state!=='done'&&now-D.sendT>75){
     D.sendT=now;const r=v=>Math.round(v*100)/100;
-    dSend('p',{x:r(c.x),z:r(c.z),y:r(AIR?cy:(TY[ci]||0)),h:Math.round(c.h*1000)/1000,vx:r(c.vx),vz:r(c.vz),ci,lap:D.done,pr:prog,f:(keys.brake?1:0)|(keys.gas?2:0)|(keys.hand?4:0)|(NIT.on?8:0)});
+    dSend('p',{x:r(c.x),z:r(c.z),y:r(AIR?cy:(TY[ci]||0)),h:Math.round(c.h*1000)/1000,vx:r(c.vx),vz:r(c.vz),ci,lap:D.done,pr:prog,f:(keys.brake?1:0)|(keys.gas?2:0)|(keys.hand?4:0)|(NIT.on?8:0),t:Math.round(now)});
   }
   if(now-D.hudT>200){D.hudT=now;updDH()}
   if(!O.seen||!D.oppId){hideOpp();return}
-  const age=Math.min((now-O.at)/1000,.4),k=Math.min(1,dt*12);
-  O.x+=(O.tx+O.vx*age-O.x)*k;O.z+=(O.tz+O.vz*age-O.z)*k;O.y+=(O.ty-O.y)*k;
-  let dh=O.th-O.h;dh=Math.atan2(Math.sin(dh),Math.cos(dh));O.h+=dh*k;
-  OPPM.visible=true;OPPM.position.set(O.x,O.y,O.z);
+  oppSample(now);
+  OPPM.visible=true;OPPM.position.set(O.x,groundAt(O.x,O.z,O.ci),O.z);
   OPPM.rotation.set(0,-O.h,Math.atan((TSL[O.ci]||0)*Math.cos(O.h-(TH[O.ci]||0))));
   oppVisual(dt,now);
   const d=Math.hypot(O.x-cam.position.x,O.z-cam.position.z),s=Math.max(.75,d/22);oppTag.scale.set(2.8*s,.7*s,1);oppTag.position.y=2.2+.3*s;
