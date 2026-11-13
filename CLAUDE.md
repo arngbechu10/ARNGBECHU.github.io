@@ -55,7 +55,7 @@
 - **리더보드**: 개인 랩타임은 새 최고 기록을 자동으로 올리고 맵별로 표시. 하드는 클리어한 스테이지 수(많은 순) → 누적 시간(짧은 순). 홈의 "리더보드" 버튼으로도 열림.
 - 기타: 니트로(한 바퀴 1번), 드리프트(핸드브레이크) 누를 때만 타이어 소리(`buildSkid`/`skidMix`: 사용자가 보낸 실제 드리프트 녹음 `assets/sounds/original/drifting_sound.mp3`의 1.0~5.35초 끽 소리를 4초 루프 `assets/sounds/skid_loop.wav`로 만들어 `SKIDSND`에 넣음. 미끄러짐에 따라 크기·재생 속도 조절), 핸드브레이크 중 회전량 ×1.7, 터치 버튼 모양/위치/크기/투명도 편집, 미니맵.
 
-- **폰 가로 화면 전용 레이아웃**: CSS 끝의 `@media (orientation:landscape) and (max-height:500px)` 블록(PC·태블릿은 높이가 커서 영향 없음). 홈은 왼쪽(차·맵·플레이)/오른쪽(조작 설정) 두 칸이 각각 스크롤, 플레이 버튼은 아래에 고정. 운전 화면은 미니맵·HUD 축소, 콕핏을 26% 아래로 내려 도로가 넓게 보이고 속도계는 가운데 아래. 모드 선택 카드 3장 한 줄. 테스트는 Playwright `devices['iPhone 13 landscape']`(750×342), `Galaxy S9+ landscape`(658×320).
+- **폰 가로 화면 전용 레이아웃**: CSS 끝의 `@media (orientation:landscape) and (max-height:500px)` 블록(PC·태블릿은 높이가 커서 영향 없음). 홈은 왼쪽(차·맵·플레이)/오른쪽(조작 설정) 두 칸이 각각 스크롤, 플레이 버튼은 아래에 고정. 운전 화면은 미니맵·HUD 축소, 콕핏 이미지를 165%로 키워(top:-16%) 천장선은 화면 맨 위·대시보드는 아래로 가서 도로가 넓게 보이고 속도계는 가운데 아래. 모드 선택 카드 3장 한 줄. 테스트는 Playwright `devices['iPhone 13 landscape']`(750×342), `Galaxy S9+ landscape`(658×320).
 
 ## Supabase
 - URL `https://payqqpkkdpydypinyptz.supabase.co`, 표 `scores`(name, lap_ms + SQL 실행 후 map, mode, stage), publishable 키는 index.html 안에 있음(공개용 키, RLS로 select/insert만 허용).
