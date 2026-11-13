@@ -53,7 +53,7 @@
   - 코드: `index.readable.html`에서 `1대1 대결` 주석 블록(파일 끝 근처). 로비 HTML은 `#mStep3`, 경주 HUD `#dh`, 카운트다운 `#cd`, 결과 `#dres`.
   - 테스트: Supabase 대신 BroadcastChannel로 흉내 내는 가짜 라이브러리를 Playwright에서 `**/supabase-js@*/**` 요청에 넣고, 한 브라우저 컨텍스트에 페이지 2개(가·나)를 열어 확인.
 - **리더보드**: 개인 랩타임은 새 최고 기록을 자동으로 올리고 맵별로 표시. 하드는 클리어한 스테이지 수(많은 순) → 누적 시간(짧은 순). 홈의 "리더보드" 버튼으로도 열림.
-- 기타: 니트로(한 바퀴 1번), 드리프트(핸드브레이크) 누를 때만 타이어 소리(`buildSkid`/`skidMix`: stick-slip 원리로 700~1250Hz 끽 소리+배음, 음 높이 떨림·크기 채터, 낮은 긁는 소리·쉬익 소리를 미끄러짐 정도로 섞음), 핸드브레이크 중 회전량 ×1.7, 터치 버튼 모양/위치/크기/투명도 편집, 미니맵.
+- 기타: 니트로(한 바퀴 1번), 드리프트(핸드브레이크) 누를 때만 타이어 소리(`buildSkid`/`skidMix`: 사용자가 보낸 실제 드리프트 녹음 `assets/sounds/original/drifting_sound.mp3`의 1.0~5.35초 끽 소리를 4초 루프 `assets/sounds/skid_loop.wav`로 만들어 `SKIDSND`에 넣음. 미끄러짐에 따라 크기·재생 속도 조절), 핸드브레이크 중 회전량 ×1.7, 터치 버튼 모양/위치/크기/투명도 편집, 미니맵.
 
 ## Supabase
 - URL `https://payqqpkkdpydypinyptz.supabase.co`, 표 `scores`(name, lap_ms + SQL 실행 후 map, mode, stage), publishable 키는 index.html 안에 있음(공개용 키, RLS로 select/insert만 허용).

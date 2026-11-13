@@ -1112,7 +1112,7 @@ const b64buf=u=>{const s=atob(u.split(',')[1]),a=new Uint8Array(s.length);for(le
 async function initAudio(){
   try{
     AC=new (window.AudioContext||window.webkitAudioContext)();AC.resume();
-    const [buf,lb]=await Promise.all([CARS[CARID].engine||ENG,CARS[CARID].launch||LAU].map(u=>AC.decodeAudioData(b64buf(u))));
+    const [buf,lb,skb]=await Promise.all([CARS[CARID].engine||ENG,CARS[CARID].launch||LAU,SKIDSND].map(u=>AC.decodeAudioData(b64buf(u))));
     const e=AC.createBufferSource();e.buffer=buf;e.loop=true;
     const f=AC.createBiquadFilter();f.type='lowpass';const g=AC.createGain();g.gain.value=0;
     e.connect(f);f.connect(g);g.connect(AC.destination);e.start();
@@ -1121,7 +1121,7 @@ async function initAudio(){
     const nb=AC.createBuffer(1,AC.sampleRate*2,AC.sampleRate),nd=nb.getChannelData(0);
     for(let i=0;i<nd.length;i++)nd[i]=Math.random()*2-1;
     const ns=AC.createBufferSource();ns.buffer=nb;ns.loop=true;
-    const sk=AC.createGain();sk.gain.value=0;sk.connect(AC.destination);ns.start();SKID=buildSkid(ns,sk);
+    const sk=AC.createGain();sk.gain.value=0;sk.connect(AC.destination);ns.start();SKID=buildSkid(skb,sk);
     NBUF=nb;const hp=AC.createBiquadFilter();hp.type='highpass';hp.frequency.value=2600;
     const zg=AC.createGain();zg.gain.value=0;const ns2=AC.createBufferSource();ns2.buffer=nb;ns2.loop=true;
     ns2.connect(hp);hp.connect(zg);zg.connect(AC.destination);ns2.start();nzg=zg;
@@ -1132,34 +1132,21 @@ async function initAudio(){
 addEventListener('pointerdown',()=>{if(AC&&AC.state!=='running')AC.resume()});
 addEventListener('keydown',()=>{if(AC&&AC.state!=='running')AC.resume()});
 /* ---------- 타이어 스키드(드리프트) 소리 ----------
-   실제 타이어 '끼이익' 소리는 고무 블록이 노면에 붙었다 미끄러졌다(stick-slip)를 1초에 수백 번 반복하면서 나요.
-   ① 700~1200Hz쯤의 또렷한 음(+배음)  ② 음 높이가 불규칙하게 떨림  ③ 크기도 들쭉날쭉(채터)
-   ④ 고무가 노면을 긁는 낮은 '우르르' 소리 + 높은 '쉬익' 소리.  미끄러질수록 음이 조금 높아지고 긁는 소리가 커져요. */
+   사용자가 보내 준 실제 드리프트 녹음(assets/sounds/original/drifting_sound.mp3)에서
+   타이어 끽- 소리만 나는 1.0~5.35초를 잘라 끊김 없는 4초 루프로 만든 것(assets/sounds/skid_loop.wav).
+   많이 미끄러질수록 소리가 커지고 음이 살짝 높아져요. */
+const SKIDSND="DATAURI";
 let SKID=null;
-function buildSkid(ns,out){
-  const A=AC,F=(t,f,q)=>{const b=A.createBiquadFilter();b.type=t;b.frequency.value=f;if(q!=null)b.Q.value=q;return b},G=v=>{const g=A.createGain();g.gain.value=v;return g};
-  const sq=G(0),roar=G(0),hiss=G(0);[sq,roar,hiss].forEach(g=>g.connect(out));
-  const am=G(1);am.connect(sq);
-  /* 느리게 출렁이는 랜덤 신호 → 음 높이 떨림 / 크기 채터 */
-  const jit=F('lowpass',30,.7);ns.connect(jit);
-  const chat=F('bandpass',22,1.2);ns.connect(chat);const cd=G(14);chat.connect(cd);cd.connect(am.gain);
-  const oscs=[[1,'triangle',.55],[2.01,'sine',.2],[3.02,'sine',.07]].map(([m,t,v])=>{
-    const o=A.createOscillator();o.type=t;o.frequency.value=900*m;
-    const d=G(900*m);jit.connect(d);d.connect(o.frequency);
-    const g=G(v);o.connect(g);g.connect(am);o.start();return{o,m}});
-  const rn=F('bandpass',900,9);ns.connect(rn);const rg=G(2.2);rn.connect(rg);rg.connect(am);
-  const rb=F('bandpass',380,.8);const rl=F('lowshelf',200);rl.gain.value=6;ns.connect(rb);rb.connect(rl);rl.connect(roar);
-  const hp=F('highpass',3600,.7);ns.connect(hp);hp.connect(hiss);
-  return{oscs,rn,sq,roar,hiss,f:850};
+function buildSkid(buf,out){
+  const s=AC.createBufferSource();s.buffer=buf;s.loop=true;
+  const g=AC.createGain();g.gain.value=0;s.connect(g);g.connect(out);
+  s.start(0,Math.random()*buf.duration);
+  return{s,g};
 }
 function skidMix(k,kmh,dt){
-  if(!SKID)return;const S=SKID;
-  const f0=clamp(760+300*k+kmh*.8,700,1250);S.f+=(f0-S.f)*Math.min(1,dt*3);
-  S.oscs.forEach(x=>x.o.frequency.value=S.f*x.m);S.rn.frequency.value=S.f;
-  const spd=clamp(kmh/90,.35,1);
-  S.sq.gain.value=.22*Math.pow(k,.85)*(1-.3*k*k);   /* 아주 크게 미끄러지면 끽 소리보다 긁는 소리가 커져요 */
-  S.roar.gain.value=.5*k*spd;
-  S.hiss.gain.value=.12*k*spd;
+  if(!SKID)return;
+  SKID.g.gain.value=.75*Math.pow(k,.8);
+  SKID.s.playbackRate.value=.93+.12*k+clamp((kmh-60)/400,-.05,.1);
 }
 let needle=0,skG=0;
 const EDGE=[0,55,100,145,195,265];
