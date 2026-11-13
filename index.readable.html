@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>R34 드리프트 랩타임</title>
+<title>Arngbechu Racing</title>
 <style>
 html,body{margin:0;height:100%;background:#000;overflow:hidden;color:#eef;font:14px/1.4 system-ui,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;user-select:none;-webkit-user-select:none}
 #gl{position:fixed;inset:0;width:100%;height:100%;display:block}
@@ -38,7 +38,7 @@ li:first-child .n,li:first-child .t{color:#f2c230}
 input{flex:1;min-width:0;padding:9px;border-radius:8px;border:1px solid #3a4250;background:#0e1115;color:#eef;font:inherit;user-select:text;-webkit-user-select:text}
 #send{background:#f2c230;color:#111;border:0;font-weight:700}#send:disabled{opacity:.4}
 #msg{margin:8px 0 0;font-size:13px;color:#9aa4b2;min-height:20px}
-#start{--cmh:max(110px,min(34vh,calc(100vh - 430px)));--gold:#f2c230;--line:#2c3342;--u:8px;position:fixed;inset:0;z-index:50;display:grid;grid-template-columns:minmax(0,1.2fr) minmax(310px,.8fr);grid-template-rows:minmax(0,1fr);gap:clamp(12px,3vw,44px);padding:clamp(12px,3.5vh,36px) clamp(14px,3.5vw,48px);background:#090a16;overflow:hidden;text-align:left;color:#eef}
+#start{--cmh:max(110px,min(34vh,calc(100vh - 475px)));--gold:#f2c230;--line:#2c3342;--u:8px;position:fixed;inset:0;z-index:50;display:grid;grid-template-columns:minmax(0,1.2fr) minmax(310px,.8fr);grid-template-rows:minmax(0,1fr);gap:clamp(12px,3vw,44px);padding:clamp(12px,3.5vh,36px) clamp(14px,3.5vw,48px);background:#090a16;overflow:hidden;text-align:left;color:#eef}
 #start .bg{position:absolute;inset:0;pointer-events:none;background:radial-gradient(70% 55% at 30% 80%,#2f62ff3a,transparent 70%),linear-gradient(90deg,#090a1688 0,#090a1600 40%,#090a16f0 100%),linear-gradient(0deg,#090a16 0,#090a1600 36%),var(--sky) 50% 100%/auto 80% no-repeat,#090a16}
 #start .hero{position:relative;z-index:1;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:clamp(16px,5vh,44px);min-width:0;min-height:0}
 #start .carwrap{position:relative;width:100%;display:flex;justify-content:center;align-items:flex-end;height:var(--cmh)}
@@ -332,6 +332,12 @@ body[data-mode=duel] #tl>div:nth-child(3){display:none}
 #dres dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:6px 16px;text-align:left;font-size:14px;padding:12px 14px;background:#080a12;border-radius:6px}
 #dres dt{color:#8d96a3}
 #dres dd{margin:0;text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
+/* 차량 선택: 실제 차 정보 */
+#start .cspec{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 6px;width:min(100%,560px);padding:0 10px;box-sizing:border-box;margin-top:calc(-1*clamp(8px,3.2vh,32px));font-size:11px;color:#cdd7e6;text-align:center;line-height:1.35}
+#start .cspec span{padding:2px 8px;border:1px solid #2c3342;border-radius:99px;background:#0b0d14cc;font-variant-numeric:tabular-nums;white-space:nowrap}
+#start .cspec em{flex-basis:100%;font-style:normal;font-size:10.5px;color:#aeb7c6;text-shadow:0 1px 3px #000,0 0 6px #000}
+#start .cspec em b{color:#f2c230;font-weight:700}
+@media (max-height:480px) and (orientation:landscape){#start .cspec{font-size:10px;gap:3px 4px;margin-top:-6px}#start .cspec span{padding:1px 6px}#start .cspec em{font-size:9.5px}}
 </style>
 </head>
 <body>
@@ -366,6 +372,7 @@ body[data-mode=duel] #tl>div:nth-child(3){display:none}
   <div class="hero">
     <div class="carwrap"><img class="car" src="DATAURI" alt=""></div>
     <div class="cname" id="cname"></div>
+    <div class="cspec" id="cspec"></div>
     <div class="cars" role="radiogroup" aria-label="차량 선택">
       <button role="radio" aria-checked="true" data-car="gtr"><img alt=""><span>GT-R R34</span></button>
       <button role="radio" aria-checked="false" data-car="gt3"><img alt=""><span>911 GT3 RS</span></button>
@@ -424,7 +431,7 @@ body[data-mode=duel] #tl>div:nth-child(3){display:none}
 </div>
 <div id="modes" class="on" role="dialog" aria-label="모드 선택">
   <div class="bg"></div>
-  <h1><small>R34 DRIFT LAP TIME</small>모드 선택</h1>
+  <h1><small>ARNGBECHU RACING</small>모드 선택</h1>
   <div class="mcards" id="mStep1">
     <button class="mc" data-mode="duel"><span class="tag">NEW</span><i>1 : 1</i><b>1대1 대결</b><p>방을 만들고 비밀번호를 정해서 친구와 같은 코스를 달려요.</p><ul><li>방 + 비밀번호</li><li>친구와 함께</li></ul></button>
     <button class="mc" data-mode="lap"><i>LAP</i><b>개인 랩타임</b><p>혼자 한 바퀴 기록에 도전해요. 맵마다 순위표가 따로 있어요.</p><ul><li>맵 3개</li><li>맵별 순위표</li></ul></button>
@@ -1059,7 +1066,7 @@ function step(dt){
   if(off)vl*=Math.exp(-1.2*dt);
   vf-=Math.sign(vf)*Math.min(Math.abs(vf),.5*dt);
   const sf=Math.min(Math.abs(vf)/5,1);
-  c.h+=steer*2.4/(1+speed/22)*(keys.hand?1.45:1)*sf*dt*(vf>=0?1:-1);
+  c.h+=steer*2.4/(1+speed/22)*(keys.hand?1.7:1)*sf*dt*(vf>=0?1:-1);
   c.vx=vf*fx+vl*rx;c.vz=vf*fz+vl*rz;
   c.x+=c.vx*dt;c.z+=c.vz*dt;
   slip=Math.abs(vl);
@@ -1105,7 +1112,7 @@ const b64buf=u=>{const s=atob(u.split(',')[1]),a=new Uint8Array(s.length);for(le
 async function initAudio(){
   try{
     AC=new (window.AudioContext||window.webkitAudioContext)();AC.resume();
-    const [buf,lb]=await Promise.all([CARS[CARID].engine||ENG,CARS[CARID].launch||LAU].map(u=>AC.decodeAudioData(b64buf(u))));
+    const [buf,lb,skb]=await Promise.all([CARS[CARID].engine||ENG,CARS[CARID].launch||LAU,SKIDSND].map(u=>AC.decodeAudioData(b64buf(u))));
     const e=AC.createBufferSource();e.buffer=buf;e.loop=true;
     const f=AC.createBiquadFilter();f.type='lowpass';const g=AC.createGain();g.gain.value=0;
     e.connect(f);f.connect(g);g.connect(AC.destination);e.start();
@@ -1114,8 +1121,7 @@ async function initAudio(){
     const nb=AC.createBuffer(1,AC.sampleRate*2,AC.sampleRate),nd=nb.getChannelData(0);
     for(let i=0;i<nd.length;i++)nd[i]=Math.random()*2-1;
     const ns=AC.createBufferSource();ns.buffer=nb;ns.loop=true;
-    const bp=AC.createBiquadFilter();bp.type='bandpass';bp.frequency.value=1700;bp.Q.value=2.5;
-    const sk=AC.createGain();sk.gain.value=0;ns.connect(bp);bp.connect(sk);sk.connect(AC.destination);ns.start();
+    const sk=AC.createGain();sk.gain.value=0;sk.connect(AC.destination);ns.start();SKID=buildSkid(skb,sk);
     NBUF=nb;const hp=AC.createBiquadFilter();hp.type='highpass';hp.frequency.value=2600;
     const zg=AC.createGain();zg.gain.value=0;const ns2=AC.createBufferSource();ns2.buffer=nb;ns2.loop=true;
     ns2.connect(hp);hp.connect(zg);zg.connect(AC.destination);ns2.start();nzg=zg;
@@ -1125,6 +1131,23 @@ async function initAudio(){
 }
 addEventListener('pointerdown',()=>{if(AC&&AC.state!=='running')AC.resume()});
 addEventListener('keydown',()=>{if(AC&&AC.state!=='running')AC.resume()});
+/* ---------- 타이어 스키드(드리프트) 소리 ----------
+   사용자가 보내 준 실제 드리프트 녹음(assets/sounds/original/drifting_sound.mp3)에서
+   타이어 끽- 소리만 나는 1.0~5.35초를 잘라 끊김 없는 4초 루프로 만든 것(assets/sounds/skid_loop.wav).
+   많이 미끄러질수록 소리가 커지고 음이 살짝 높아져요. */
+const SKIDSND="DATAURI";
+let SKID=null;
+function buildSkid(buf,out){
+  const s=AC.createBufferSource();s.buffer=buf;s.loop=true;
+  const g=AC.createGain();g.gain.value=0;s.connect(g);g.connect(out);
+  s.start(0,Math.random()*buf.duration);
+  return{s,g};
+}
+function skidMix(k,kmh,dt){
+  if(!SKID)return;
+  SKID.g.gain.value=.75*Math.pow(k,.8);
+  SKID.s.playbackRate.value=.93+.12*k+clamp((kmh-60)/400,-.05,.1);
+}
 let needle=0,skG=0;
 const EDGE=[0,55,100,145,195,265];
 function drive(dt){
@@ -1138,7 +1161,8 @@ function drive(dt){
   if(eng&&sg){
     eng.playbackRate.value=.3+.75*rpm+.12*nitroK;ef.frequency.value=900+5000*rpm;
     eg.gain.value=(DEAD?0:1)*(.25+.45*rpm*(keys.gas?1:.55))*(1+.3*nitroK)*clamp((AC.currentTime-t0a-1.4)/.8,0,1);
-    skG+=((keys.hand&&kmh>15?clamp((slip-3)/9,0,1)*.35:0)-skG)*Math.min(1,dt*12);sg.gain.value=skG;
+    const sl=keys.hand&&kmh>15?clamp((slip-2.5)/10,0,1):0;
+    skG+=(sl-skG)*Math.min(1,dt*(sl>skG?10:4));sg.gain.value=DEAD?0:1;skidMix(skG,kmh,dt);
     if(nzg)nzg.gain.value=nitroK*.22;
   }
   needle+=(clamp(kmh,0,300)-needle)*Math.min(1,dt*14);
@@ -1404,12 +1428,26 @@ const CARS={
 let CARID='gtr';
 const carImg=document.querySelector('#start .car');
 document.querySelectorAll('.cars button[data-car]').forEach(b=>{const C=CARS[b.dataset.car],i=b.querySelector('img');if(C&&i)i.src=C.hero});
+
+/* 실제 차 정보 (게임 속 성능은 모두 같아요) */
+const CSPEC={
+  gtr:[['280마력','1,560kg','0→100 4.9초','최고 250km/h','4륜구동'],'출발과 코너에서 안정적'],
+  gt3:[['525마력','1,450kg','0→100 3.2초','최고 296km/h','후륜구동'],'큰 날개 덕분에 코너링 최강'],
+  chal:[['약 800마력','1,950kg','0→100 3.5초','최고 326km/h','후륜구동'],'힘은 최강, 무거워서 코너는 약함'],
+  f40:[['478마력','1,100kg','0→100 4.1초','최고 324km/h','후륜구동'],'가볍지만 예민해서 잘 미끄러짐'],
+  mcl:[['720마력','1,419kg','0→100 2.9초','최고 341km/h','후륜구동'],'가속과 최고 속도 최강']
+};
+function showSpec(id){
+  const el=$('cspec'),s=CSPEC[id];el.textContent='';if(!s)return;
+  s[0].forEach(t=>{const e=document.createElement('span');e.textContent=t;el.append(e)});
+  const em=document.createElement('em');em.textContent=s[1]+' · ';const b=document.createElement('b');b.textContent='실제 차 정보예요. 게임 속 성능은 모두 같아요';em.append(b);el.append(em);
+}
 function setCar(id,anim){
   const C=CARS[id];if(!C)return;CARID=id;
   $('cabin').src=C.cabin;$('wheel').src=C.wheel;
   const w=$('wheel').style;w.left=C.wx+'%';w.top=C.wy+'%';w.width=C.ww+'%';
   $('gg').style.left=C.gx+'%';$('gg').style.top=C.gy+'%';
-  carImg.src=C.hero;$('cname').textContent=C.name;
+  carImg.src=C.hero;$('cname').textContent=C.name;showSpec(id);
   if(anim){carImg.style.animation='none';void carImg.offsetWidth;carImg.style.animation=''}
   document.querySelectorAll('.cars button').forEach(b=>b.setAttribute('aria-checked',b.dataset.car===id));
   try{localStorage.setItem('drift-car',id)}catch(e){}
@@ -1740,6 +1778,104 @@ function setOppColor(){
   oppMat.body.forEach((m,i)=>m.color.setHex(hex).multiplyScalar(f[i]));oppMat.roof.color.setHex(hex).multiplyScalar(.88);
 }
 
+/* --- 상대 차: 실제 사진을 도로 위에 세워서 보여 줘요 ---
+   · 뒤에서 보면 뒷모습 사진, 앞에서 보면 앞모습 사진(홈 화면 사진). 오른쪽에서 보면 좌우를 뒤집어요.
+   · 사진은 범퍼 위치에서 바닥에 딱 붙어 있고, 그림자는 차가 향하는 방향대로 바닥에 깔려요.
+   · 서스펜션: 코너에서는 바깥쪽으로 기울고(롤), 가속하면 뒤가 내려앉고(스쿼트) 브레이크를 밟으면 앞이 숙여져요(다이브).
+     실제 차처럼 스프링+댐퍼로 계산해서 살짝 출렁였다가 자리를 잡아요. 바퀴는 땅에 붙어 있고 차체 윗부분만 움직여요.
+   · 브레이크 등, 드리프트 타이어 연기, 니트로 배기 불꽃. */
+const REAR={gtr:'DATAURI',gt3:'DATAURI',chal:'DATAURI',f40:'DATAURI',mcl:'DATAURI'};
+/* len: 차 길이(m), h: 사진 속 차 높이(m, 지붕·날개 포함). 사진 좌표는 왼쪽 위가 (0,0), 오른쪽 아래가 (1,1)
+   u: 범퍼 가운데의 가로 위치, side: 사진에 보이는 옆면(L/R), tl: 미등, ex: 배기구 */
+const CARV={
+  gtr:{len:4.6,h:1.62,rear:{u:.77,side:'L',asp:2.3792,tl:[[.61,.37],[.934,.37],[.79,.27]],ex:[[.653,.82]]},front:{u:.2,side:'L'}},
+  gt3:{len:4.57,h:1.72,rear:{u:.675,side:'L',asp:2.2695,tl:[[.45,.445],[.9,.445],[.675,.445]],ex:[[.765,.85]]},front:{u:.3,side:'L'}},
+  chal:{len:5.02,h:1.85,rear:{u:.704,side:'L',asp:1.9632,tl:[[.525,.443],[.883,.431]],ex:[[.51,.84],[.89,.84]]},front:{u:.3,side:'L'}},
+  f40:{len:4.36,h:1.5,rear:{u:.755,side:'L',asp:2.3273,tl:[[.58,.44],[.93,.44]],ex:[[.766,.75]]},front:{u:.78,side:'R'}},
+  mcl:{len:4.54,h:1.62,rear:{u:.725,side:'L',asp:2.5197,tl:[[.54,.373],[.91,.423]],ex:[[.684,.43],[.89,.43]]},front:{u:.32,side:'L'}}
+};
+const BOXM=new THREE.Group();OPPM.add(BOXM);
+OPPM.children.slice().forEach(o=>{if(o!==oppTag&&o!==BOXM&&!(o.geometry&&o.geometry.type==='PlaneGeometry'))BOXM.add(o)});
+/* 부드러운 바닥 그림자 */
+(function(){
+  const sh=OPPM.children.find(o=>o.geometry&&o.geometry.type==='PlaneGeometry');if(!sh)return;
+  const cv=document.createElement('canvas');cv.width=256;cv.height=128;const x=cv.getContext('2d');
+  x.filter='blur(14px)';x.fillStyle='rgba(0,0,0,.9)';x.fillRect(34,30,188,68);
+  x.filter='blur(5px)';x.fillStyle='rgba(0,0,0,.6)';[[52,30],[52,90],[196,30],[196,90]].forEach(([a,b])=>x.fillRect(a-12,b-8,24,16));
+  sh.material.map=new THREE.CanvasTexture(cv);sh.material.opacity=.75;sh.material.needsUpdate=true;
+  sh.geometry=new THREE.PlaneGeometry(5.6,2.9);sh.position.y=.05;
+})();
+const texC={};
+function texOf(u){
+  if(!texC[u]){const t=TL.load(u);t.anisotropy=4;texC[u]=t}
+  return texC[u];
+}
+Object.values(REAR).forEach(texOf);
+const OPPC=new THREE.Group();OPPC.visible=false;S.add(OPPC);
+const cardGeo=new THREE.PlaneGeometry(1,1);
+const card=new THREE.Mesh(cardGeo,new THREE.MeshBasicMaterial({transparent:true,alphaTest:.2,side:THREE.DoubleSide}));card.renderOrder=2;OPPC.add(card);
+const mkGlow=(r,g,b,add)=>{const s=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex(r,g,b),blending:add?THREE.AdditiveBlending:THREE.NormalBlending,transparent:true,depthWrite:false,fog:false}));s.renderOrder=3;OPPC.add(s);return s};
+const tailG=[0,1,2].map(()=>mkGlow(255,36,24,true)),flameG=[0,1].map(()=>mkGlow(90,150,255,true));
+/* 타이어 연기 */
+const smoke=[];const smokeT=glowTex(225,225,230);
+for(let i=0;i<36;i++){const s=new THREE.Sprite(new THREE.SpriteMaterial({map:smokeT,transparent:true,depthWrite:false,opacity:0}));s.visible=false;s.userData={t:9};S.add(s);smoke.push(s)}
+let smokeI=0,smokeAcc=0;
+function puff(x,y,z,vx,vz){const s=smoke[smokeI++%smoke.length];s.position.set(x,y,z);s.userData={t:0,vx:vx*.25+(Math.random()-.5)*.8,vz:vz*.25+(Math.random()-.5)*.8};s.visible=true}
+const V={view:'rear',side:'L',ph:0,pv:0,yawR:0,acc:0,roll:0,rollV:0,pit:0,pitV:0,bl:0,init:false};
+function hideOpp(){OPPM.visible=false;OPPC.visible=false}
+function oppVisual(dt,now){
+  const P=CARV[D.oppCar]||CARV.gtr,fx=Math.cos(O.h),fz=Math.sin(O.h),rx=-fz,rz=fx;
+  const v=Math.hypot(O.vx,O.vz),fl=O.fl|0,braking=fl&1,drift=fl&4,nitro=fl&8;
+  /* 차의 움직임에서 횡가속도·종가속도 구하기 */
+  if(!V.init){V.ph=O.h;V.pv=v;V.init=true}
+  let dh=O.h-V.ph;dh=Math.atan2(Math.sin(dh),Math.cos(dh));V.ph=O.h;
+  const idt=1/Math.max(dt,1e-3);
+  V.yawR+=(dh*idt-V.yawR)*Math.min(1,dt*6);
+  V.acc+=((v-V.pv)*idt-V.acc)*Math.min(1,dt*4);V.pv=v;
+  const aLat=clamp(v*V.yawR,-15,15),aLon=clamp(V.acc,-15,12);
+  /* 스프링+댐퍼 (고유진동 약 1.3Hz, 감쇠비 약 0.5): 1g 코너에서 약 2.5도 기울어요 */
+  const spring=(x,xv,target)=>{const a=70*(target-x)-8.5*xv;xv+=a*dt;return[x+xv*dt,xv]};
+  [V.roll,V.rollV]=spring(V.roll,V.rollV,-clamp(aLat/9.8,-1.3,1.3)*.044);
+  [V.pit,V.pitV]=spring(V.pit,V.pitV,clamp(-aLon/9.8,-1.2,1.2)*.035);     /* +면 앞이 숙여짐(브레이크) */
+  /* 카메라가 차의 어느 쪽에 있는지 */
+  const cx=cam.position.x-O.x,cz=cam.position.z-O.z,dist=Math.hypot(cx,cz)||1,along=(cx*fx+cz*fz)/dist,lat=(cx*rx+cz*rz)/dist;
+  if(V.view==='rear'&&along>.2)V.view='front';else if(V.view==='front'&&along<-.2)V.view='rear';
+  if(lat>.1)V.side='R';else if(lat<-.1)V.side='L';
+  const ph=V.view==='rear'?P.rear:P.front,url=V.view==='rear'?REAR[D.oppCar]:(CARS[D.oppCar]||CARS.gtr).hero;
+  if(!ph||!url){OPPC.visible=false;BOXM.visible=true;return}
+  const tex=texOf(url),img=tex.image;
+  const asp=ph.asp||(img&&img.width?img.width/img.height:0);
+  if(!asp){OPPC.visible=false;BOXM.visible=true;return}
+  BOXM.visible=false;OPPC.visible=true;
+  if(card.material.map!==tex){card.material.map=tex;card.material.needsUpdate=true}
+  const mir=ph.side!==V.side,rear=V.view==='rear',u=mir?1-ph.u:ph.u;
+  /* 범퍼 위치에 사진을 세우고 카메라 쪽으로 돌리기 */
+  const off=(P.len/2-.3)*(rear?-1:1),ax=O.x+fx*off,az=O.z+fz*off;
+  const th=Math.atan2(cam.position.x-ax,cam.position.z-az),crx=Math.cos(th),crz=-Math.sin(th);
+  OPPC.position.set(ax,O.y+.02,az);OPPC.rotation.set(0,th,0);
+  /* 차체 높이: 앞이 숙여지면 앞모습은 낮아지고 뒷모습은 높아져요 + 노면 진동 */
+  const vib=(Math.sin(now*.031)*.6+Math.sin(now*.053+1.7)*.4)*.006*Math.min(v/30,1);
+  const H=P.h*(1+(rear?1:-1)*V.pit+vib),W=P.h*asp;
+  const shift=(rx*crx+rz*crz)*V.roll*H; /* 롤: 바퀴는 그대로, 위쪽만 옆으로 */
+  const p=cardGeo.attributes.position,uv=cardGeo.attributes.uv;
+  p.setXYZ(0,-u*W+shift,H,0);p.setXYZ(1,(1-u)*W+shift,H,0);p.setXYZ(2,-u*W,0,0);p.setXYZ(3,(1-u)*W,0,0);p.needsUpdate=true;
+  const u0=mir?1:0,u1=mir?0:1;uv.setXY(0,u0,1);uv.setXY(1,u1,1);uv.setXY(2,u0,0);uv.setXY(3,u1,0);uv.needsUpdate=true;
+  const night=MAPID==='mountain'?1:MAPID==='xmas'?.78:.68;card.material.color.setScalar(night);
+  const at=(q,s)=>{const qu=mir?1-q[0]:q[0];s.position.set((qu-u)*W+shift*(1-q[1]),(1-q[1])*H,.08)};
+  /* 브레이크 등 */
+  V.bl+=((braking?1:0)-V.bl)*Math.min(1,dt*14);
+  tailG.forEach((s,i)=>{const q=rear&&ph.tl&&ph.tl[i];s.visible=!!q;if(!q)return;at(q,s);const k=(MAPID==='mountain'?.15:.4)+V.bl*.95;s.material.opacity=Math.min(1,k);const sc=(.32+V.bl*.4)*(i===2?.8:1);s.scale.set(sc*1.9,sc,1)});
+  /* 니트로 불꽃 */
+  flameG.forEach((s,i)=>{const q=rear&&nitro&&ph.ex&&ph.ex[i];s.visible=!!q;if(!q)return;at(q,s);const k=.6+Math.random()*.4;s.scale.set(.7*k,.45*k,1)});
+  /* 드리프트하면 뒷바퀴에서 타이어 연기 */
+  if(drift&&v>8){smokeAcc+=dt*26;while(smokeAcc>1){smokeAcc--;const sd=Math.random()<.5?-1:1;puff(O.x-fx*1.35+rx*.85*sd,O.y+.35,O.z-fz*1.35+rz*.85*sd,O.vx,O.vz)}}
+}
+function smokeStep(dt){
+  for(const s of smoke){const d=s.userData;if(d.t>=1.5){s.visible=false;continue}
+    d.t+=dt;s.position.x+=d.vx*dt;s.position.z+=d.vz*dt;s.position.y+=dt*.55;const k=d.t/1.5;s.scale.setScalar(1+k*4.5);s.material.opacity=.38*(1-k)*Math.min(1,d.t*8)}
+}
+Object.keys(CARS).forEach(k=>texOf(CARS[k].hero));
+
 /* --- 로비 화면 --- */
 let dSel='seoul';
 function dView(v){['dPick','dCreate','dWait','dJoin'].forEach(i=>$(i).hidden=i!==v)}
@@ -1862,7 +1998,7 @@ function onDuelMsg(m){
 /* --- 차고: 차 고르고 준비 --- */
 function duelGarage(){
   D.state='garage';D.ready=false;D.cdT.forEach(clearTimeout);D.cdT=[];
-  stopAudio();started=false;HOLD=false;DEAD=false;OPPM.visible=false;O.seen=false;
+  stopAudio();started=false;HOLD=false;DEAD=false;hideOpp();O.seen=false;
   ['dh','cd','dres','stg'].forEach(i=>$(i).classList.remove('on','win'));
   document.body.classList.remove('dready');document.body.dataset.mode='duel';
   if(MAPID!==D.map)setMap(D.map);
@@ -1961,25 +2097,27 @@ function updDH(){
 }
 function oppPos(m){
   if(!isFinite(m.x)||!isFinite(m.z))return;
-  O.tx=m.x;O.tz=m.z;O.ty=+m.y||0;O.th=+m.h||0;O.vx=+m.vx||0;O.vz=+m.vz||0;O.ci=clamp(m.ci|0,0,N-1);O.lap=m.lap|0;O.pr=+m.pr||0;O.at=performance.now();
+  O.tx=m.x;O.tz=m.z;O.ty=+m.y||0;O.th=+m.h||0;O.vx=+m.vx||0;O.vz=+m.vz||0;O.ci=clamp(m.ci|0,0,N-1);O.lap=m.lap|0;O.pr=+m.pr||0;O.fl=m.f|0;O.at=performance.now();
   if(!O.seen||Math.hypot(O.tx-O.x,O.tz-O.z)>25){O.x=O.tx;O.z=O.tz;O.y=O.ty;O.h=O.th}
   O.seen=true;
 }
 /* 매 프레임: 내 위치 보내기 + 상대 차 부드럽게 움직이기 */
 function duelFrame(dt,now){
   const live=D.state==='count'||D.state==='race'||D.state==='done';
-  if(!live){if(OPPM.visible)OPPM.visible=false;return}
+  smokeStep(dt);
+  if(!live){hideOpp();return}
   if(D.state!=='done'&&now-D.sendT>75){
     D.sendT=now;const r=v=>Math.round(v*100)/100;
-    dSend('p',{x:r(c.x),z:r(c.z),y:r(AIR?cy:(TY[ci]||0)),h:Math.round(c.h*1000)/1000,vx:r(c.vx),vz:r(c.vz),ci,lap:D.done,pr:prog});
+    dSend('p',{x:r(c.x),z:r(c.z),y:r(AIR?cy:(TY[ci]||0)),h:Math.round(c.h*1000)/1000,vx:r(c.vx),vz:r(c.vz),ci,lap:D.done,pr:prog,f:(keys.brake?1:0)|(keys.gas?2:0)|(keys.hand?4:0)|(NIT.on?8:0)});
   }
   if(now-D.hudT>200){D.hudT=now;updDH()}
-  if(!O.seen||!D.oppId){OPPM.visible=false;return}
+  if(!O.seen||!D.oppId){hideOpp();return}
   const age=Math.min((now-O.at)/1000,.4),k=Math.min(1,dt*12);
   O.x+=(O.tx+O.vx*age-O.x)*k;O.z+=(O.tz+O.vz*age-O.z)*k;O.y+=(O.ty-O.y)*k;
   let dh=O.th-O.h;dh=Math.atan2(Math.sin(dh),Math.cos(dh));O.h+=dh*k;
   OPPM.visible=true;OPPM.position.set(O.x,O.y,O.z);
   OPPM.rotation.set(0,-O.h,Math.atan((TSL[O.ci]||0)*Math.cos(O.h-(TH[O.ci]||0))));
+  oppVisual(dt,now);
   const d=Math.hypot(O.x-cam.position.x,O.z-cam.position.z),s=Math.max(.75,d/22);oppTag.scale.set(2.8*s,.7*s,1);oppTag.position.y=2.2+.3*s;
 }
 /* 차끼리 부딪힘: 차를 앞뒤 원 2개로 보고, 겹치면 살짝 튕겨 나가요 (상대도 자기 화면에서 똑같이 계산) */
@@ -2018,7 +2156,7 @@ function drawOppMM(){
 /* --- 상대가 나갔을 때 / 내가 나갈 때 --- */
 function oppGone(){
   if(!D.oppId)return;
-  D.oppId=null;D.oppReady=false;O.seen=false;OPPM.visible=false;
+  D.oppId=null;D.oppReady=false;O.seen=false;hideOpp();
   if(D.state==='count'||D.state==='race'){D.oppLeft=true;toast('상대가 나갔어요. 혼자 끝까지 달릴 수 있어요.');updDH()}
   else if(D.state==='done'){D.oppLeft=true;showDuelResult()}
   else if(D.state==='garage')backToLobby('상대가 나갔어요.');
@@ -2026,7 +2164,7 @@ function oppGone(){
 }
 function backToLobby(msg){
   D.cdT.forEach(clearTimeout);D.cdT=[];
-  stopAudio();started=false;HOLD=false;OPPM.visible=false;D.ready=false;D.oppReady=false;
+  stopAudio();started=false;HOLD=false;hideOpp();D.ready=false;D.oppReady=false;
   ['dh','cd','dres','stg'].forEach(i=>$(i).classList.remove('on','win'));
   document.body.classList.remove('dready');document.body.removeAttribute('data-mode');
   $('start').style.display='none';$('modes').classList.add('on');$('mStep1').hidden=true;$('mStep2').hidden=true;$('mStep3').hidden=false;
@@ -2036,7 +2174,7 @@ function backToLobby(msg){
 function duelOff(){
   clearTimeout(D.findT);D.cdT.forEach(clearTimeout);D.cdT=[];
   if(D.ch){dSend('bye',{});const ch=D.ch;D.ch=null;setTimeout(()=>{try{sbClient.removeChannel(ch)}catch(e){}},200)}
-  D.oppId=null;D.hiSent=false;D.state='off';D.ready=false;D.oppReady=false;O.seen=false;OPPM.visible=false;
+  D.oppId=null;D.hiSent=false;D.state='off';D.ready=false;D.oppReady=false;O.seen=false;hideOpp();
   document.body.classList.remove('dready');
 }
 addEventListener('pagehide',()=>{if(D.ch)dSend('bye',{})});
