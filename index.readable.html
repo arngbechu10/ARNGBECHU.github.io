@@ -38,7 +38,7 @@ li:first-child .n,li:first-child .t{color:#f2c230}
 input{flex:1;min-width:0;padding:9px;border-radius:8px;border:1px solid #3a4250;background:#0e1115;color:#eef;font:inherit;user-select:text;-webkit-user-select:text}
 #send{background:#f2c230;color:#111;border:0;font-weight:700}#send:disabled{opacity:.4}
 #msg{margin:8px 0 0;font-size:13px;color:#9aa4b2;min-height:20px}
-#start{--cmh:max(110px,min(34vh,calc(100vh - 430px)));--gold:#f2c230;--line:#2c3342;--u:8px;position:fixed;inset:0;z-index:50;display:grid;grid-template-columns:minmax(0,1.2fr) minmax(310px,.8fr);grid-template-rows:minmax(0,1fr);gap:clamp(12px,3vw,44px);padding:clamp(12px,3.5vh,36px) clamp(14px,3.5vw,48px);background:#090a16;overflow:hidden;text-align:left;color:#eef}
+#start{--cmh:max(110px,min(34vh,calc(100vh - 475px)));--gold:#f2c230;--line:#2c3342;--u:8px;position:fixed;inset:0;z-index:50;display:grid;grid-template-columns:minmax(0,1.2fr) minmax(310px,.8fr);grid-template-rows:minmax(0,1fr);gap:clamp(12px,3vw,44px);padding:clamp(12px,3.5vh,36px) clamp(14px,3.5vw,48px);background:#090a16;overflow:hidden;text-align:left;color:#eef}
 #start .bg{position:absolute;inset:0;pointer-events:none;background:radial-gradient(70% 55% at 30% 80%,#2f62ff3a,transparent 70%),linear-gradient(90deg,#090a1688 0,#090a1600 40%,#090a16f0 100%),linear-gradient(0deg,#090a16 0,#090a1600 36%),var(--sky) 50% 100%/auto 80% no-repeat,#090a16}
 #start .hero{position:relative;z-index:1;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:clamp(16px,5vh,44px);min-width:0;min-height:0}
 #start .carwrap{position:relative;width:100%;display:flex;justify-content:center;align-items:flex-end;height:var(--cmh)}
@@ -332,6 +332,12 @@ body[data-mode=duel] #tl>div:nth-child(3){display:none}
 #dres dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:6px 16px;text-align:left;font-size:14px;padding:12px 14px;background:#080a12;border-radius:6px}
 #dres dt{color:#8d96a3}
 #dres dd{margin:0;text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
+/* 차량 선택: 실제 차 정보 */
+#start .cspec{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 6px;width:min(100%,560px);padding:0 10px;box-sizing:border-box;margin-top:calc(-1*clamp(8px,3.2vh,32px));font-size:11px;color:#cdd7e6;text-align:center;line-height:1.35}
+#start .cspec span{padding:2px 8px;border:1px solid #2c3342;border-radius:99px;background:#0b0d14cc;font-variant-numeric:tabular-nums;white-space:nowrap}
+#start .cspec em{flex-basis:100%;font-style:normal;font-size:10.5px;color:#aeb7c6;text-shadow:0 1px 3px #000,0 0 6px #000}
+#start .cspec em b{color:#f2c230;font-weight:700}
+@media (max-height:480px) and (orientation:landscape){#start .cspec{font-size:10px;gap:3px 4px;margin-top:-6px}#start .cspec span{padding:1px 6px}#start .cspec em{font-size:9.5px}}
 </style>
 </head>
 <body>
@@ -366,6 +372,7 @@ body[data-mode=duel] #tl>div:nth-child(3){display:none}
   <div class="hero">
     <div class="carwrap"><img class="car" src="DATAURI" alt=""></div>
     <div class="cname" id="cname"></div>
+    <div class="cspec" id="cspec"></div>
     <div class="cars" role="radiogroup" aria-label="차량 선택">
       <button role="radio" aria-checked="true" data-car="gtr"><img alt=""><span>GT-R R34</span></button>
       <button role="radio" aria-checked="false" data-car="gt3"><img alt=""><span>911 GT3 RS</span></button>
@@ -1404,12 +1411,26 @@ const CARS={
 let CARID='gtr';
 const carImg=document.querySelector('#start .car');
 document.querySelectorAll('.cars button[data-car]').forEach(b=>{const C=CARS[b.dataset.car],i=b.querySelector('img');if(C&&i)i.src=C.hero});
+
+/* 실제 차 정보 (게임 속 성능은 모두 같아요) */
+const CSPEC={
+  gtr:[['280마력','1,560kg','0→100 4.9초','최고 250km/h','4륜구동'],'출발과 코너에서 안정적'],
+  gt3:[['525마력','1,450kg','0→100 3.2초','최고 296km/h','후륜구동'],'큰 날개 덕분에 코너링 최강'],
+  chal:[['약 800마력','1,950kg','0→100 3.5초','최고 326km/h','후륜구동'],'힘은 최강, 무거워서 코너는 약함'],
+  f40:[['478마력','1,100kg','0→100 4.1초','최고 324km/h','후륜구동'],'가볍지만 예민해서 잘 미끄러짐'],
+  mcl:[['720마력','1,419kg','0→100 2.9초','최고 341km/h','후륜구동'],'가속과 최고 속도 최강']
+};
+function showSpec(id){
+  const el=$('cspec'),s=CSPEC[id];el.textContent='';if(!s)return;
+  s[0].forEach(t=>{const e=document.createElement('span');e.textContent=t;el.append(e)});
+  const em=document.createElement('em');em.textContent=s[1]+' · ';const b=document.createElement('b');b.textContent='실제 차 정보예요. 게임 속 성능은 모두 같아요';em.append(b);el.append(em);
+}
 function setCar(id,anim){
   const C=CARS[id];if(!C)return;CARID=id;
   $('cabin').src=C.cabin;$('wheel').src=C.wheel;
   const w=$('wheel').style;w.left=C.wx+'%';w.top=C.wy+'%';w.width=C.ww+'%';
   $('gg').style.left=C.gx+'%';$('gg').style.top=C.gy+'%';
-  carImg.src=C.hero;$('cname').textContent=C.name;
+  carImg.src=C.hero;$('cname').textContent=C.name;showSpec(id);
   if(anim){carImg.style.animation='none';void carImg.offsetWidth;carImg.style.animation=''}
   document.querySelectorAll('.cars button').forEach(b=>b.setAttribute('aria-checked',b.dataset.car===id));
   try{localStorage.setItem('drift-car',id)}catch(e){}
