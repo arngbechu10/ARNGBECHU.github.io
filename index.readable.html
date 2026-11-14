@@ -419,6 +419,12 @@ body[data-mode=hard] .lbtabs{display:none}
 #lcr.on{display:block;animation:cdpop 1.2s ease-out both}
 #lcr.perfect{color:#3ddc84}#lcr.good{color:#f2c230}#lcr.spin{color:#ff5a4a}
 @media (orientation:landscape) and (max-height:500px){#lc{bottom:auto;top:58%;width:min(320px,60vw)}#lc .lt{font-size:11px}#lc .lb{height:12px}}
+/* 니트로: 쓸 수 있을 때 더 진하고 밝게 */
+#nit:not(.spent):not(.burn){border-color:#4aa3ff;background:#0b1a33e6;color:#d8ecff;font-weight:700;box-shadow:0 0 12px #3a8bff66}
+#nit:not(.spent):not(.burn) i{background:linear-gradient(90deg,#1f6bff,#5ab4ff 60%,#bfe4ff);box-shadow:0 0 14px #4aa3ff}
+#nit:not(.spent):not(.burn) .nb{height:10px;background:#0a1c3a}
+.pad button[data-k=nitro]:not(.spent):not(.burn){background:#1652c8;color:#fff;border-color:#8ccaff;opacity:min(1,calc(var(--po,.6) + .3));box-shadow:0 0 14px #3a8bff99}
+#nit.spent{opacity:.6}
 </style>
 </head>
 <body>
@@ -1364,6 +1370,42 @@ function buildCanyon(){
 function canyonFrame(dt){}
 /* === 하드 5·6 끝 === */
 
+/* ---------- 길 안내 표지판 (모든 맵 공통, 연습장 제외) ----------
+   코너 40~55m 앞 오른쪽에 노란 다이아몬드 경고판: 꺾이는 방향 화살표 / 아주 급하면(반경 22m 미만) U자 헤어핀.
+   결승선 300m·100m 앞에 FINISH 표지. 서로 70m보다 가까우면 하나만. */
+let GUIDE_TEX=null;
+function guideTex(){
+  if(GUIDE_TEX)return GUIDE_TEX;
+  const dia=(draw)=>tkTex(256,256,(x,w,h)=>{x.save();x.translate(w/2,h/2);x.rotate(Math.PI/4);x.fillStyle='#111';x.fillRect(-88,-88,176,176);x.fillStyle='#ffc81a';x.fillRect(-80,-80,160,160);x.restore();
+    x.strokeStyle='#111';x.fillStyle='#111';x.lineWidth=16;x.lineCap='round';x.lineJoin='round';draw(x)});
+  const curve=d=>dia(x=>{x.save();if(d<0){x.translate(256,0);x.scale(-1,1)}x.beginPath();x.moveTo(118,190);x.lineTo(118,140);x.quadraticCurveTo(118,100,158,90);x.stroke();
+    x.beginPath();x.moveTo(178,85);x.lineTo(146,66);x.lineTo(150,112);x.closePath();x.fill();x.restore()});
+  const pin=d=>dia(x=>{x.save();if(d<0){x.translate(256,0);x.scale(-1,1)}x.beginPath();x.moveTo(100,190);x.lineTo(100,112);x.arc(128,112,28,Math.PI,0);x.lineTo(156,160);x.stroke();
+    x.beginPath();x.moveTo(156,186);x.lineTo(136,154);x.lineTo(176,154);x.closePath();x.fill();x.restore()});
+  const fin=m=>tkTex(256,160,(x,w,h)=>{x.fillStyle='#111';x.fillRect(0,0,w,h);for(let k=0;k<8;k++)for(let q=0;q<2;q++){x.fillStyle=(k+q)%2?'#fff':'#111';x.fillRect(k*32,q*22,32,22)}
+    x.fillStyle='#fff';x.font='900 40px system-ui';x.textAlign='center';x.fillText('FINISH',w/2,94);x.fillStyle='#ffc81a';x.font='900 40px system-ui';x.fillText(m+'m',w/2,142)});
+  const M=t=>new THREE.MeshBasicMaterial({map:t,transparent:true,side:THREE.DoubleSide});
+  GUIDE_TEX={R:M(curve(1)),L:M(curve(-1)),PR:M(pin(1)),PL:M(pin(-1)),F300:M(fin(300)),F100:M(fin(100)),post:tkM(0x6a6e76)};
+  return GUIDE_TEX;
+}
+function buildGuide(){
+  const D=MAPS[MAPID];if(!D||D.practice)return;
+  const G=guideTex(),placed=[],K=[];
+  for(let i=0;i<N;i++){let d=TH[(i+8)%N]-TH[(i+N-8)%N];d=Math.atan2(Math.sin(d),Math.cos(d));K.push(d/(16*SP))}
+  const lat=i=>HW.length?HW[i]+.7:(WALL||HALF)+.9;
+  const near=i=>placed.some(j=>{let d=Math.abs(i-j);if(!OPENP)d=Math.min(d,N-d);return d*SP<70});
+  const put=(i,mat,w,h)=>{if(OPENP&&(i<0||i>=N))return;i=(i+N)%N;if(near(i))return;placed.push(i);
+    const y=TY[i]||0,[x,z]=tkAt(i,lat(i));tkBox(.12,h*.5+1.6,.12,G.post,x,y+(h*.5+1.6)/2,z);tkBoard(x,y+1.6+h*.5,z,w,h,-Math.cos(TH[i]),-Math.sin(TH[i]),mat)};
+  /* 결승 표지 먼저 */
+  const end=OPENP?LAPEND:N;put(end-Math.round(300/SP),G.F300,3.4,2.1);put(end-Math.round(100/SP),G.F100,3.4,2.1);
+  /* 코너 */
+  for(let i=0;i<N;i++){const k=K[i],prev=K[(i+N-1)%N];if(Math.abs(k)<1/45||Math.abs(prev)>=1/45)continue;
+    let mk=0,sg=0;for(let j=0;j<Math.round(60/SP);j++){const kk=K[(i+j)%N];if(Math.abs(kk)>Math.abs(mk))mk=kk;sg+=kk}
+    const R=1/Math.abs(mk),right=sg>0,mat=R<22?(right?G.PR:G.PL):(right?G.R:G.L);
+    put(i-Math.round(Math.min(55,Math.max(35,R*1.6))/SP),mat,2.6,2.6)}
+  tkFlush();
+}
+
 function clearMap(){
   if(!MG)return;S.remove(MG);
   MG.traverse(o=>{if(o.geometry)o.geometry.dispose();
@@ -1761,6 +1803,7 @@ function setMap(id){
   const yel=new THREE.MeshBasicMaterial({color:0xf2c230});
   [-1,1].forEach(sd=>{const m=new THREE.Mesh(new THREE.BoxGeometry(.5,7,.5),yel);m.position.set(sx+TN[0][0]*(HALF+1.5)*sd,TY[0]+3.5,sz+TN[0][1]*(HALF+1.5)*sd);MG.add(m)});
   const gb=new THREE.Mesh(new THREE.BoxGeometry(.5,1,(HALF+1.5)*2),yel);gb.position.set(sx,TY[0]+7,sz);gb.rotation.y=-sh;MG.add(gb);}
+  buildGuide();
   /* 상태 초기화 */
   bestLap=null;$('best').textContent='-';$('last').textContent='-';$('send').disabled=true;
   $('msg').textContent='한 바퀴를 완주하면 올릴 수 있어요.';
@@ -1832,10 +1875,12 @@ function step(dt){
   vf=Math.max(vf,-8);
   let grip=6-2.2*Math.min(speed/45,1);
   if(keys.gas&&speed>10&&Math.abs(steer)>.4)grip-=1.4;
-  if(keys.hand){grip=.9;vf*=Math.exp(-.35*dt)}
+  if(keys.hand){grip=.9;vf*=Math.exp(-.3*dt)}
   grip=Math.max(grip,.8);
   if(iceNow)grip=Math.min(grip,.55);   /* 얼음: 옆으로 잘 미끄러짐 */
-  vl*=Math.exp(-grip*dt);
+  {const vl0=vl;vl*=Math.exp(-grip*dt);
+   /* 드리프트 중 가속을 밟고 있으면 옆으로 미끄러지며 잃는 속도의 35%를 앞으로 되돌려 줘요 (실제 드리프트처럼 속도 유지) */
+   if(keys.hand&&keys.gas&&vf>3&&!iceNow)vf+=Math.abs(vl0-vl)*.35*Math.max(0,1-vf/75)}
   vf*=Math.exp(-(.015+(off?1.4:0))*dt);
   if(off)vl*=Math.exp(-1.2*dt);
   vf-=Math.sign(vf)*Math.min(Math.abs(vf),.5*dt);
