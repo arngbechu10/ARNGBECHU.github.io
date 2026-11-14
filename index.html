@@ -2157,6 +2157,88 @@ let smokeI=0,smokeAcc=0;
 function puff(x,y,z,vx,vz){const s=smoke[smokeI++%smoke.length];s.position.set(x,y,z);s.userData={t:0,vx:vx*.25+(Math.random()-.5)*.8,vz:vz*.25+(Math.random()-.5)*.8};s.visible=true}
 const V={view:'rear',side:'L',ph:0,pv:0,yawR:0,acc:0,roll:0,rollV:0,pit:0,pitV:0,bl:0,init:false};
 function hideOpp(){OPPM.visible=false;OPPC.visible=false}
+/* --- 상대 차 3D 모델 ---
+   assets/models/<차>.glb (Sketchfab 모델을 Blender로 줄이고 바퀴 4개를 따로 떼어 Draco 압축, 차 한 대 약 0.5MB).
+   1대1에서 상대 차가 정해지면 그 차만 불러와요. 못 불러오면(인터넷·파일 문제) 예전 사진 방식으로 보여요.
+   모델 앞쪽은 +z, 바닥 가운데가 원점, 바퀴 노드 이름은 WHEEL_FL/FR/RL/RR. */
+const M3D_JS=['https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js','https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js'];
+const M3D_DRACO='https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/libs/draco/';
+/* paint: 차체 페인트 재질 이름, col: 홈 화면 차 사진과 비슷한 색 */
+const M3D={
+  gtr:{paint:/Paint_Material/,col:0x1e46be},      /* 베이사이드 블루 */
+  gt3:{paint:/phong2SG1|phong3SG1/,col:0xa3a7ae},  /* 실버 */
+  chal:{paint:/^Carosserie$/,col:0x8e939a},        /* 실버 그레이 */
+  f40:{paint:/^F40$/,col:0xc40f1f},                /* 로쏘 코르사 */
+  mcl:{paint:null}                                 /* 원래 검정 그대로 */
+};
+const M3S={};let m3dLib=null,OPP3D=null;
+function m3dLibLoad(){
+  if(!m3dLib)m3dLib=M3D_JS.reduce((p,src)=>p.then(()=>new Promise((ok,no)=>{
+    if(/GLTF/.test(src)&&THREE.GLTFLoader||/DRACO/.test(src)&&THREE.DRACOLoader)return ok();
+    const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>{s.remove();no(new Error('lib'))};document.head.append(s)})),Promise.resolve()).catch(e=>{m3dLib=null;throw e});
+  return m3dLib;
+}
+/* 불러오기 시작(이미 했으면 그대로). 준비되면 M3S[id].val */
+function m3dLoad(id){
+  if(!M3D[id]||M3S[id])return;
+  const st=M3S[id]={val:null,failed:false};
+  m3dLibLoad().then(()=>new Promise((ok,no)=>{
+    const L=new THREE.GLTFLoader(),DL=new THREE.DRACOLoader();DL.setDecoderPath(M3D_DRACO);L.setDRACOLoader(DL);
+    L.load('assets/models/'+id+'.glb',g=>ok(m3dPrep(id,g.scene)),undefined,no);
+  })).then(v=>{st.val=v}).catch(()=>{st.failed=true;setTimeout(()=>{if(M3S[id]===st)delete M3S[id]},15000)});
+}
+function m3dPrep(id,scene){
+  const cfg=M3D[id],holder=new THREE.Group(),body=new THREE.Group(),wheels=[];
+  holder.rotation.y=Math.PI/2;holder.add(body);   /* 모델 앞(+z)을 게임의 앞(+x)으로 */
+  const parts=[];scene.updateMatrixWorld(true);scene.children.slice().forEach(c=>parts.push(c));
+  parts.forEach(c=>{(/^WHEEL_/.test(c.name)?holder:body).add(c)});
+  holder.traverse(o=>{
+    if(o.isMesh)[].concat(o.material).forEach(m=>{
+      ['map','emissiveMap'].forEach(k=>{if(m[k])m[k].encoding=THREE.LinearEncoding});   /* 게임은 선형 출력이라 맞춰 줌 */
+      if(cfg.paint&&cfg.paint.test(m.name)){m.color.setHex(cfg.col);m.map=null;m.metalness=.6;m.roughness=.3}
+      m.envMapIntensity=1.1;m.needsUpdate=true;
+    });
+    if(/^WHEEL_/.test(o.name)){const b=new THREE.Box3().setFromObject(o),sz=b.getSize(new THREE.Vector3());
+      wheels.push({o,front:o.position.z>0,r:Math.max(.2,sz.y/2),spin:0})}
+  });
+  const b=new THREE.Box3().setFromObject(holder),len=b.max.x-b.min.x||4.5;
+  return{holder,body,wheels,len};
+}
+/* 조명: 모델(빛을 받는 재질)에만 영향. 맵마다 밝기, 하늘 사진으로 반사 */
+const m3dHemi=new THREE.HemisphereLight(0xdfe8ff,0x2a2630,1),m3dSun=new THREE.DirectionalLight(0xffffff,1);
+m3dSun.position.set(.6,1,.35);S.add(m3dHemi);S.add(m3dSun);
+const M3L={seoul:[.85,.75],xmas:[.95,.7],tokyo:[.8,.65],mountain:[1.15,1.25]};
+let m3dPM=null;const m3dEnv={};
+function m3dEnvFor(id){
+  if(m3dEnv[id]!==undefined)return m3dEnv[id];
+  const t=skyTex((MAPS[id]&&MAPS[id].sky)||id);if(!t||!t.image||!t.image.width)return null;
+  try{m3dPM=m3dPM||new THREE.PMREMGenerator(R);m3dEnv[id]=m3dPM.fromEquirectangular(t).texture}catch(e){m3dEnv[id]=null}
+  return m3dEnv[id];
+}
+const m3dTail=[0,1].map(()=>{const s=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex(255,36,24),blending:THREE.AdditiveBlending,transparent:true,depthWrite:false,fog:false}));s.visible=false;OPPM.add(s);return s});
+const m3dFlame=[0,1].map(()=>{const s=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex(90,150,255),blending:THREE.AdditiveBlending,transparent:true,depthWrite:false,fog:false}));s.visible=false;OPPM.add(s);return s});
+function m3dHide(){if(OPP3D)OPP3D.visible=false;m3dTail.forEach(s=>s.visible=false);m3dFlame.forEach(s=>s.visible=false)}
+/* 매 프레임: 모델이 준비됐으면 보여 주고 true */
+function opp3D(dt,v,braking,nitro){
+  m3dLoad(D.oppCar);const st=M3S[D.oppCar],M=st&&st.val;
+  if(!M){m3dHide();return false}
+  if(OPP3D!==M.holder){if(OPP3D)OPPM.remove(OPP3D);OPPM.add(M.holder);OPP3D=M.holder}
+  M.holder.visible=true;
+  /* 맵에 맞는 빛·반사 */
+  const L=M3L[MAPID]||[1,1];m3dHemi.intensity=L[0];m3dSun.intensity=L[1];
+  const env=m3dEnvFor(MAPID);if(S.environment!==env)S.environment=env;
+  /* 서스펜션: 차체만 기울이고 바퀴는 그대로 (앞=+z 기준: x축 회전=앞뒤, z축 회전=좌우) */
+  M.body.rotation.set(V.pit,0,V.roll);
+  /* 바퀴: 속도만큼 굴러가고, 앞바퀴는 코너에서 꺾임 */
+  V.st=(V.st||0)+(clamp(Math.atan(2.6*V.yawR/Math.max(v,3)),-.5,.5)-(V.st||0))*Math.min(1,dt*8);
+  const fwd=(O.vx*Math.cos(O.h)+O.vz*Math.sin(O.h))>=0?1:-1;
+  M.wheels.forEach(w=>{w.spin+=fwd*v/w.r*dt;w.o.rotation.order='YXZ';w.o.rotation.set(w.spin,w.front?V.st:0,0)});
+  /* 브레이크 등·니트로 불꽃 (차 뒤쪽, OPPM 기준 x가 앞) */
+  V.bl+=((braking?1:0)-V.bl)*Math.min(1,dt*14);const rearX=-M.len/2-.05;
+  m3dTail.forEach((s,i)=>{s.visible=true;s.position.set(rearX,.78,(i?1:-1)*.66);const k=(MAPID==='mountain'?.12:.35)+V.bl*.9;s.material.opacity=Math.min(1,k);const sc=.35+V.bl*.45;s.scale.set(sc*1.6,sc,1)});
+  m3dFlame.forEach((s,i)=>{s.visible=!!nitro;if(!nitro)return;s.position.set(rearX-.1,.38,(i?1:-1)*.32);const k=.6+Math.random()*.4;s.scale.set(.7*k,.45*k,1)});
+  return true;
+}
 function oppVisual(dt,now){
   const P=CARV[D.oppCar]||CARV.gtr,fx=Math.cos(O.h),fz=Math.sin(O.h),rx=-fz,rz=fx;
   const v=Math.hypot(O.vx,O.vz),fl=O.fl|0,braking=fl&1,drift=fl&4,nitro=fl&8;
@@ -2171,6 +2253,10 @@ function oppVisual(dt,now){
   const spring=(x,xv,target)=>{const a=70*(target-x)-8.5*xv;xv+=a*dt;return[x+xv*dt,xv]};
   [V.roll,V.rollV]=spring(V.roll,V.rollV,Math.abs(aLat)<1.5?0:-clamp(aLat/9.8,-1.3,1.3)*.04);
   [V.pit,V.pitV]=spring(V.pit,V.pitV,(braking&&v>3?.028:0)-((fl&2)&&!braking&&v<60?.01:0));     /* +면 앞이 숙여짐(브레이크) */
+  /* 드리프트하면 뒷바퀴에서 타이어 연기 */
+  if(drift&&v>8){smokeAcc+=dt*26;while(smokeAcc>1){smokeAcc--;const sd=Math.random()<.5?-1:1;puff(O.x-fx*1.35+rx*.85*sd,O.y+.35,O.z-fz*1.35+rz*.85*sd,O.vx,O.vz)}}
+  /* 3D 모델이 준비됐으면 그걸로 (아니면 아래 사진 방식) */
+  if(opp3D(dt,v,braking,nitro)){OPPC.visible=false;BOXM.visible=false;return}
   /* 카메라가 차의 어느 쪽에 있는지 */
   const cx=cam.position.x-O.x,cz=cam.position.z-O.z,dist=Math.hypot(cx,cz)||1,along=(cx*fx+cz*fz)/dist,lat=(cx*rx+cz*rz)/dist;
   if(V.view==='rear'&&along>.2)V.view='front';else if(V.view==='front'&&along<-.2)V.view='rear';
@@ -2201,8 +2287,6 @@ function oppVisual(dt,now){
   tailG.forEach((s,i)=>{const q=rear&&ph.tl&&ph.tl[i];s.visible=!!q;if(!q)return;at(q,s);const k=(MAPID==='mountain'?.15:.4)+V.bl*.95;s.material.opacity=Math.min(1,k);const sc=(.32+V.bl*.4)*(i===2?.8:1);s.scale.set(sc*1.9,sc,1)});
   /* 니트로 불꽃 */
   flameG.forEach((s,i)=>{const q=rear&&nitro&&ph.ex&&ph.ex[i];s.visible=!!q;if(!q)return;at(q,s);const k=.6+Math.random()*.4;s.scale.set(.7*k,.45*k,1)});
-  /* 드리프트하면 뒷바퀴에서 타이어 연기 */
-  if(drift&&v>8){smokeAcc+=dt*26;while(smokeAcc>1){smokeAcc--;const sd=Math.random()<.5?-1:1;puff(O.x-fx*1.35+rx*.85*sd,O.y+.35,O.z-fz*1.35+rz*.85*sd,O.vx,O.vz)}}
 }
 function smokeStep(dt){
   for(const s of smoke){const d=s.userData;if(d.t>=1.5){s.visible=false;continue}
@@ -2321,7 +2405,7 @@ function onDuelMsg(m){
   }
   if(m.from!==D.oppId)return;
   switch(m.k){
-    case 'car':if(CARS[m.car])D.oppCar=m.car;D.oppReady=!!m.ready;setOppColor();duelInfo();if(D.role==='host')maybeGo();break;
+    case 'car':if(CARS[m.car]){D.oppCar=m.car;m3dLoad(m.car)}D.oppReady=!!m.ready;setOppColor();duelInfo();if(D.role==='host')maybeGo();break;
     case 'go':if(D.role==='guest'&&D.state==='garage')duelCountdown();break;
     case 'p':oppPos(m);break;
     case 'fin':D.oppFin=Math.max(0,m.ms|0);O.lap=D.laps;onOppFin();break;
