@@ -280,7 +280,7 @@ body[data-mode=hard] #lbp .row{display:none}
 .dpick i{font-style:normal;font-size:30px;font-weight:900;color:#f2c230;line-height:1}
 .dpick b{font-size:18px}
 .dpick span{font-size:12.5px;color:#aeb7c6;line-height:1.45}
-.dmaps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.dmaps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
 .dmaps button{font:inherit;color:#cdd7e6;cursor:pointer;padding:0;overflow:hidden;background:#0b0d14;border:2px solid #2c3342;border-radius:8px;display:flex;flex-direction:column;text-align:left}
 .dmaps img{width:100%;aspect-ratio:16/9;object-fit:cover;display:block}
 .dmaps b{padding:6px 8px;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -445,6 +445,7 @@ body[data-mode=practice] #tl,body[data-mode=practice] #bt,body[data-mode=practic
       <button role="radio" aria-checked="true" data-map="seoul"><img src="DATAURI" alt=""><b>Seoul</b><em>보통 · 야경 도심</em></button>
       <button role="radio" aria-checked="false" data-map="mountain"><img src="DATAURI" alt=""><b>Mountain Pass</b><em>어려움 · 내리막 산길</em></button>
       <button role="radio" aria-checked="false" data-map="xmas"><img src="DATAURI" alt=""><b>Christmas</b><em>쉬움 · 눈 내리는 밤</em></button>
+      <button role="radio" aria-checked="false" data-map="tokyo"><img src="DATAURI" alt=""><b>Tokyo Neon</b><em>매우 어려움 · 네온 시티</em></button>
     </div>
     <div class="stages"><div class="stl" id="stList"></div><p>스테이지를 하나씩 클리어해요. 벽에 부딪혀도 되는 횟수가 10번부터 스테이지마다 1번씩 줄어요!</p></div>
     <div class="duelinfo" id="duelInfo"><div><span>나</span><b id="diMe"></b></div><div><span id="diOppN">상대</span><b id="diOpp"></b></div></div>
@@ -590,7 +591,7 @@ const TL=new THREE.TextureLoader();
 const rep=t=>{t.wrapS=t.wrapT=THREE.RepeatWrapping;t.anisotropy=8;return t};
 
 /* ================= 맵 시스템 ================= */
-const SKIES={ship:'DATAURI',seoul:'DATAURI',mountain:'DATAURI',xmas:'DATAURI'};
+const SKIES={tokyo:'DATAURI',ship:'DATAURI',seoul:'DATAURI',mountain:'DATAURI',xmas:'DATAURI'};
 const skyCache={};
 const skyTex=id=>skyCache[id]||(skyCache[id]=rep(TL.load(SKIES[id])));
 const skyMat=new THREE.MeshBasicMaterial({map:skyTex('seoul'),side:THREE.BackSide,transparent:true,fog:false,depthWrite:false});
@@ -662,6 +663,251 @@ const MAPS={
   xmas:{half:14,wall:3,bg:0x16254a,fog:[0x1a2a58,70,560],gnd:0x8798c2,gy:-.03,asph:0x9aa1b8,kerb:['#c4352b','#f4f4f7'],pts:()=>closedSpline(xmasCtrl()),lamps:{gap:36,col:'255,214,150',size:15},rail:'fence',trees:true,shoulder:0xb4c2e2}
 };
 let BR=null,RIVER=null,WATERT=null,TP=[],TY=[],TSL=[],TS=[0],TN=[],TH=[],TLEN=0,HALF=8,WALL=0,sx=0,sz=0,sh=0,MAPID='seoul',MG=null,terrH=null;
+
+
+/* ================= Tokyo Neon City 맵 =================
+   비 오는 밤의 도쿄 시가지 코스(약 1.3km). 좁은 길 + 90도 코너 + 헤어핀 + S자 시케인으로 어려운 편.
+   일본 느낌 장애물(부딪히면 막혀요): 工事中 공사 구간 2곳, 도리이(鳥居) 6개, 주차된 택시, 자판기.
+   장애물은 코스 위치(비율 f)와 옆 위치(lat, +가 진행 방향 오른쪽)로 정해요 → TOKYO_OBS. */
+const TOKYO_CTRL=[[0,0],[120,0],[215,0],[250,12],[262,45],[262,120],[250,150],[222,160],[190,160],[170,172],[164,200],[164,248],[152,276],[120,286],[50,286],[10,280],[-14,256],[-16,215],[-34,184],[-70,176],[-118,176],[-148,164],[-162,132],[-162,112],[-140,86],[-164,52],[-142,24],[-112,6],[-70,0]];
+const TOKYO_OBS=[
+  {type:'kouji',f:.08,lat:3.9,hl:7,hw:3.6},     /* 공사 구간: 출발 직선 오른쪽 차선 */
+  {type:'kouji',f:.255,lat:-3.9,hl:7,hw:3.6},   /* 공사 구간: 오른쪽 직선 왼쪽 차선 */
+  {type:'taxi',f:.415,lat:5.4,hl:2.3,hw:.95},   /* 주차된 택시 */
+  {type:'vend',f:.70,lat:-6.3,hl:1.7,hw:.5}     /* 자판기 3대 */
+];
+const TORII_F=[.482,.494,.506,.518,.530,.542];  /* 도리이 위치 (기둥이 도로 안쪽 ±6.1m) */
+const TORII_LAT=6.1;
+MAPS.tokyo={half:7.5,wall:1.6,rail:'jersey',bg:0x0b0a18,fog:[0x150f28,55,480],gnd:0x0a0a14,gy:-.03,asph:0x5d6274,kerb:['#e0203c','#f2f2f2'],
+  pts:()=>closedSpline(TOKYO_CTRL),lamps:{gap:38,col:'190,215,255',size:13},shoulder:0x22242c,tokyo:true};
+let TOBS=[],TK={blink:[],rain:null,t:0,haz:[]};
+const tkIdx=f=>Math.round(f*N)%N;
+function tkAt(i,lat,along){const n=TN[i],q=TP[i],h=TH[i];return[q[0]+n[0]*lat+Math.cos(h)*(along||0),q[1]+n[1]*lat+Math.sin(h)*(along||0)]}
+function tkTex(w,h,fn){const cv=document.createElement('canvas');cv.width=w;cv.height=h;fn(cv.getContext('2d'),w,h);const t=new THREE.CanvasTexture(cv);t.anisotropy=4;return t}
+const JP='"Hiragino Sans","Yu Gothic","Noto Sans JP","Noto Sans CJK JP","Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif';
+const NEON=[['カラオケ','#ff3df0'],['ラーメン','#ffb21f'],['居酒屋','#ff4b3a'],['寿司','#3dfcff'],['ホテル','#9b6bff'],['ゲーム','#4dff7a'],['焼肉','#ff6a3a'],['東京','#ff2d6f'],['薬','#3df0a0'],['カフェ','#ffd83d'],['パチンコ','#ff3dd0'],['うどん','#7ad8ff']];
+const BOARDS=[['SKYLINE GT-R','#3d8bff'],['PORSCHE','#ffffff'],['東京 NEON','#ff3df0'],['F40','#ff3b3b'],['JAPAN','#3dfcff'],['720S','#ff9a3d']];
+function neonTex(txt,col,vert){
+  return tkTex(vert?128:512,vert?448:160,(x,w,h)=>{
+    x.fillStyle='rgba(8,6,16,.88)';x.fillRect(0,0,w,h);
+    x.strokeStyle=col;x.lineWidth=6;x.shadowColor=col;x.shadowBlur=18;x.strokeRect(8,8,w-16,h-16);
+    x.fillStyle='#fff';x.textAlign='center';x.textBaseline='middle';x.shadowBlur=22;
+    if(vert){const ch=[...txt],s=Math.min(84,(h-40)/ch.length);x.font='900 '+s+'px '+JP;ch.forEach((c,k)=>{x.fillStyle=col;x.fillText(c,w/2,20+s*(k+.5)+(h-40-s*ch.length)/2);x.fillStyle='rgba(255,255,255,.75)';x.fillText(c,w/2,20+s*(k+.5)+(h-40-s*ch.length)/2)})}
+    else{x.font='900 78px '+JP;x.fillStyle=col;x.fillText(txt,w/2,h/2+4);x.fillStyle='rgba(255,255,255,.7)';x.fillText(txt,w/2,h/2+4)}
+  });
+}
+/* 창문 텍스처 1장 = 가로 8칸(약 26m) × 세로 16층(약 56m). 대부분 꺼져 있고 일부만 켜짐 */
+const WIN_W=26,WIN_H=56;
+function winTex(seed){
+  let s=seed;const rnd=()=>(s=(s*16807)%2147483647)/2147483647;
+  const t=tkTex(256,512,(x,w,h)=>{x.fillStyle='#090a12';x.fillRect(0,0,w,h);
+    const pal=['#c9a463','#d8b878','#9fb8d0','#b9c9dc','#e0c48a'];
+    for(let r=0;r<16;r++){const floorLit=rnd()<.55;for(let k=0;k<8;k++){const on=floorLit&&rnd()<.5;x.fillStyle=on?pal[(rnd()*pal.length)|0]:'#13141f';x.globalAlpha=on?.55+rnd()*.35:1;x.fillRect(5+k*31.5,7+r*31.8,22,17)}}x.globalAlpha=1});
+  t.wrapS=t.wrapT=THREE.RepeatWrapping;return t;
+}
+/* 상자 면마다 실제 크기에 맞게 창문이 반복되도록 uv 늘리기 */
+function boxWinGeo(w,h,d){const g=new THREE.BoxGeometry(w,h,d),uv=g.attributes.uv,dims=[[d,h],[d,h],[w,d],[w,d],[w,h],[w,h]];
+  for(let f=0;f<6;f++)for(let k=0;k<4;k++){const i=f*4+k;uv.setXY(i,uv.getX(i)*dims[f][0]/WIN_W,uv.getY(i)*dims[f][1]/WIN_H)}return g}
+/* 네온 간판 모음 그림(아틀라스): 세로 간판 12개 + 가로 간판 6개를 한 장에 */
+let NEON_ATLAS=null;
+function neonAtlas(){
+  if(NEON_ATLAS)return NEON_ATLAS;
+  const cv=document.createElement('canvas');cv.width=2048;cv.height=1024;const x=cv.getContext('2d'),rects=[];
+  const draw=(txt,col,vert,ox,oy,w,h)=>{x.save();x.translate(ox,oy);x.fillStyle='rgba(8,6,16,.9)';x.fillRect(0,0,w,h);
+    x.strokeStyle=col;x.lineWidth=6;x.shadowColor=col;x.shadowBlur=18;x.strokeRect(8,8,w-16,h-16);
+    x.textAlign='center';x.textBaseline='middle';x.shadowBlur=22;
+    if(vert){const ch=[...txt],sz=Math.min(84,(h-40)/ch.length),top=20+(h-40-sz*ch.length)/2;x.font='900 '+sz+'px '+JP;ch.forEach((c,k)=>{x.fillStyle=col;x.fillText(c,w/2,top+sz*(k+.5));x.fillStyle='rgba(255,255,255,.75)';x.fillText(c,w/2,top+sz*(k+.5))})}
+    else{x.font='900 78px '+JP;x.fillStyle=col;x.fillText(txt,w/2,h/2+4);x.fillStyle='rgba(255,255,255,.7)';x.fillText(txt,w/2,h/2+4)}x.restore()};
+  NEON.forEach(([t,c],k)=>{draw(t,c,true,k*128+4,4,120,440);rects.push({v:true,u0:(k*128+4)/2048,u1:(k*128+124)/2048,v0:1-444/1024,v1:1-4/1024})});
+  BOARDS.forEach(([t,c],k)=>{const ox=(k%4)*512,oy=460+Math.floor(k/4)*170;draw(t,c,false,ox+4,oy,504,160);rects.push({v:false,u0:(ox+4)/2048,u1:(ox+508)/2048,v0:1-(oy+160)/1024,v1:1-oy/1024})});
+  const t=new THREE.CanvasTexture(cv);t.anisotropy=4;NEON_ATLAS={mat:new THREE.MeshBasicMaterial({map:t,transparent:true}),rects};return NEON_ATLAS;
+}
+/* 평평한 바닥 장식(물웅덩이 네온 반사 등): 길이 방향이 코스 방향 */
+function tkFlat(x,z,th,len,wid,tex,col,op,add){
+  const g=new THREE.PlaneGeometry(len,wid);g.rotateX(-Math.PI/2);
+  const m=new THREE.Mesh(g,new THREE.MeshBasicMaterial({map:tex||null,color:col,transparent:true,opacity:op,depthWrite:false,blending:add?THREE.AdditiveBlending:THREE.NormalBlending,polygonOffset:true,polygonOffsetFactor:-3,polygonOffsetUnits:-3}));
+  m.position.set(x,.03,z);m.rotation.y=-th;MG.add(m);return m;
+}
+/* 세운 판: 앞면이 (nx,nz) 방향을 바라봄 */
+function tkBoard(x,y,z,w,h,nx,nz,mat){const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),mat);m.position.set(x,y,z);m.rotation.y=Math.atan2(nx,nz);MG.add(m);return m}
+const tkM=(c,o)=>new THREE.MeshBasicMaterial(Object.assign({color:c},o||{}));
+/* 같은 재질의 물체를 하나로 합쳐서 그리기 횟수를 줄여요 (폰에서 버벅이지 않게) */
+let TKB=new Map();
+function tkMerge(parts,withCol){
+  let n=0;parts.forEach(p=>{if(p.g.index)p.g=p.g.toNonIndexed();n+=p.g.attributes.position.count});
+  const pos=new Float32Array(n*3),uv=new Float32Array(n*2),col=withCol?new Float32Array(n*3):null;let o=0;
+  parts.forEach(p=>{const a=p.g.attributes,k=a.position.count;pos.set(a.position.array,o*3);if(a.uv)uv.set(a.uv.array,o*2);
+    if(col)for(let q=0;q<k;q++){col[(o+q)*3]=p.col.r;col[(o+q)*3+1]=p.col.g;col[(o+q)*3+2]=p.col.b}o+=k;p.g.dispose()});
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(pos,3));g.setAttribute('uv',new THREE.BufferAttribute(uv,2));if(col)g.setAttribute('color',new THREE.BufferAttribute(col,3));
+  g.computeBoundingSphere();return g;
+}
+const _tko=new THREE.Object3D();
+function tkAdd(geo,mat,x,y,z,ry,col){_tko.position.set(x,y,z);_tko.rotation.set(0,ry||0,0);_tko.updateMatrix();geo.applyMatrix4(_tko.matrix);let b=TKB.get(mat);if(!b)TKB.set(mat,b=[]);b.push({g:geo,col})}
+function tkFlush(){TKB.forEach((parts,mat)=>{MG.add(new THREE.Mesh(tkMerge(parts,!!mat.vertexColors),mat))});TKB=new Map()}
+function tkBox(w,h,d,mat,x,y,z,ry){tkAdd(new THREE.BoxGeometry(w,h,d),mat,x,y,z,ry)}
+
+function buildTokyo(){
+  TOBS=[];TK.blink=[];TK.haz=[];TKB=new Map();
+  const glowP=(pts,cols,size,tex)=>{const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pts,3));if(cols)g.setAttribute('color',new THREE.Float32BufferAttribute(cols,3));
+    const p=new THREE.Points(g,new THREE.PointsMaterial({size,map:tex||glowTex(255,255,255),vertexColors:!!cols,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}));MG.add(p);return p};
+  /* --- 건물 + 네온 간판 --- */
+  const wins=[winTex(7),winTex(91),winTex(523)].map(t=>tkM(0xffffff,{map:t})),AT=neonAtlas(),reflM=new THREE.MeshBasicMaterial({map:glowTex(255,255,255),vertexColors:true,transparent:true,opacity:.3,depthWrite:false,blending:THREE.AdditiveBlending,polygonOffset:true,polygonOffsetFactor:-3,polygonOffsetUnits:-3});
+  /* (x,z)가 코스에서 r보다 멀리 있는지. skip을 주면 그 근처(±45점)는 빼고 검사 */
+  const far=(x,z,r,skip)=>{for(let j=0;j<N;j+=3){if(skip!=null){let dj=Math.abs(j-skip);dj=Math.min(dj,N-dj);if(dj<45)continue}const dx=x-TP[j][0],dz=z-TP[j][1];if(dx*dx+dz*dz<r*r)return false}return true};
+  let seed=11;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
+  const signs=[];
+  for(let i=0;i<N;i+=9)for(const sd of[-1,1]){
+    if(rnd()<.18)continue;                                   /* 군데군데 빈 땅 → 뒤로 하늘·도쿄 타워가 보여요 */
+    const inner=sd>0,w=9+rnd()*9,d=10+rnd()*12,h=inner?5+rnd()*7:16+Math.pow(rnd(),1.5)*48,off=WALL+4+d/2;
+    const [bx,bz]=tkAt(i,sd*off);if(!far(bx,bz,off-.5)||!far(bx,bz,WALL+3+Math.hypot(w,d)/2,i))continue;
+    tkAdd(boxWinGeo(w,h,d),wins[(i/9|0)%3],bx,h/2,bz,-TH[i]);
+    if(rnd()<.6&&h>9){
+      const vert=h>13&&rnd()<.7,k=vert?(rnd()*NEON.length)|0:NEON.length+((rnd()*BOARDS.length)|0),R=AT.rects[k],col=(vert?NEON[k]:BOARDS[k-NEON.length])[1];
+      const sw=vert?2.6:9,shh=vert?9:2.9,al=(rnd()-.5)*(w-sw-1),fo=sd*(off-d/2-.25);
+      const [sx_,sz_]=tkAt(i,fo,al),n=TN[i],g=new THREE.PlaneGeometry(sw,shh),uv=g.attributes.uv;
+      for(let q=0;q<4;q++)uv.setXY(q,uv.getX(q)?R.u1:R.u0,uv.getY(q)?R.v1:R.v0);
+      tkAdd(g,AT.mat,sx_,Math.max(shh/2+1.5,Math.min(h-shh/2-1,4.5+rnd()*12)),sz_,Math.atan2(-n[0]*sd,-n[1]*sd));
+      signs.push([i,sd,al,col]);
+    }
+  }
+  /* 젖은 도로에 비친 네온 */
+  signs.forEach(([i,sd,al,col])=>{const [x,z]=tkAt(i,sd*(HALF-1.6),al),g=new THREE.PlaneGeometry(13,3.2);g.rotateX(-Math.PI/2);tkAdd(g,reflM,x,.03,z,-TH[i],new THREE.Color(col))});
+  /* --- 도쿄 타워 (코스 안쪽 가운데) --- */
+  {
+    const TX=70,TZ=130,Hh=118,lp=[],gp=[],half=y=>14*Math.pow(1-y/Hh,1.7)+1.1;
+    const cr=y=>{const a=half(y);return[[TX-a,y,TZ-a],[TX+a,y,TZ-a],[TX+a,y,TZ+a],[TX-a,y,TZ+a]]};
+    const push=(a,b)=>{lp.push(...a,...b)};
+    for(let y=0;y<Hh;y+=6){const A=cr(y),B=cr(Math.min(Hh,y+6));for(let k=0;k<4;k++){push(A[k],B[k]);push(A[k],B[(k+1)%4]);push(A[(k+1)%4],B[k]);gp.push(...A[k])}
+      for(let k=0;k<4;k++)push(A[k],A[(k+1)%4])}
+    push([TX,Hh,TZ],[TX,Hh+16,TZ]);
+    const lg=new THREE.BufferGeometry();lg.setAttribute('position',new THREE.Float32BufferAttribute(lp,3));
+    MG.add(new THREE.LineSegments(lg,new THREE.LineBasicMaterial({color:0xff5a1f,fog:false})));
+    glowP(gp,null,7,glowTex(255,120,40));
+    const deckM=tkM(0xfff1d8,{fog:false});[[46,5.4],[82,3]].forEach(([y,a])=>tkBox(a*2,3.2,a*2,deckM,TX,y,TZ));
+    const top=glowP([TX,Hh+16,TZ],null,10,glowTex(255,40,40));TK.blink.push({o:top,per:1.2});
+  }
+  /* --- 초록 고속도로 표지판 (출발 직후, 헤어핀 앞, 시케인 앞) --- */
+  [[.02,['東京タワー','Tokyo Tower','↑'],['銀座','Ginza','↗']],[.615,['渋谷','Shibuya','←'],['新宿','Shinjuku','↑']],[.765,['首都高','Shuto Exp.','↑'],['横浜','Yokohama','→']]].forEach(([f,...bs])=>{
+    const i=tkIdx(f),th=TH[i],n=TN[i],postM=tkM(0x5c6470);
+    [-1,1].forEach(sd=>{const [x,z]=tkAt(i,sd*(WALL+.9));tkBox(.35,7.4,.35,postM,x,3.7,z)});
+    const [cx,cz]=tkAt(i,0);tkBox(.4,.5,(WALL+.9)*2,postM,cx,7.2,cz,-th);
+    bs.forEach(([kj,en,ar],k)=>{
+      const tex=tkTex(512,256,(x,w,h)=>{x.fillStyle='#1d6b3a';x.fillRect(0,0,w,h);x.strokeStyle='#fff';x.lineWidth=8;x.strokeRect(10,10,w-20,h-20);
+        x.fillStyle='#fff';x.textAlign='center';x.font='900 92px '+JP;x.fillText(kj,w/2-40,120);x.font='700 46px system-ui,sans-serif';x.fillText(en,w/2-40,200);x.font='900 120px system-ui';x.fillText(ar,w-70,160)});
+      const [x,z]=tkAt(i,(k?1:-1)*3.6);tkBoard(x,6.1,z,6.4,3.2,-Math.cos(th),-Math.sin(th),new THREE.MeshBasicMaterial({map:tex}));
+    });
+  });
+  /* --- 코너 바깥쪽 빨강·흰 화살표(쉐브론) --- */
+  {
+    const chev=dir=>tkTex(256,96,(x,w,h)=>{x.fillStyle='#f4f4f4';x.fillRect(0,0,w,h);x.fillStyle='#d8141e';for(let k=0;k<3;k++){const o=k*86+14;x.beginPath();
+      if(dir>0){x.moveTo(o,8);x.lineTo(o+34,8);x.lineTo(o+70,48);x.lineTo(o+34,88);x.lineTo(o,88);x.lineTo(o+36,48)}else{x.moveTo(o+70,8);x.lineTo(o+36,8);x.lineTo(o,48);x.lineTo(o+36,88);x.lineTo(o+70,88);x.lineTo(o+34,48)}x.fill()}});
+    const mR=new THREE.MeshBasicMaterial({map:chev(1)}),mL=new THREE.MeshBasicMaterial({map:chev(-1)});
+    for(let i=0;i<N;i+=5){let d=TH[(i+8)%N]-TH[(i+N-8)%N];d=Math.atan2(Math.sin(d),Math.cos(d));const k=d/(16*SP);if(Math.abs(k)<1/36)continue;
+      const sd=k>0?-1:1,n=TN[i],[x,z]=tkAt(i,sd*(WALL+.08)),nx=-n[0]*sd,nz=-n[1]*sd,ph=Math.atan2(nx,nz),lx=Math.cos(ph),lz=-Math.sin(ph);
+      tkAdd(new THREE.PlaneGeometry(2.3,1.05),(lx*Math.cos(TH[i])+lz*Math.sin(TH[i])>0)?mR:mL,x,.75,z,ph)}
+  }
+  /* --- 벚꽃 (출발 직선 끝 쪽, 도리이 주변) --- */
+  {
+    const pts=[],cols=[],trunkM=tkM(0x2a1d1a),blM=tkM(0xf2a8c8);
+    const tree=(x,z)=>{tkBox(.5,3.4,.5,trunkM,x,1.7,z);for(let k=0;k<4;k++){tkAdd(new THREE.IcosahedronGeometry(1.6+rnd()*.9,0),blM,x+(rnd()-.5)*3,4.2+rnd()*1.6,z+(rnd()-.5)*3)}
+      for(let k=0;k<40;k++){pts.push(x+(rnd()-.5)*6,3.4+rnd()*3.6,z+(rnd()-.5)*6);const p=.75+rnd()*.25;cols.push(1,.55*p,.75*p)}};
+    for(let f=.86;f<.995;f+=.011)for(const sd of[-1,1]){const [x,z]=tkAt(tkIdx(f),sd*(WALL+2.6));if(far(x,z,WALL+1.6))tree(x,z)}
+    for(let f=.47;f<.56;f+=.016)for(const sd of[-1,1]){const [x,z]=tkAt(tkIdx(f),sd*(WALL+2.6));if(far(x,z,WALL+1.6))tree(x,z)}
+    glowP(pts,cols,1.6,glowTex(255,190,220));
+  }
+  /* --- 도리이 + 빨간 초롱 --- */
+  {
+    const red=tkM(0xd8361f),blk=tkM(0x161214),lanM=tkM(0xff3a1e,{fog:false}),lan=[];
+    TORII_F.forEach(f=>{const i=tkIdx(f),th=TH[i],ry=-th-Math.PI/2;
+      [-1,1].forEach(sd=>{const [x,z]=tkAt(i,sd*TORII_LAT);tkAdd(new THREE.CylinderGeometry(.36,.42,6.4,12),red,x,3.2,z);
+        tkBox(.95,.35,.95,blk,x,.18,z);TOBS.push({x,z,c:Math.cos(th),s:Math.sin(th),hl:.45,hw:.45})});
+      const [cx,cz]=tkAt(i,0);tkBox(TORII_LAT*2+3.2,.45,.85,blk,cx,6.75,cz,ry);tkBox(TORII_LAT*2+2.4,.42,.6,red,cx,6.25,cz,ry);tkBox(TORII_LAT*2+.6,.32,.38,red,cx,5.15,cz,ry);
+      tkBox(.3,1.1,.3,red,cx,5.75,cz,ry);
+      for(const o of[-4.2,-1.4,1.4,4.2]){const [x,z]=tkAt(i,o);const lg=new THREE.SphereGeometry(.34,10,8);lg.scale(1,1.3,1);tkAdd(lg,lanM,x,4.5,z);lan.push(x,4.5,z)}
+    });
+    glowP(lan,null,3.2,glowTex(255,90,40));
+  }
+  /* --- 장애물 --- */
+  TOKYO_OBS.forEach(o=>{
+    const i=tkIdx(o.f),th=TH[i],[x,z]=tkAt(i,o.lat),ry=-th,fx=Math.cos(th),fz=Math.sin(th),n=TN[i];
+    TOBS.push({x,z,c:fx,s:fz,hl:o.hl,hw:o.hw});
+    const P=(al,lt)=>{const q=tkAt(i,o.lat+lt,al);return q};
+    if(o.type==='kouji'){
+      const st=tkTex(128,32,(c,w,h)=>{for(let k=-2;k<10;k++){c.fillStyle=k%2?'#111':'#ffcf1a';c.beginPath();c.moveTo(k*16,0);c.lineTo(k*16+16,0);c.lineTo(k*16+16-32,h);c.lineTo(k*16-32,h);c.fill()}});
+      const stM=new THREE.MeshBasicMaterial({map:st}),legM=tkM(0xe8e8e8);
+      /* 둘레 바리케이드 */
+      const bar=(al,lt,w,rot)=>{const [bx,bz]=P(al,lt);tkBox(w,.45,.12,stM,bx,.95,bz,rot);[-1,1].forEach(e=>{const q=tkAt(i,o.lat+lt+(rot===ry?0:e*w/2-e*.1),al+(rot===ry?e*w/2-e*.1:0));tkBox(.08,1.1,.5,legM,q[0],.55,q[1],rot)})};
+      for(let a=-o.hl+1;a<=o.hl-1;a+=2.4){bar(a,-o.hw,2.2,ry);bar(a,o.hw,2.2,ry)}
+      for(let l=-o.hw+1.1;l<=o.hw-1.1;l+=2.4){bar(-o.hl,l,2.2,ry-Math.PI/2);bar(o.hl,l,2.2,ry-Math.PI/2)}
+      /* 콘 */
+      const coneG=new THREE.ConeGeometry(.26,.7,10);coneG.translate(0,.35,0);const coneM=tkM(0xff5a14);
+      for(let a=-o.hl;a<=o.hl;a+=3)for(const lt of[-o.hw-.4]){const [cx,cz]=P(a,Math.sign(-o.lat)*(o.hw+.4));tkAdd(coneG.clone(),coneM,cx,0,cz)}
+      /* 工事中 간판 + 인사하는 작업자 간판 (앞쪽, 차가 오는 방향을 봄) */
+      const sign=tkTex(256,320,(c,w,h)=>{c.fillStyle='#fff';c.fillRect(0,0,w,h);c.fillStyle='#ffd21a';c.fillRect(10,10,w-20,h-20);c.strokeStyle='#d01818';c.lineWidth=10;c.strokeRect(14,14,w-28,h-28);
+        c.fillStyle='#111';c.textAlign='center';c.font='900 70px '+JP;c.fillText('工事中',w/2,105);c.font='700 26px '+JP;c.fillText('ご迷惑をおかけします',w/2,160);
+        c.fillStyle='#1a3f9a';c.beginPath();c.arc(w/2-40,215,16,0,7);c.fill();c.fillRect(w/2-52,232,26,46);c.save();c.translate(w/2-26,236);c.rotate(.8);c.fillRect(0,0,40,14);c.restore();
+        c.font='700 24px '+JP;c.fillStyle='#d01818';c.fillText('安全第一',w/2+44,262)});
+      const [sx2,sz2]=P(-o.hl-1.2,0);tkBoard(sx2,1.6,sz2,1.6,2,-fx,-fz,new THREE.MeshBasicMaterial({map:sign}));tkBox(.08,1.2,.08,legM,sx2,.6,sz2);
+      /* 깜빡이는 경고등 */
+      const lp=[];for(let a=-o.hl;a<=o.hl;a+=2.4)for(const lt of[-o.hw,o.hw]){const q=P(a,lt);lp.push(q[0],1.35,q[1])}
+      TK.blink.push({o:glowP(lp,null,1.5,glowTex(255,60,30)),per:.7});
+      /* 화살표 LED 판 (피해 갈 방향) */
+      const arr=tkTex(128,128,(c,w,h)=>{c.fillStyle='#111';c.fillRect(0,0,w,h);c.fillStyle='#ffb21a';c.font='900 100px system-ui';c.textAlign='center';c.textBaseline='middle';c.fillText(o.lat>0?'⇦':'⇨',w/2,h/2+4)});
+      const [ax,az]=P(-o.hl-.4,0);const ab=tkBoard(ax,2.3,az,1.5,1.5,-fx,-fz,new THREE.MeshBasicMaterial({map:arr}));TK.blink.push({o:ab,per:.9});
+    }
+    if(o.type==='taxi'){
+      const g=new THREE.Group();g.position.set(x,0,z);g.rotation.y=ry;MG.add(g);
+      const add=(w,h,d,m,px,py,pz)=>{const b=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);b.position.set(px,py,pz);g.add(b);return b};
+      add(4.4,.85,1.72,[tkM(0x1a2148),tkM(0x141a3a),tkM(0x232c5c),tkM(0x0b0d1a),tkM(0x1d254f),tkM(0x1d254f)],0,.72,0);
+      add(2.6,.72,1.6,[tkM(0x151a26),tkM(0x151a26),tkM(0x232c5c),tkM(0x111),tkM(0x2a3448),tkM(0x2a3448)],-.2,1.5,0);
+      add(.7,.28,.34,tkM(0xffd21a,{fog:false}),-.2,2,0);
+      add(.06,.12,1.5,tkM(0xd8d8d8),0,.78,.87);add(.06,.12,1.5,tkM(0xd8d8d8),0,.78,-.87);
+      [[1.42,.9],[1.42,-.9],[-1.42,.9],[-1.42,-.9]].forEach(([a,b])=>{const w=new THREE.Mesh(new THREE.CylinderGeometry(.34,.34,.26,12),tkM(0x0b0b0e));w.rotation.x=Math.PI/2;w.position.set(a,.34,b);g.add(w)});
+      const hz=[];[[2.21,.7],[2.21,-.7],[-2.21,.7],[-2.21,-.7]].forEach(([a,b])=>{const v=new THREE.Vector3(a,.85,b).applyAxisAngle(new THREE.Vector3(0,1,0),ry);hz.push(x+v.x,.85,z+v.z)});
+      TK.blink.push({o:glowP(hz,null,1.6,glowTex(255,160,30)),per:.8});
+    }
+    if(o.type==='vend'){
+      const front=(k)=>tkTex(128,256,(c,w,h)=>{c.fillStyle=k===1?'#d8261e':'#f4f6fa';c.fillRect(0,0,w,h);c.fillStyle=k===1?'#fff':'#1d5fd8';c.fillRect(8,10,w-16,30);
+        const cc=['#e8352b','#2a7de1','#f2c230','#2ab36a','#ff8a1f','#7a3ee0','#ffffff'];for(let r=0;r<4;r++)for(let q=0;q<5;q++){c.fillStyle=cc[(r*5+q+k*3)%cc.length];c.fillRect(12+q*22,52+r*30,14,24)}
+        c.fillStyle='#ccd6e8';c.fillRect(14,180,w-28,46);c.fillStyle='#111';c.font='700 18px '+JP;c.textAlign='center';c.fillText('つめた〜い',w/2,245)});
+      for(let k=0;k<3;k++){const [vx,vz]=P((k-1)*1.1,0),m=new THREE.Mesh(new THREE.BoxGeometry(1,1.85,.8),[tkM(0xdfe3ea),tkM(0xdfe3ea),tkM(0xcfd3da),tkM(0x333),
+        new THREE.MeshBasicMaterial({map:front(k),fog:false}),tkM(0xdfe3ea)]);
+        /* 앞면(+z)이 도로 쪽을 보게 */
+        m.position.set(vx,.93,vz);m.rotation.y=Math.atan2(-n[0]*Math.sign(o.lat),-n[1]*Math.sign(o.lat));MG.add(m)}
+      const [gx,gz]=P(0,-Math.sign(o.lat)*1.2);tkFlat(gx,gz,th,4.5,3,glowTex(255,255,255),new THREE.Color(0xbfdcff),.35,true);
+    }
+  });
+  tkFlush();
+  /* --- 비 --- */
+  {
+    const n=1500,pos=new Float32Array(n*6);for(let k=0;k<n;k++){const x=(Math.random()-.5)*70,y=Math.random()*24,z=(Math.random()-.5)*70;pos.set([x,y,z,x+.05,y-.9,z],k*6)}
+    const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(pos,3));
+    const r=new THREE.LineSegments(g,new THREE.LineBasicMaterial({color:0xa9bde0,transparent:true,opacity:.32,depthWrite:false}));r.frustumCulled=false;MG.add(r);TK.rain=r;
+  }
+}
+/* 장애물 충돌 (회전된 상자) */
+function tobsCollide(){
+  for(const o of TOBS){
+    const dx=c.x-o.x,dz=c.z-o.z;if(dx*dx+dz*dz>900)continue;
+    const u=dx*o.c+dz*o.s,v=-dx*o.s+dz*o.c,pu=o.hl+2.1-Math.abs(u),pv=o.hw+1-Math.abs(v);
+    if(pu<=0||pv<=0)continue;
+    let ax,az,pen;if(pv<pu){const sg=v>=0?1:-1;ax=-o.s*sg;az=o.c*sg;pen=pv}else{const sg=u>=0?1:-1;ax=o.c*sg;az=o.s*sg;pen=pu}
+    c.x+=ax*pen;c.z+=az*pen;
+    const vin=-(c.vx*ax+c.vz*az);
+    if(vin>0){c.vx+=ax*vin*1.3;c.vz+=az*vin*1.3;const k=Math.max(.55,1-vin*.025);c.vx*=k;c.vz*=k;hitK=Math.min(1,Math.max(hitK,vin/12));if(vin>2)thump(Math.min(1,vin/14))}
+  }
+}
+/* 매 프레임: 비 내리기, 경고등 깜빡이기 */
+function tokyoFrame(dt){
+  TK.t+=dt;
+  TK.blink.forEach(b=>{b.o.visible=(TK.t%b.per)<b.per*.55});
+  const r=TK.rain;if(!r)return;
+  r.position.set(cam.position.x,cam.position.y-8,cam.position.z);
+  const a=r.geometry.attributes.position,p=a.array,fall=dt*26;
+  for(let k=0;k<p.length;k+=6){p[k+1]-=fall;p[k+4]-=fall;if(p[k+1]<0){const y=24+p[k+1];p[k+1]=y;p[k+4]=y-.9}}
+  a.needsUpdate=true;
+}
+/* === Tokyo 끝 === */
 
 function clearMap(){
   if(!MG)return;S.remove(MG);
@@ -1050,6 +1296,7 @@ function setMap(id){
   }
   if(D.trees)buildXmasTrees();
   if(D.lamps)buildLamps(D.lamps);
+  if(D.tokyo)buildTokyo();
   }
   /* 출발선 + 게이트 (연습장은 없음) */
   if(!D.practice){const line=new THREE.Mesh(new THREE.PlaneGeometry(1.6,HALF*2),new THREE.MeshBasicMaterial({color:0xffffff}));
@@ -1158,6 +1405,7 @@ function step(dt){
   }
   if(MODE==='duel')duelCollide(dt);
   if(MAPID==='practice')practiceBounds();
+  if(MAPID==='tokyo')tobsCollide();
   if(prog>=LAPEND&&!AIR&&MODE!=='practice'){
     prog-=LAPEND;NIT.ready=true;
     if(lapStart!==null){
@@ -1320,6 +1568,7 @@ function loop(now){
   drive(dt);
   if(MODE==='duel')duelFrame(dt,now);
   if(MODE==='practice'&&started)pracFrame(dt);
+  if(MAPID==='tokyo')tokyoFrame(dt);
   const fx=Math.cos(c.h),fz=Math.sin(c.h),rx=-fz,rz=fx;
   const sp=Math.hypot(c.vx,c.vz),bump=Math.sin(now*.05)*.004*Math.min(sp/30,1);
   camY+=((AIR?cy:(TY[ci]||0))-camY)*Math.min(1,dt*(AIR?16:10));camP+=((AIR?cvy/Math.max(Math.hypot(c.vx,c.vz),6):(TSL[ci]||0))-camP)*Math.min(1,dt*3);
@@ -1535,7 +1784,7 @@ const HDR={apikey:KEY,'Content-Type':'application/json'};
 /* RICH: scores 표에 map / mode / stage 열이 있으면 true, 없으면 false (처음엔 모름) */
 var RICH=null;
 var MODE='lap',HOLD=false,DEAD=false,PLAYER='';
-const MAPLABEL={seoul:'Seoul',mountain:'Mountain Pass',xmas:'Christmas',ship:'Cargo Ship'};
+const MAPLABEL={seoul:'Seoul',mountain:'Mountain Pass',xmas:'Christmas',tokyo:'Tokyo Neon',ship:'Cargo Ship'};
 const HARD_STAGES=['xmas','seoul','mountain','ship']; /* 쉬운 순서. 새 맵은 이 배열 뒤에 이름만 추가하면 다음 스테이지가 돼요 */
 /* 스테이지마다 허용 충돌 횟수가 줄어들어요: 1스테이지 10번 → 2스테이지 9번 → 3스테이지 8번 …
    (맵이 6개가 되면 10·9·8·7·6·5번). 시작 횟수는 HARD_FIRST, 최소는 HARD_MIN. 충돌 횟수는 스테이지마다 새로 세요. */
@@ -1792,7 +2041,7 @@ $('failMenu').onclick=showModes;
         → 둘 다 차고에서 차 고르고 '준비' → 5,4,3,2,1 GO! → DUEL_LAPS 바퀴 먼저 도는 사람이 승리
    통신: Supabase Realtime 채널(방 비밀번호마다 하나). presence = 누가 방에 있는지, broadcast = 위치·준비·결승 메시지 */
 const DUEL_LAPS=3;                                  /* 대결 바퀴 수 */
-const DUEL_MAPS=['seoul','mountain','xmas'];        /* 방 만들 때 고를 수 있는 맵 */
+const DUEL_MAPS=['seoul','mountain','xmas','tokyo'];        /* 방 만들 때 고를 수 있는 맵 */
 const DUEL_LIB='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js';
 const DUEL_URL='https://payqqpkkdpydypinyptz.supabase.co';
 const OPP_COL={gtr:0x2b55c9,gt3:0x8fd14f,chal:0xc9302c,f40:0xe0261d,mcl:0xff7a1a};
