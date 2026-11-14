@@ -261,6 +261,10 @@ body[data-mode=hard] #lbp .row{display:none}
 
 #boom.water .f1{background:radial-gradient(circle at 50% 66%,#fff 0,#d9f1ff 14%,#6fb8ef 34%,#1d5fa8 54%,#0a2f5c 68%,transparent 80%)}
 #boom.water .f2{background:radial-gradient(circle at 50% 66%,transparent 30%,#bfe6ff88 40%,transparent 52%)}
+#boom.fall .f1{background:radial-gradient(circle at 50% 70%,#e8b080 0,#b8603a 30%,#6a2a1a 60%,transparent 80%)}
+#boom.fall .f2{background:none}
+#boom.fall .sm{background:radial-gradient(circle at 50% 60%,#3a1a10f0 0,#120604f8 70%)}
+#hh small#hhTime{color:#ffd88a;font-weight:700;font-size:12px}#hh small#hhTime:empty{display:none}#hh small#hhTime.low{color:#ff5a4a}
 #boom.water .sm{background:radial-gradient(circle at 50% 40%,#0d3b6ef0 0,#041a33f8 70%)}
 #jh{position:fixed;left:50%;top:clamp(70px,12vh,110px);transform:translateX(-50%);z-index:3;display:none;align-items:center;gap:12px;padding:8px 16px;background:#0b0d14d9;border:2px solid #ff5a4a;border-radius:8px;text-shadow:0 1px 3px #000;pointer-events:none;font-variant-numeric:tabular-nums}
 #jh.on{display:flex}
@@ -379,6 +383,7 @@ body[data-mode=duel] #tl>div:nth-child(3){display:none}
   #jh{top:44px;padding:5px 12px}
 }
 /* ===== 연습장 ===== */
+#start .stl{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}#start .stl div{padding:5px 9px}
 .mc i.two{font-size:clamp(15px,3.7vh,32px);line-height:1;letter-spacing:.01em}
 #start .stl div em{font-style:normal;font-size:11px;color:#ff8f84;white-space:nowrap}
 body[data-mode=practice] #start .modebar>span:nth-child(2){display:none}
@@ -414,6 +419,12 @@ body[data-mode=hard] .lbtabs{display:none}
 #lcr.on{display:block;animation:cdpop 1.2s ease-out both}
 #lcr.perfect{color:#3ddc84}#lcr.good{color:#f2c230}#lcr.spin{color:#ff5a4a}
 @media (orientation:landscape) and (max-height:500px){#lc{bottom:auto;top:58%;width:min(320px,60vw)}#lc .lt{font-size:11px}#lc .lb{height:12px}}
+/* 니트로: 쓸 수 있을 때 더 진하고 밝게 */
+#nit:not(.spent):not(.burn){border-color:#4aa3ff;background:#0b1a33e6;color:#d8ecff;font-weight:700;box-shadow:0 0 12px #3a8bff66}
+#nit:not(.spent):not(.burn) i{background:linear-gradient(90deg,#1f6bff,#5ab4ff 60%,#bfe4ff);box-shadow:0 0 14px #4aa3ff}
+#nit:not(.spent):not(.burn) .nb{height:10px;background:#0a1c3a}
+.pad button[data-k=nitro]:not(.spent):not(.burn){background:#1652c8;color:#fff;border-color:#8ccaff;opacity:min(1,calc(var(--po,.6) + .3));box-shadow:0 0 14px #3a8bff99}
+#nit.spent{opacity:.6}
 </style>
 </head>
 <body>
@@ -555,7 +566,7 @@ body[data-mode=hard] .lbtabs{display:none}
     </form>
   </div>
 </div>
-<div id="hh"><b id="hhStage"></b><div id="hhPips"></div><small id="hhLeft"></small></div>
+<div id="hh"><b id="hhStage"></b><div id="hhPips"></div><small id="hhLeft"></small><small id="hhTime"></small></div>
 <div id="hit"></div>
 <div id="jh" role="status"><b>JUMP</b><span id="jhD"></span><em id="jhV"></em></div>
 <div id="boom"><i class="f1"></i><i class="f2"></i><i class="sm"></i></div>
@@ -1153,6 +1164,248 @@ function nyFrame(dt){
 function mmNY(){const W=NY_WATER,y0=Math.max(0,W.z0*msc+moz),y1=W.z1*msc+moz;mbg.fillStyle='#1d3a7a';if(y1>y0)mbg.fillRect(W.x0*msc+mox,y0,(W.x1-W.x0)*msc,y1-y0)}
 /* === New York 끝 === */
 
+/* ================= 하드모드 5·6 스테이지: Alps / Red Canyon =================
+   공통: 제한 시간(MAPS[id].limit 초, 첫 가속부터 셈. 넘으면 '시간 초과' 실패), 하늘은 그림으로 직접 그림(procSky).
+   Alps: 지그재그 오르막 → 꼭대기 터널 → 얼음·낙석 내리막. 얼음(ICE) 위는 미끄럽고, 낙석(ROCKS)은 다가가면 위에서 떨어져 길을 막아요.
+   Red Canyon: 가드레일 없는 좁은 능선 길. 길 밖으로 나가면(HW[i]+0.6) 추락 → 실패. 중간에 더 좁은 나무 다리. */
+const fmtS=s=>Math.floor(s/60)+':'+String(Math.round(s%60)).padStart(2,'0');
+let ICE=[],HW=[],FALL=false,fallT=0,ROCKS=[],SNOW=null;
+function procSky(kind){
+  const W=2048,H=320,cv=document.createElement('canvas');cv.width=W;cv.height=H;const x=cv.getContext('2d'),hz=H*.63;
+  let s=kind==='alps'?7:13;const rnd=()=>(s=(s*16807)%2147483647)/2147483647;
+  const g=x.createLinearGradient(0,0,0,hz);
+  if(kind==='alps'){g.addColorStop(0,'#3e6aa8');g.addColorStop(.7,'#9ec2e6');g.addColorStop(1,'#dfeaf4')}else{g.addColorStop(0,'#3a2a5a');g.addColorStop(.45,'#c8586a');g.addColorStop(.8,'#f29a4a');g.addColorStop(1,'#ffd08a')}
+  x.fillStyle=g;x.fillRect(0,0,W,hz);
+  if(kind==='canyon'){const sg=x.createRadialGradient(W*.3,hz-30,0,W*.3,hz-30,260);sg.addColorStop(0,'rgba(255,240,190,.95)');sg.addColorStop(.12,'rgba(255,200,120,.6)');sg.addColorStop(1,'rgba(255,160,90,0)');x.fillStyle=sg;x.fillRect(0,0,W,hz)}
+  else for(let k=0;k<5;k++){x.fillStyle='rgba(255,255,255,.55)';const cx=rnd()*W,cy=20+rnd()*90;for(let q=0;q<6;q++){x.beginPath();x.ellipse(cx+q*26,cy+Math.sin(q)*6,40+rnd()*30,12+rnd()*8,0,0,7);x.fill()}}
+  /* 산·메사 실루엣 3겹 (가로로 이어지게 sin 주기를 W에 맞춤) */
+  const layers=kind==='alps'?[[.55,'#8ea7c4',95],[.72,'#6b84a4',70],[.88,'#4d6481',50]]:[[.62,'#b8566a',40],[.8,'#8a3a4a',30],[.95,'#5a2436',22]];
+  layers.forEach(([base,col,amp],li)=>{const yb=hz*base+ (kind==='alps'?0:20);x.fillStyle=col;x.beginPath();x.moveTo(0,hz);
+    if(kind==='alps'){const pk=[];for(let k=0;k<9+li*3;k++)pk.push([rnd()*W,amp*(.4+rnd()*.9)]);
+      for(let px=0;px<=W;px+=4){let y=yb;pk.forEach(([cx,h])=>{for(const o of[-W,0,W]){const d=Math.abs(px-cx-o)/(h*1.6);if(d<1)y=Math.min(y,yb-h*(1-d))}});x.lineTo(px,y)}
+      x.lineTo(W,hz);x.fill();
+      /* 눈 덮인 봉우리 */
+      x.save();x.clip();x.fillStyle='rgba(250,252,255,.92)';pk.forEach(([cx,h])=>{for(const o of[-W,0,W]){x.beginPath();x.moveTo(cx+o,yb-h);x.lineTo(cx+o-h*.55,yb-h*.62);x.lineTo(cx+o+h*.5,yb-h*.6);x.fill()}});x.restore();
+    }else{let y=yb;for(let px=0;px<=W;px+=8){if(rnd()<.06)y=yb-amp*(rnd()<.5?rnd()*.4:.6+rnd()*.6);x.lineTo(px,y)}x.lineTo(W,hz);x.fill()}
+  });
+  const bg=x.createLinearGradient(0,hz,0,H);bg.addColorStop(0,kind==='alps'?'#c8d6e4':'#a8503a');bg.addColorStop(1,kind==='alps'?'#7d8fa4':'#4a1e18');x.fillStyle=bg;x.fillRect(0,hz,W,H-hz);
+  return cv.toDataURL('image/jpeg',.88);
+}
+/* 하늘: 사용자가 보낸 사진으로 만든 파노라마 (procSky는 예비용) */
+SKIES.alps='DATAURI';SKIES.canyon='DATAURI';
+const ALPS_CTRL=[[0,0],[110,0],[205,0],[245,12],[258,38],[245,62],[205,72],[110,72],[45,72],[8,84],[-4,110],[8,136],[45,146],[110,146],[205,146],[245,158],[258,184],[245,208],[205,218],[110,218],[30,220],[-30,228],[-80,244],[-130,244],[-172,228],[-196,198],[-182,164],[-214,130],[-196,94],[-224,58],[-200,20],[-160,-14],[-104,-26],[-50,-20],[-18,-6]];
+const ALPS_H=48,ALPS_TUN=[.615,.70];
+const ALPS_ICE=[[.40,.44,-6.5,1],[.565,.6,-1,6.5],[.755,.80,-6.5,6.5],[.86,.885,-6.5,0]];      /* [시작,끝,왼쪽,오른쪽] (코스 비율, 옆 위치) */
+const ALPS_ROCK=[{f:.775,lat:2.6},{f:.835,lat:-2.8}];                                          /* 다가가면 떨어지는 바위 */
+const ALPS_BOULDER=[[.22,-3.6],[.47,3.4],[.81,3.8],[.905,-3.2]];                               /* 이미 떨어진 바위 */
+function alpsTY(){
+  const a=[];for(let i=0;i<N;i++){const u=i/N;let y=0;
+    if(u<.02)y=0;else if(u<.58)y=ALPS_H*sm01n((u-.02)/.56);else if(u<.72)y=ALPS_H;else if(u<.96)y=ALPS_H*(1-sm01n((u-.72)/.24));a.push(y)}
+  return a;
+}
+MAPS.alps={half:6.5,wall:1.4,rail:'guard',bg:0x0e1630,fog:[0x18223c,90,640],gnd:0x2a3448,gy:-40,lamps:{gap:42,col:'255,190,120',size:13},night:[.42,.5,.72],asph:0x8d929c,kerb:['#e8eef4','#c4352b'],
+  pts:()=>closedSpline(ALPS_CTRL),tyFn:alpsTY,alps:true,limit:110,sky:'alps'};
+/* --- 붉은 협곡 --- */
+const CANYON_CTRL=[[0,0],[110,0],[190,-8],[240,-36],[262,-84],[244,-130],[198,-150],[150,-140],[112,-112],[72,-120],[44,-160],[54,-212],[100,-244],[180,-256],[262,-240],[322,-200],[352,-140],[360,-60],[342,8],[294,48],[224,60],[164,88],[102,106],[42,98],[-6,68],[-28,30],[-20,6]];
+const CANYON_FLOOR=-90,CANYON_HW=5.2,CANYON_BRIDGE=[.60,.665],CANYON_BRIDGE_HW=3.6;
+const CANYON_ROCKS=[[.13,2.6],[.335,-2.4],[.475,2.4],[.82,-2.6],[.9,2.3]];
+function canyonTY(){const a=[];for(let i=0;i<N;i++){const u=i/N*Math.PI*2;a.push(7*Math.sin(u*3)+4*Math.sin(u*5+1)-4*Math.sin(u))}
+  const d=a[0];return a.map(v=>v-d)}
+MAPS.canyon={half:CANYON_HW,wall:0,bg:0xc87048,fog:[0xc0704c,150,880],gnd:0x6a2a1c,gy:CANYON_FLOOR,asph:0xb27458,kerb:['#e8c8a8','#8a3a2a'],
+  pts:()=>closedSpline(CANYON_CTRL),tyFn:canyonTY,canyon:true,cliff:true,limit:82,sky:'canyon'};
+const fIdx=f=>Math.round(f*N)%N;
+const inRange=(i,a,b)=>{const u=i/N;return u>=a&&u<=b};
+
+/* ---------- 얼음 ---------- */
+function onIce(){const u=ci/N;for(const z of ICE)if(u>=z[0]&&u<=z[1]&&side>=z[2]-.5&&side<=z[3]+.5)return true;return false}
+
+/* ---------- 추락 (협곡) ---------- */
+function startFall(){
+  if(FALL||DEAD)return;FALL=true;fallT=0;AIR=true;cy=TY[ci]||0;cvy=1.2;
+  for(const k in keys)keys[k]=0;if(eg)eg.gain.value=.15;
+}
+function fallStep(dt){
+  fallT+=dt;c.x+=c.vx*dt;c.z+=c.vz*dt;c.vx*=Math.exp(-.4*dt);c.vz*=Math.exp(-.4*dt);cvy-=9.8*dt;cy+=cvy*dt;c.h+=.6*dt;
+  if(fallT>1.7&&!DEAD){if(MODE==='hard')hardFall();else{FALL=false;reset()}}
+}
+function hardFall(){
+  if(DEAD)return;DEAD=true;c.vx=c.vz=0;if(eg)eg.gain.value=0;if(sg)sg.gain.value=0;thump(1);
+  const b=$('boom');b.classList.remove('on','water','fall');void b.offsetWidth;b.classList.add('on','fall');
+  failT=setTimeout(()=>showFail(false,'fall'),1300);
+}
+function hardTimeout(){
+  if(DEAD||HOLD)return;DEAD=true;for(const k in keys)keys[k]=0;c.vx=c.vz=0;if(eg)eg.gain.value=0;if(sg)sg.gain.value=0;
+  failT=setTimeout(()=>showFail(false,'time'),600);
+}
+/* 제한 시간 표시·검사 (0.1초마다) */
+setInterval(()=>{
+  const el=$('hhTime'),L=MAPS[MAPID]&&MAPS[MAPID].limit;
+  if(MODE!=='hard'||!L){el.textContent='';el.classList.remove('low');return}
+  const used=lapStart===null?0:(performance.now()-lapStart)/1000,left=Math.max(0,L-used);
+  el.textContent='남은 시간 '+Math.floor(left/60)+':'+String(Math.floor(left%60)).padStart(2,'0')+'.'+Math.floor(left*10%10);
+  el.classList.toggle('low',left<15);
+  if(started&&!DEAD&&!HOLD&&lapStart!==null&&left<=0)hardTimeout();
+},100);
+
+/* ---------- Alps 만들기 ---------- */
+function buildAlps(){
+  ICE=ALPS_ICE.slice();TOBS=[];TKB=new Map();ROCKS=[];
+  let seed=41;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
+  const yAt=i=>TY[i]||0,tun=i=>inRange(i,ALPS_TUN[0],ALPS_TUN[1]),ti0=fIdx(ALPS_TUN[0]),ti1=fIdx(ALPS_TUN[1]);
+  /* 터널 위 산 높이: 입구에선 천장 바로 위(8.8m), 안쪽으로 갈수록 높게(최대 18m) → 산이 터널 안으로 파고들지 않음 */
+  const tunUp=i=>8.8+Math.min(9,.45*Math.min(i-ti0,ti1-i)*SP);
+  /* 지형: 길 근처는 길 높이(터널 위는 산), 멀리는 높은 봉우리 */
+  const pad=340,cell=9;let x0=1e9,x1=-1e9,z0=1e9,z1=-1e9;TP.forEach(p=>{x0=Math.min(x0,p[0]);x1=Math.max(x1,p[0]);z0=Math.min(z0,p[1]);z1=Math.max(z1,p[1])});
+  const mx=(x0+x1)/2,mz=(z0+z1)/2;x0-=pad;x1+=pad;z0-=pad;z1+=pad;
+  const gx=Math.ceil((x1-x0)/cell)+1,gz=Math.ceil((z1-z0)/cell)+1,e0=HALF+14;
+  const base=(x,z)=>{const r=Math.hypot((x-mx)/1.1,z-mz);return 14+.0018*z*z*.0+.32*Math.max(0,r-260)+16*Math.sin(x*.013+z*.006)+9*Math.sin(x*.029-z*.021)+5*Math.sin(x*.07+z*.05)};
+  const tH=(x,z)=>{let sw=0,sy=0,dmin=1e9,di=0;
+    for(let i=0;i<N;i+=2){const dx=x-TP[i][0],dz=z-TP[i][1],d2=dx*dx+dz*dz,k=1/((d2+1)*(d2+1));sw+=k;sy+=k*(TY[i]+(tun(i)?tunUp(i):-.5));if(d2<dmin){dmin=d2;di=i}}
+    const d=Math.sqrt(dmin),a=Math.exp(-Math.pow(Math.max(0,d-(tun(di)?HALF+30:e0))/30,2));return (sy/sw)*a+Math.max(base(x,z),sy/sw-6)*(1-a)};
+  const Hh=new Float32Array(gx*gz);for(let j=0;j<gz;j++)for(let i=0;i<gx;i++)Hh[j*gx+i]=tH(x0+i*cell,z0+j*cell);
+  const pos=new Float32Array(gx*gz*3),col=new Float32Array(gx*gz*3),ix=[];
+  for(let j=0;j<gz;j++)for(let i=0;i<gx;i++){const k=j*gx+i,x=x0+i*cell,z=z0+j*cell,y=Hh[k];
+    const hl=Hh[j*gx+Math.max(i-1,0)],hr=Hh[j*gx+Math.min(i+1,gx-1)],hu=Hh[Math.max(j-1,0)*gx+i],hd=Hh[Math.min(j+1,gz-1)*gx+i];
+    let nx=(hl-hr)/(2*cell),nz=(hu-hd)/(2*cell),ny=1;const nl=Math.hypot(nx,ny,nz);ny/=nl;const lit=clamp(.7+.4*((-nx/nl*.45+ny*.75+nz/nl*.35)),.6,1.1);
+    const steep=sm01((1-ny-.12)/.18),snow=sm01((y-30)/25)*(1-steep*.8)+(rnd()<.02?.2:0),low=sm01((22-y)/16);
+    const c3=[.93*snow+(1-snow)*(.46*steep+(1-steep)*(.36+.1*low)),.95*snow+(1-snow)*(.45*steep+(1-steep)*(.42+.06*low)),.99*snow+(1-snow)*(.47*steep+(1-steep)*(.38))];
+    for(let q=0;q<3;q++)col[k*3+q]=clamp(c3[q]*lit*MAPS.alps.night[q],0,1);pos[k*3]=x;pos[k*3+1]=y;pos[k*3+2]=z}
+  /* 터널 입구 바로 앞 지형은 구멍을 뚫음 (입구 벽이 가장자리를 가려 줌) */
+  const ports=[ti0,ti1].map(i=>[TP[i][0],TP[i][1],TY[i]]),cut=k=>{const x=pos[k*3],y=pos[k*3+1],z=pos[k*3+2];return ports.some(([px,pz,py])=>(x-px)*(x-px)+(z-pz)*(z-pz)<17*17&&y>py+.3)};
+  for(let j=0;j<gz-1;j++)for(let i=0;i<gx-1;i++){const a=j*gx+i,b=a+1,cc=a+gx,d=cc+1;if(cut(a)||cut(b)||cut(cc)||cut(d))continue;ix.push(a,cc,b,b,cc,d)}
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(pos,3));g.setAttribute('color',new THREE.BufferAttribute(col,3));g.setIndex(ix);
+  MG.add(new THREE.Mesh(g,new THREE.MeshBasicMaterial({vertexColors:true,side:THREE.DoubleSide})));
+  /* 눈 덮인 전나무 */
+  {const vs=[spruceGeo({h:11,r:2.8,tiers:6,snow:true}),spruceGeo({h:15,r:3.3,tiers:7,snow:true})],tm=new THREE.MeshBasicMaterial({vertexColors:true}),bk=[[],[]],dm=new THREE.Object3D(),cc=new THREE.Color();
+    let n=0,tries=0;while(n<520&&tries<9000){tries++;const x=x0+pad*.4+rnd()*(x1-x0-pad*.8),z=z0+pad*.4+rnd()*(z1-z0-pad*.8);const [d,di]=nearD(x,z);if(d<HALF+12||d>110)continue;const y=tH(x,z);if(y>40)continue;bk[n%2].push([x,y,z]);n++}
+    vs.forEach((vg,vi)=>{const L=bk[vi],im=new THREE.InstancedMesh(vg,tm,Math.max(1,L.length));L.forEach((t,k)=>{const s=.8+rnd()*.6;dm.position.set(t[0],t[1]-.3,t[2]);dm.rotation.set(0,rnd()*6.28,0);dm.scale.set(s,s,s);dm.updateMatrix();im.setMatrixAt(k,dm.matrix);cc.setRGB(.42,.48,.64);im.setColorAt(k,cc)});im.count=L.length;MG.add(im)})}
+  /* 터널: 벽·천장·주황 조명, 입구 콘크리트 */
+  {const tw=new THREE.MeshBasicMaterial({map:tkTex(64,64,(x,w,h)=>{x.fillStyle='#3a3c42';x.fillRect(0,0,w,h);x.fillStyle='#2c2e33';for(let k=0;k<4;k++)x.fillRect(0,k*16+15,w,1);x.fillRect(31,0,1,h)}),color:0x9a9ca4}),tc=tkM(0x1a1b1f),con=tkM(0x3e4148),lp=[];
+    const i0=fIdx(ALPS_TUN[0]),i1=fIdx(ALPS_TUN[1]),W=WALL+.9;
+    for(let i=i0;i<=i1;i+=2){const y=yAt(i),ry=-TH[i];[-1,1].forEach(sd=>{const [x,z]=tkAt(i,sd*W);tkAdd(new THREE.BoxGeometry(SP*2.3,7.4,.6),tw,x,y+3.7,z,ry)});
+      const [cx,cz]=tkAt(i,0);tkAdd(new THREE.BoxGeometry(SP*2.3,.7,W*2+.6),tc,cx,y+7.6,cz,ry);
+      if(i%10===0)[-1,1].forEach(sd=>{const [lx,lz]=tkAt(i,sd*(W-1));lp.push(lx,y+6.9,lz)})}
+    const conT=new THREE.MeshBasicMaterial({map:tkTex(128,128,(x,w,h)=>{x.fillStyle='#4a4d56';x.fillRect(0,0,w,h);x.fillStyle='rgba(0,0,0,.18)';for(let k=0;k<8;k++){x.fillRect(0,k*16+15,w,1);x.fillRect(((k%2)*32+k*7)%w,k*16,1,16)}})});
+    [i0,i1].forEach(i=>{const y=yAt(i),ry=-TH[i];[-1,1].forEach(sd=>{const [x,z]=tkAt(i,sd*(W+11));tkAdd(new THREE.BoxGeometry(2.4,26,22),conT,x,y+11,z,ry)});const [cx,cz]=tkAt(i,0);tkAdd(new THREE.BoxGeometry(2.4,16.5,W*2+.4),conT,cx,y+16.2,cz,ry);tkAdd(new THREE.BoxGeometry(3,1,W*2+44),con,cx,y+24.4,cz,ry);
+      const sign=new THREE.MeshBasicMaterial({map:tkTex(256,64,(x,w,h)=>{x.fillStyle='#1a3f9a';x.fillRect(0,0,w,h);x.fillStyle='#fff';x.font='900 40px system-ui';x.textAlign='center';x.fillText('GOTTHARD TUNNEL',w/2,46)})});
+      const n=TN[i],f=i===i0?-1:1,[sx2,sz2]=tkAt(i,0,f*1.05);tkBoard(sx2,y+8.8,sz2,8,2,f*Math.cos(TH[i]),f*Math.sin(TH[i]),sign)});
+    const gp=new THREE.BufferGeometry();gp.setAttribute('position',new THREE.Float32BufferAttribute(lp,3));MG.add(new THREE.Points(gp,new THREE.PointsMaterial({size:4,map:glowTex(255,170,70),transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,fog:false})))}
+  /* 얼음: 연한 하늘색 반짝이는 길 */
+  {const im=new THREE.MeshBasicMaterial({map:tkTex(128,128,(x,w,h)=>{x.fillStyle='rgba(150,190,230,.45)';x.fillRect(0,0,w,h);for(let k=0;k<70;k++){x.strokeStyle='rgba(255,255,255,'+(.3+Math.random()*.5)+')';x.beginPath();const a=Math.random()*w,b=Math.random()*h;x.moveTo(a,b);x.lineTo(a+Math.random()*30-15,b+Math.random()*30-15);x.stroke()}}),transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-3,polygonOffsetUnits:-3});
+    ICE.forEach(([a,b,l0,l1])=>strip2(l0,l1,.035,fIdx(a),fIdx(b),(i,s)=>[s*.15,TS[i]/8],im))}
+  /* 바위 (이미 떨어진 것) + 낙석 경고판 + 절벽 */
+  const rockM=tkM(0x45434c),rockD=tkM(0x302e36),rockG=r=>{const g=new THREE.IcosahedronGeometry(r,1),p=g.attributes.position,sd=Math.random()*100;for(let k=0;k<p.count;k++){const X=p.getX(k),Y=p.getY(k),Z=p.getZ(k),f=Math.sin((X*12.9+Y*78.2+Z*37.7)/r+sd)*43758.5,s=.78+.38*(f-Math.floor(f));p.setXYZ(k,X*s,Y*s*.8,Z*s)}g.computeVertexNormals();return g};
+  ALPS_BOULDER.forEach(([f,lat])=>{const i=fIdx(f),[x,z]=tkAt(i,lat);tkAdd(rockG(1.7),rockM,x,yAt(i)+1,z,rnd()*6);for(let k=0;k<4;k++){const [a,b]=tkAt(i,lat+(rnd()-.5)*4,(rnd()-.5)*5);tkAdd(rockG(.4),rockD,a,yAt(i)+.2,b,0)}
+    TOBS.push({x,z,c:Math.cos(TH[i]),s:Math.sin(TH[i]),hl:1.5,hw:1.5})});
+  const warn=new THREE.MeshBasicMaterial({map:tkTex(256,256,(x,w,h)=>{x.fillStyle='#fff';x.beginPath();x.moveTo(w/2,8);x.lineTo(w-8,h-30);x.lineTo(8,h-30);x.fill();x.fillStyle='#d01818';x.beginPath();x.moveTo(w/2,26);x.lineTo(w-28,h-42);x.lineTo(28,h-42);x.fill();x.fillStyle='#fff';x.beginPath();x.moveTo(w/2,58);x.lineTo(w-58,h-56);x.lineTo(58,h-56);x.fill();
+    x.fillStyle='#111';[[118,120,16],[140,150,12],[110,165,10],[150,180,9]].forEach(([a,b,r])=>{x.beginPath();x.arc(a,b,r,0,7);x.fill()});x.fillRect(80,100,8,90);x.font='900 26px system-ui';x.textAlign='center';x.fillText('ROCKFALL',w/2,h-4)}),transparent:true,side:THREE.DoubleSide});
+  const iceS=new THREE.MeshBasicMaterial({map:tkTex(256,256,(x,w,h)=>{x.fillStyle='#fff';x.beginPath();x.moveTo(w/2,8);x.lineTo(w-8,h-30);x.lineTo(8,h-30);x.fill();x.fillStyle='#d01818';x.beginPath();x.moveTo(w/2,26);x.lineTo(w-28,h-42);x.lineTo(28,h-42);x.fill();x.fillStyle='#fff';x.beginPath();x.moveTo(w/2,58);x.lineTo(w-58,h-56);x.lineTo(58,h-56);x.fill();
+    x.strokeStyle='#1a5fd8';x.lineWidth=6;for(let k=0;k<3;k++){x.save();x.translate(w/2,150);x.rotate(k*Math.PI/3);x.beginPath();x.moveTo(0,-38);x.lineTo(0,38);x.stroke();x.restore()}x.fillStyle='#111';x.font='900 30px system-ui';x.textAlign='center';x.fillText('ICE',w/2,h-4)}),transparent:true,side:THREE.DoubleSide});
+  const postM=tkM(0x5a5e66),sign=(f,m)=>{const i=fIdx(f),y=yAt(i),[x,z]=tkAt(i,WALL+1.6);tkBox(.12,2.4,.12,postM,x,y+1.2,z);tkBoard(x,y+2.6,z,1.6,1.6,-Math.cos(TH[i]),-Math.sin(TH[i]),m)};
+  ALPS_ROCK.forEach(r=>sign(r.f-.03,warn));sign(.19,warn);ALPS_ICE.forEach(z=>sign(z[0]-.015,iceS));
+  /* 낙석 구간 안쪽 절벽 */
+  ALPS_ROCK.forEach(r=>{for(let k=-6;k<=6;k++){const i=(fIdx(r.f)+k*5+N)%N,sd=-Math.sign(r.lat)||1;for(let q=0;q<3;q++){const [x,z]=tkAt(i,sd*(WALL+4+q*3.5+rnd()*2),(rnd()-.5)*3),rr=3+rnd()*3.5;tkAdd(rockG(rr),q%2?rockD:rockM,x,yAt(i)+rr*.6+q*5.5,z,rnd()*6)}}});
+  /* 떨어지는 바위 (따로 움직임) */
+  ALPS_ROCK.forEach(r=>{const i=fIdx(r.f),[x,z]=tkAt(i,r.lat),m=new THREE.Mesh(rockG(1.6),rockM);MG.add(m);ROCKS.push({i,x,z,y0:yAt(i),m,state:0,y:0,vy:0,ob:null})});
+  /* 눈 */
+  {const n=900,p=new Float32Array(n*3);for(let k=0;k<n;k++){let a,b2;do{a=(Math.random()-.5)*80;b2=(Math.random()-.5)*80}while(a*a+b2*b2<16);p[k*3]=a;p[k*3+1]=Math.random()*26;p[k*3+2]=b2}
+    const gg=new THREE.BufferGeometry();gg.setAttribute('position',new THREE.BufferAttribute(p,3));SNOW=new THREE.Points(gg,new THREE.PointsMaterial({size:.3,map:glowTex(255,255,255),color:0xffffff,transparent:true,opacity:.8,depthWrite:false}));SNOW.frustumCulled=false;MG.add(SNOW)}
+  tkFlush();alpsReset();
+}
+function alpsReset(){ROCKS.forEach(r=>{r.state=0;r.m.visible=false;if(r.ob){const k=TOBS.indexOf(r.ob);if(k>=0)TOBS.splice(k,1);r.ob=null}})}
+function alpsFrame(dt){
+  ROCKS.forEach(r=>{
+    if(r.state===0){let d=r.i-ci;if(d<-N/2)d+=N;if(d>N/2)d-=N;if(started&&!HOLD&&d>0&&d*SP<55){r.state=1;r.y=r.y0+26;r.vy=0;r.m.visible=true}}
+    if(r.state===1){r.vy-=14*dt;r.y+=r.vy*dt;r.m.rotation.x+=dt*4;r.m.rotation.z+=dt*3;
+      if(r.y<=r.y0+1.1){r.y=r.y0+1.1;r.state=2;r.ob={x:r.x,z:r.z,c:Math.cos(TH[r.i]),s:Math.sin(TH[r.i]),hl:1.5,hw:1.5};TOBS.push(r.ob);
+        const d=Math.hypot(c.x-r.x,c.z-r.z);if(d<60){thump(Math.max(.25,1-d/60));hitK=Math.max(hitK,.5*(1-d/60))}}}
+    r.m.position.set(r.x,r.y,r.z)});
+  if(SNOW){const inTun=inRange(ci,ALPS_TUN[0]-.005,ALPS_TUN[1]+.005);SNOW.visible=!inTun;SNOW.position.set(cam.position.x,cam.position.y-8,cam.position.z);
+    const a=SNOW.geometry.attributes.position,p=a.array;for(let k=0;k<p.length;k+=3){p[k+1]-=dt*2.4;p[k]+=Math.sin(k+TK.t)*dt*.4;if(p[k+1]<0)p[k+1]+=26}a.needsUpdate=true;TK.t+=dt}
+}
+
+/* ---------- Red Canyon 만들기 ---------- */
+function buildCanyon(){
+  TOBS=[];TKB=new Map();ICE=[];
+  let seed=53;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
+  const yAt=i=>TY[i]||0,brg=i=>inRange(i,CANYON_BRIDGE[0],CANYON_BRIDGE[1]);
+  HW=[];for(let i=0;i<N;i++)HW.push(brg(i)?CANYON_BRIDGE_HW:CANYON_HW);
+  const strata=tkTex(128,512,(x,w,h)=>{const cols=['#a8452c','#c4643c','#8a3420','#d07a4a','#b4553a','#e09060','#93402a','#c8704a'];let y=0;while(y<h){const t=6+Math.random()*28;x.fillStyle=cols[(Math.random()*cols.length)|0];x.fillRect(0,y,w,t);y+=t}
+    for(let k=0;k<300;k++){x.fillStyle='rgba(60,20,10,'+(Math.random()*.15)+')';x.fillRect(Math.random()*w,Math.random()*h,2+Math.random()*8,1+Math.random()*3)}});
+  strata.wrapS=strata.wrapT=THREE.RepeatWrapping;
+  const rock=new THREE.MeshBasicMaterial({map:strata}),rockTop=tkM(0xb06040),rockDk=new THREE.MeshBasicMaterial({map:strata,color:0x9a7a6a});
+  /* 길 (폭이 바뀌는 흙길): 직접 만들기 */
+  {const pos=[],uv=[],idx=[],dirt=asphT.clone();dirt.needsUpdate=true;dirt.wrapS=dirt.wrapT=THREE.RepeatWrapping;
+    for(let i=0;i<=N;i++){const k=i%N;if(brg(k))continue;const n=TN[k],q=TP[k],h=HW[k],y=yAt(k)+.04;pos.push(q[0]-n[0]*h,y,q[1]-n[1]*h,q[0]+n[0]*h,y,q[1]+n[1]*h);uv.push(-h/6,TS[i]/10,h/6,TS[i]/10)}
+    for(let s=0;s<pos.length/6-1;s++){const a=s*2;if(Math.hypot(pos[a*3+6]-pos[a*3],pos[a*3+8]-pos[a*3+2])>SP*3)continue;idx.push(a,a+2,a+1,a+1,a+2,a+3)}
+    const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(idx);
+    MG.add(new THREE.Mesh(g,new THREE.MeshBasicMaterial({map:dirt,color:0xc88a6a,side:THREE.DoubleSide})));
+    /* 가장자리 흰 선 */
+    const em=new THREE.MeshBasicMaterial({color:0xf0e0c8,transparent:true,opacity:.7,polygonOffset:true,polygonOffsetFactor:-3,polygonOffsetUnits:-3});
+    for(let i=0;i<N;i+=2){if(brg(i))continue;[-1,1].forEach(sd=>{const [x,z]=tkAt(i,sd*(HW[i]-.3)),g2=new THREE.PlaneGeometry(SP*1.4,.18);g2.rotateX(-Math.PI/2);tkAdd(g2,em,x,yAt(i)+.04,z,-TH[i])})}}
+  /* 길 아래 능선 바위 (위는 좁고 아래는 넓게) */
+  for(let i=0;i<N;i+=3){if(brg(i))continue;const y=yAt(i),[x,z]=tkAt(i,0),ry=-TH[i],w=HW[i]+.9;
+    tkAdd(new THREE.BoxGeometry(SP*3.3,1.2,w*2),rockTop,x,y-.85,z,ry);
+    tkAdd(new THREE.BoxGeometry(SP*3.3,14,w*2+.6),rock,x,y-1.2-7,z,ry);
+    const d=y-15-CANYON_FLOOR;tkAdd(new THREE.BoxGeometry(SP*3.5,d,w*2+8+(i%7)),rockDk,x,CANYON_FLOOR+d/2,z,ry)}
+  /* 나무 다리 (난간 없음, 기둥만) */
+  {const i0=fIdx(CANYON_BRIDGE[0]),i1=fIdx(CANYON_BRIDGE[1]),plank=new THREE.MeshBasicMaterial({map:tkTex(64,64,(x,w,h)=>{x.fillStyle='#7a5434';x.fillRect(0,0,w,h);for(let k=0;k<8;k++){x.fillStyle=k%2?'#6a4628':'#86603e';x.fillRect(0,k*8,w,7);x.fillStyle='#3a2414';x.fillRect(0,k*8+7,w,1)}})}),beam=tkM(0x4a3020),rope=[];
+    for(let i=i0;i<=i1;i++){const y=yAt(i),[x,z]=tkAt(i,0);tkAdd(new THREE.BoxGeometry(SP*1.05,.35,CANYON_BRIDGE_HW*2),plank,x,y-.15,z,-TH[i]);
+      if((i-i0)%6===0)[-1,1].forEach(sd=>{const [px,pz]=tkAt(i,sd*(CANYON_BRIDGE_HW+.15));tkAdd(new THREE.BoxGeometry(.2,.9,.2),beam,px,y+.1,pz,0);rope.push(px,y+.5,pz)})}
+    [i0,i1].forEach(i=>[-1,1].forEach(sd=>{const [px,pz]=tkAt(i,sd*(CANYON_BRIDGE_HW+.3));tkAdd(new THREE.BoxGeometry(.5,3.5,.5),beam,px,yAt(i)+1.2,pz,0)}));
+    const gp=new THREE.BufferGeometry();gp.setAttribute('position',new THREE.Float32BufferAttribute(rope,3));MG.add(new THREE.Points(gp,new THREE.PointsMaterial({size:.25,color:0xd8c8a0})));
+    for(let i=i0;i<=i1;i+=12){const y=yAt(i),[x,z]=tkAt(i,0);tkAdd(new THREE.BoxGeometry(.6,1.2,CANYON_BRIDGE_HW*2+.6),beam,x,y-.9,z,-TH[i])}}
+  /* 메사·뷰트·후두 (멀리 서 있는 붉은 바위산) */
+  for(let n=0,t=0;n<140&&t<6000;t++){const x=-600+rnd()*1600,z=-800+rnd()*1400,[d]=nearD(x,z);if(d<24)continue;
+    if(rnd()<.6){const w=12+rnd()*55,dd=12+rnd()*55;if(d<24+Math.hypot(w,dd)/2)continue;top=-10+rnd()*(d>120?70:35),h=top-CANYON_FLOOR;tkAdd(new THREE.BoxGeometry(w,h,dd),rock,x,CANYON_FLOOR+h/2,z,rnd()*3);tkAdd(new THREE.BoxGeometry(w+2,2,dd+2),rockTop,x,top+1,z,0)}
+    else{let y=CANYON_FLOOR,r=3+rnd()*4;const top=-20+rnd()*45;while(y<top){const h=6+rnd()*10;tkAdd(new THREE.CylinderGeometry(r*.85,r,h,9),rock,x,y+h/2,z,rnd()*3);y+=h;r*=.86}tkAdd(new THREE.CylinderGeometry(r*1.6,r*1.2,2.2,9),rockTop,x,y+1.1,z,0)}n++}
+  /* 바위 장애물 (길 가장자리에 걸쳐서 길을 더 좁게) */
+  const bm=tkM(0x8a4a32),rockG=r=>{const g=new THREE.IcosahedronGeometry(r,1),p=g.attributes.position,sd=Math.random()*100;for(let k=0;k<p.count;k++){const X=p.getX(k),Y=p.getY(k),Z=p.getZ(k),f=Math.sin((X*12.9+Y*78.2+Z*37.7)/r+sd)*43758.5,s=.78+.38*(f-Math.floor(f));p.setXYZ(k,X*s,Y*s*.8,Z*s)}g.computeVertexNormals();return g};
+  CANYON_ROCKS.forEach(([f,lat])=>{const i=fIdx(f),[x,z]=tkAt(i,lat);tkAdd(rockG(1.6),bm,x,yAt(i)+.9,z,rnd()*6);TOBS.push({x,z,c:Math.cos(TH[i]),s:Math.sin(TH[i]),hl:1.4,hw:1.4})});
+  /* 위험 표지 (낭떠러지) */
+  const dz=new THREE.MeshBasicMaterial({map:tkTex(256,128,(x,w,h)=>{x.fillStyle='#ffcf1a';x.fillRect(0,0,w,h);x.fillStyle='#111';x.fillRect(6,6,w-12,4);x.fillRect(6,h-10,w-12,4);x.font='900 40px system-ui';x.textAlign='center';x.fillText('DANGER',w/2,52);x.font='700 26px system-ui';x.fillText('NO GUARDRAIL',w/2,94)}),side:THREE.DoubleSide});
+  [.02,.2,.55,.75].forEach(f=>{const i=fIdx(f),y=yAt(i),[x,z]=tkAt(i,-(HW[i]+1.2));tkBox(.12,2,.12,tkM(0x5a5048),x,y+1,z);tkBoard(x,y+2.2,z,2.2,1.1,-Math.cos(TH[i]),-Math.sin(TH[i]),dz)});
+  tkFlush();
+}
+function canyonFrame(dt){}
+/* === 하드 5·6 끝 === */
+
+/* ---------- 길 안내 표지판 (모든 맵 공통, 연습장 제외) ----------
+   코너 40~55m 앞 오른쪽에 노란 다이아몬드 경고판: 꺾이는 방향 화살표 / 아주 급하면(반경 22m 미만) U자 헤어핀.
+   결승선 300m·100m 앞에 FINISH 표지. 서로 70m보다 가까우면 하나만. */
+let GUIDE_TEX=null;
+function guideTex(){
+  if(GUIDE_TEX)return GUIDE_TEX;
+  const dia=(draw)=>tkTex(256,256,(x,w,h)=>{x.save();x.translate(w/2,h/2);x.rotate(Math.PI/4);x.fillStyle='#111';x.fillRect(-88,-88,176,176);x.fillStyle='#ffc81a';x.fillRect(-80,-80,160,160);x.restore();
+    x.strokeStyle='#111';x.fillStyle='#111';x.lineWidth=16;x.lineCap='round';x.lineJoin='round';draw(x)});
+  const curve=d=>dia(x=>{x.save();if(d<0){x.translate(256,0);x.scale(-1,1)}x.beginPath();x.moveTo(118,190);x.lineTo(118,140);x.quadraticCurveTo(118,100,158,90);x.stroke();
+    x.beginPath();x.moveTo(178,85);x.lineTo(146,66);x.lineTo(150,112);x.closePath();x.fill();x.restore()});
+  const pin=d=>dia(x=>{x.save();if(d<0){x.translate(256,0);x.scale(-1,1)}x.beginPath();x.moveTo(100,190);x.lineTo(100,112);x.arc(128,112,28,Math.PI,0);x.lineTo(156,160);x.stroke();
+    x.beginPath();x.moveTo(156,186);x.lineTo(136,154);x.lineTo(176,154);x.closePath();x.fill();x.restore()});
+  const fin=m=>tkTex(256,160,(x,w,h)=>{x.fillStyle='#111';x.fillRect(0,0,w,h);for(let k=0;k<8;k++)for(let q=0;q<2;q++){x.fillStyle=(k+q)%2?'#fff':'#111';x.fillRect(k*32,q*22,32,22)}
+    x.fillStyle='#fff';x.font='900 40px system-ui';x.textAlign='center';x.fillText('FINISH',w/2,94);x.fillStyle='#ffc81a';x.font='900 40px system-ui';x.fillText(m+'m',w/2,142)});
+  const M=t=>new THREE.MeshBasicMaterial({map:t,transparent:true,side:THREE.DoubleSide});
+  GUIDE_TEX={R:M(curve(1)),L:M(curve(-1)),PR:M(pin(1)),PL:M(pin(-1)),F300:M(fin(300)),F100:M(fin(100)),post:tkM(0x6a6e76)};
+  return GUIDE_TEX;
+}
+function buildGuide(){
+  const D=MAPS[MAPID];if(!D||D.practice)return;
+  const G=guideTex(),placed=[],K=[];
+  for(let i=0;i<N;i++){let d=TH[(i+8)%N]-TH[(i+N-8)%N];d=Math.atan2(Math.sin(d),Math.cos(d));K.push(d/(16*SP))}
+  const lat=i=>HW.length?HW[i]+.7:(WALL||HALF)+.9;
+  const near=i=>placed.some(j=>{let d=Math.abs(i-j);if(!OPENP)d=Math.min(d,N-d);return d*SP<70});
+  const put=(i,mat,w,h)=>{if(OPENP&&(i<0||i>=N))return;i=(i+N)%N;if(near(i))return;placed.push(i);
+    const y=TY[i]||0,[x,z]=tkAt(i,lat(i));tkBox(.12,h*.5+1.6,.12,G.post,x,y+(h*.5+1.6)/2,z);tkBoard(x,y+1.6+h*.5,z,w,h,-Math.cos(TH[i]),-Math.sin(TH[i]),mat)};
+  /* 결승 표지 먼저 */
+  const end=OPENP?LAPEND:N;put(end-Math.round(300/SP),G.F300,3.4,2.1);put(end-Math.round(100/SP),G.F100,3.4,2.1);
+  /* 코너 */
+  for(let i=0;i<N;i++){const k=K[i],prev=K[(i+N-1)%N];if(Math.abs(k)<1/45||Math.abs(prev)>=1/45)continue;
+    let mk=0,sg=0;for(let j=0;j<Math.round(60/SP);j++){const kk=K[(i+j)%N];if(Math.abs(kk)>Math.abs(mk))mk=kk;sg+=kk}
+    const R=1/Math.abs(mk),right=sg>0,mat=R<22?(right?G.PR:G.PL):(right?G.R:G.L);
+    put(i-Math.round(Math.min(55,Math.max(35,R*1.6))/SP),mat,2.6,2.6)}
+  tkFlush();
+}
+
 function clearMap(){
   if(!MG)return;S.remove(MG);
   MG.traverse(o=>{if(o.geometry)o.geometry.dispose();
@@ -1505,7 +1758,7 @@ function setMap(id){
   for(let i=0;i<N;i++){const a=TP[(i+N-1)%N],b=TP[(i+1)%N],dx=b[0]-a[0],dz=b[1]-a[1],l=Math.hypot(dx,dz);
     TH.push(Math.atan2(dz,dx));TN.push([-dz/l,dx/l])}
   if(D.open){TH[0]=TH[1];TN[0]=TN[1];TH[N-1]=TH[N-2];TN[N-1]=TN[N-2]}
-  BR=null;RIVER=null;TOBS=[];WATERT=null;if(D.bridge)planBridge();JMP=null;OBS=[];LAPEND=N;if(D.ship)shipPlan();
+  BR=null;RIVER=null;TOBS=[];ICE=[];HW=[];ROCKS=[];SNOW=null;WATERT=null;if(D.bridge)planBridge();JMP=null;OBS=[];LAPEND=N;if(D.ship)shipPlan();
   TSL=[];for(let i=0;i<N;i++)TSL.push((TY[(i+4)%N]-TY[(i+N-4)%N])/(8*TLEN/N));
   if(D.open){for(let k=0;k<5;k++){TSL[k]=TSL[5];TSL[N-1-k]=TSL[N-6]}for(let i=0;i<N;i++)TSL[i]=clamp(TSL[i],-.2,.2)}
   sx=TP[0][0];sz=TP[0][1];sh=TH[0];if(D.start){sx=D.start[0];sz=D.start[1];sh=D.start[2]}
@@ -1513,7 +1766,7 @@ function setMap(id){
   gnd.material.map=null;gnd.material.needsUpdate=true;gnd.material.color.setHex(D.gnd);gnd.position.y=D.gy;
   skyMat.map=skyTex(D.sky||id);skyMat.needsUpdate=true;
   document.documentElement.style.setProperty('--sky','url("'+SKIES[D.sky||id]+'")');
-  if(D.practice)buildPractice();else if(D.ship)buildShip();else{
+  if(D.practice)buildPractice();else if(D.ship)buildShip();else if(D.canyon)buildCanyon();else{
   /* 도로 */
   if(D.terrain)buildTerrain();
   if(D.shoulder){const sm=new THREE.MeshBasicMaterial({color:D.shoulder,side:THREE.DoubleSide});strip(HALF,WALL+1.2,.01,()=>[0,0],sm);strip(-WALL-1.2,-HALF,.01,()=>[0,0],sm)}
@@ -1542,6 +1795,7 @@ function setMap(id){
   if(D.lamps)buildLamps(D.lamps);
   if(D.tokyo)buildTokyo();
   if(D.ny)buildNY();
+  if(D.alps)buildAlps();
   }
   /* 출발선 + 게이트 (연습장은 없음) */
   if(!D.practice){const line=new THREE.Mesh(new THREE.PlaneGeometry(1.6,HALF*2),new THREE.MeshBasicMaterial({color:0xffffff}));
@@ -1549,6 +1803,7 @@ function setMap(id){
   const yel=new THREE.MeshBasicMaterial({color:0xf2c230});
   [-1,1].forEach(sd=>{const m=new THREE.Mesh(new THREE.BoxGeometry(.5,7,.5),yel);m.position.set(sx+TN[0][0]*(HALF+1.5)*sd,TY[0]+3.5,sz+TN[0][1]*(HALF+1.5)*sd);MG.add(m)});
   const gb=new THREE.Mesh(new THREE.BoxGeometry(.5,1,(HALF+1.5)*2),yel);gb.position.set(sx,TY[0]+7,sz);gb.rotation.y=-sh;MG.add(gb);}
+  buildGuide();
   /* 상태 초기화 */
   bestLap=null;$('best').textContent='-';$('last').textContent='-';$('send').disabled=true;
   $('msg').textContent='한 바퀴를 완주하면 올릴 수 있어요.';
@@ -1590,7 +1845,9 @@ function nearest(x,z,from,win){
 }
 function reset(){
   c={x:sx,z:sz,h:sh,vx:0,vz:0};steer=0;AIR=false;cvy=0;cy=TY[0]||0;camY=TY[0]||0;camP=0;hitK=0;ci=0;prog=0;lapStart=null;NIT.ready=true;NIT.on=false;NIT.t=0;
+  FALL=false;
   if(MAPID==='practice')pracReset();
+  if(MAPID==='alps')alpsReset();
 }
 reset();
 let slip=0;
@@ -1602,23 +1859,28 @@ function thump(v){
   const g=AC.createGain();g.gain.value=.55*v;s.connect(f);f.connect(g);g.connect(AC.destination);s.start();
 }
 function step(dt){
+  if(FALL){fallStep(dt);return}
   if(AIR){airStep(dt);return}
+  const iceNow=ICE.length?onIce():false;
   steer+=(((keys.right?1:0)-(keys.left?1:0))-steer)*Math.min(1,dt*5);
   const fx=Math.cos(c.h),fz=Math.sin(c.h),rx=-fz,rz=fx;
   let vf=c.vx*fx+c.vz*fz,vl=c.vx*rx+c.vz*rz;
   const speed=Math.hypot(c.vx,c.vz),off=Math.abs(side)>HALF+1.2;
-  if(keys.gas){vf+=13*Math.max(0,1-vf/80)*dt*(LC.spin>0?.12:1);if(lapStart===null)lapStart=performance.now()}
+  if(keys.gas){vf+=13*Math.max(0,1-vf/80)*dt*(LC.spin>0?.12:1)*(iceNow?.45:1);if(lapStart===null)lapStart=performance.now()}
   if(LC.b>0){vf+=LC.bp*Math.max(0,1-vf/70)*dt;LC.b-=dt}
   if(LC.spin>0){LC.spin-=dt;hitK=Math.max(hitK,.12)}
   if(NIT.on){vf+=22*clamp(vf/25,.35,1)*Math.max(0,1-vf/105)*dt;NIT.t-=dt;if(NIT.t<=0){NIT.on=false;NIT.t=0}}
   vf-=9.8*.55*TSL[ci]*Math.cos(c.h-TH[ci])*dt;
-  if(keys.brake)vf-=(vf>0.5?24:7)*dt;
+  if(keys.brake)vf-=(vf>0.5?24:7)*dt*(iceNow?.3:1);
   vf=Math.max(vf,-8);
   let grip=6-2.2*Math.min(speed/45,1);
   if(keys.gas&&speed>10&&Math.abs(steer)>.4)grip-=1.4;
-  if(keys.hand){grip=.9;vf*=Math.exp(-.35*dt)}
+  if(keys.hand){grip=.9;vf*=Math.exp(-.3*dt)}
   grip=Math.max(grip,.8);
-  vl*=Math.exp(-grip*dt);
+  if(iceNow)grip=Math.min(grip,.55);   /* 얼음: 옆으로 잘 미끄러짐 */
+  {const vl0=vl;vl*=Math.exp(-grip*dt);
+   /* 드리프트 중 가속을 밟고 있으면 옆으로 미끄러지며 잃는 속도의 35%를 앞으로 되돌려 줘요 (실제 드리프트처럼 속도 유지) */
+   if(keys.hand&&keys.gas&&vf>3&&!iceNow)vf+=Math.abs(vl0-vl)*.35*Math.max(0,1-vf/75)}
   vf*=Math.exp(-(.015+(off?1.4:0))*dt);
   if(off)vl*=Math.exp(-1.2*dt);
   vf-=Math.sign(vf)*Math.min(Math.abs(vf),.5*dt);
@@ -1653,6 +1915,7 @@ function step(dt){
   if(MODE==='duel')duelCollide(dt);
   if(MAPID==='practice')practiceBounds();
   if(TOBS.length)tobsCollide();
+  if(HW.length&&!AIR&&Math.abs(side)>HW[ci]+.6){startFall();return}
   if(prog>=LAPEND&&!AIR&&MODE!=='practice'){
     prog-=LAPEND;NIT.ready=true;
     if(lapStart!==null){
@@ -1817,7 +2080,7 @@ function loop(now){
   drive(dt);
   if(MODE==='duel'){lcTick(dt);duelFrame(dt,now)}
   if(MODE==='practice'&&started)pracFrame(dt);
-  if(MAPID==='tokyo')tokyoFrame(dt);else if(MAPID==='ny')nyFrame(dt);
+  if(MAPID==='tokyo')tokyoFrame(dt);else if(MAPID==='ny')nyFrame(dt);else if(MAPID==='alps')alpsFrame(dt);
   const fx=Math.cos(c.h),fz=Math.sin(c.h),rx=-fz,rz=fx;
   const sp=Math.hypot(c.vx,c.vz),bump=Math.sin(now*.05)*.004*Math.min(sp/30,1);
   camY+=((AIR?cy:(TY[ci]||0))-camY)*Math.min(1,dt*(AIR?16:10));camP+=((AIR?cvy/Math.max(Math.hypot(c.vx,c.vz),6):(TSL[ci]||0))-camP)*Math.min(1,dt*3);
@@ -2033,8 +2296,8 @@ const HDR={apikey:KEY,'Content-Type':'application/json'};
 /* RICH: scores 표에 map / mode / stage 열이 있으면 true, 없으면 false (처음엔 모름) */
 var RICH=null;
 var MODE='lap',HOLD=false,DEAD=false,PLAYER='';
-const MAPLABEL={seoul:'Seoul',mountain:'Mountain Pass',xmas:'Christmas',tokyo:'Tokyo Neon',ny:'New York',ship:'Cargo Ship'};
-const HARD_STAGES=['xmas','seoul','mountain','ship']; /* 쉬운 순서. 새 맵은 이 배열 뒤에 이름만 추가하면 다음 스테이지가 돼요 */
+const MAPLABEL={seoul:'Seoul',mountain:'Mountain Pass',xmas:'Christmas',tokyo:'Tokyo Neon',ny:'New York',ship:'Cargo Ship',alps:'Alps',canyon:'Red Canyon'};
+const HARD_STAGES=['xmas','seoul','mountain','ship','alps','canyon']; /* 쉬운 순서. 새 맵은 이 배열 뒤에 이름만 추가하면 다음 스테이지가 돼요 */
 /* 스테이지마다 허용 충돌 횟수가 줄어들어요: 1스테이지 10번 → 2스테이지 9번 → 3스테이지 8번 …
    (맵이 6개가 되면 10·9·8·7·6·5번). 시작 횟수는 HARD_FIRST, 최소는 HARD_MIN. 충돌 횟수는 스테이지마다 새로 세요. */
 const HARD_FIRST=10,HARD_MIN=1;
@@ -2148,7 +2411,6 @@ $('mbChange').onclick=showModes;
 (function(){
   const row=$('stList');
   HARD_STAGES.forEach((id,i)=>{const d=document.createElement('div');d.innerHTML='<span></span><b></b><em></em>';d.children[0].textContent='STAGE '+(i+1);d.children[1].textContent=MAPLABEL[id];d.children[2].textContent='충돌 '+hardLimit(i)+'번';row.append(d)});
-  const n=document.createElement('div');n.className='next';n.innerHTML='<span>NEXT</span><b>준비 중</b>';row.append(n);
 })();
 
 /* ---------- 홈 리더보드 버튼 ---------- */
@@ -2176,7 +2438,7 @@ function updateHH(){
 }
 function hardBegin(){
   hardIdx=0;hits=0;hitsTotal=0;stageTimes=[];DEAD=false;HOLD=false;clearTimeout(failT);
-  ['boom','fail','stg','hit'].forEach(i=>$(i).classList.remove('on','win','water'));
+  ['boom','fail','stg','hit'].forEach(i=>$(i).classList.remove('on','win','water','fall'));
   if(MAPID!==HARD_STAGES[0])setMap(HARD_STAGES[0]);
   updateHH();$('hh').classList.add('on');
 }
@@ -2219,15 +2481,15 @@ function explode(){
   DEAD=true;for(const k in keys)keys[k]=0;c.vx=c.vz=0;
   if(eg)eg.gain.value=0;if(sg)sg.gain.value=0;
   explodeSound();
-  const b=$('boom');b.classList.remove('on','water');void b.offsetWidth;b.classList.add('on');
+  const b=$('boom');b.classList.remove('on','water','fall');void b.offsetWidth;b.classList.add('on');
   let n=0;const sh=setInterval(()=>{hitK=1;if(++n>22)clearInterval(sh)},50);
   failT=setTimeout(()=>showFail(false),1900);
 }
 async function showFail(win,why){
   const cleared=stageTimes.length;
   $('fail').classList.toggle('win',win);
-  $('failT').textContent=win?'ALL CLEAR':why==='water'?'추락':'실패';
-  $('failSub').textContent=win?'모든 스테이지를 클리어했어요!':why==='water'?'바다에 빠졌어요. 점프할 때 속도가 모자랐거나 방향이 틀어졌어요.':'차량이 폭발했어요. 이 스테이지에서 벽에 '+hardLimit(hardIdx)+'번 부딪혔어요.';
+  $('failT').textContent=win?'ALL CLEAR':why==='water'||why==='fall'?'추락':why==='time'?'시간 초과':'실패';
+  $('failSub').textContent=win?'모든 스테이지를 클리어했어요!':why==='water'?'바다에 빠졌어요. 점프할 때 속도가 모자랐거나 방향이 틀어졌어요.':why==='fall'?'협곡 아래로 떨어졌어요. 가드레일이 없으니 길 가장자리를 조심하세요!':why==='time'?'제한 시간('+fmtS(MAPS[MAPID].limit)+') 안에 결승선에 들어오지 못했어요.':'차량이 폭발했어요. 이 스테이지에서 벽에 '+hardLimit(hardIdx)+'번 부딪혔어요.';
   $('fStage').textContent=win?HARD_STAGES.length+' / '+HARD_STAGES.length:(hardIdx+1)+' / '+HARD_STAGES.length+' · '+MAPLABEL[HARD_STAGES[hardIdx]];
   $('fClear').textContent=cleared+'개';
   $('fTime').textContent=cleared?fmt(hardTotal()):'-';
@@ -2250,7 +2512,7 @@ function hardLapDone(t){
   if(hardIdx>=HARD_STAGES.length-1){DEAD=true;showFail(true);return}
   HOLD=true;
   $('stgT').textContent='STAGE '+(hardIdx+1)+' CLEAR';
-  $('stgS').textContent=fmt(t)+' · 다음 '+MAPLABEL[HARD_STAGES[hardIdx+1]];
+  {const nx=HARD_STAGES[hardIdx+1],L=MAPS[nx].limit;$('stgS').textContent=fmt(t)+' · 다음 '+MAPLABEL[nx]+(L?' · 제한 시간 '+fmtS(L):'')}
   $('stg').classList.add('on');
   setTimeout(()=>{
     if(!started)return;   /* 그 사이에 나가기를 눌렀으면 넘어가지 않음 */
@@ -3025,7 +3287,7 @@ function goBack(){
   if(MODE==='hard'&&!DEAD&&!confirm('하드 도전을 그만둘까요? 지금까지 진행한 스테이지는 사라져요.'))return;
   for(const k in keys)keys[k]=0;document.querySelectorAll('.pad button').forEach(b=>b.classList.remove('on'));
   stopAudio();started=false;HOLD=false;DEAD=false;clearTimeout(failT);
-  ['hh','boom','fail','stg','hit','jh'].forEach(i=>$(i).classList.remove('on','win','water'));
+  ['hh','boom','fail','stg','hit','jh'].forEach(i=>$(i).classList.remove('on','win','water','fall'));
   $('lbp').classList.remove('on','top');
   if(MODE==='hard'&&MAPID!==HARD_STAGES[0])setMap(HARD_STAGES[0]);
   reset();$('start').style.display='grid';
