@@ -74,6 +74,7 @@
 - **SRI**: three.min.js는 jsDelivr `three@0.128.0/build/three.min.js` + integrity(실패하면 바로 다음 인라인 스크립트가 cdnjs로 대체). 동적 스크립트(supabase-js, GLTFLoader, DRACOLoader)는 `loadScript()`가 `SRI` 표의 해시로 받고 실패하면 unpkg로 한 번 더. 해시는 같은 버전 npm 파일로 계산(jsDelivr npm은 바이트 그대로). 버전 바꾸면 해시도 다시 계산.
 - 이름: `cleanName()`(제어·보이지 않는 문자·`<>` 제거, 20자) + `BAD_NAME` 욕설 정규식(서버 SQL과 같은 목록). 순위표·상대 이름은 전부 textContent라 XSS 없음.
 - `sendScore`는 이름·시간(20초~1시간) 검사 후 보냄. 1대1 메시지는 모양 검사(`onDuelMsg`), fin 시간 범위 검사.
+- 테스트 주의: 1대1 테스트는 supabase-js 대신 가짜 파일(mock_sb.js)을 주므로 "Failed to find a valid digest" 경고가 뜨고 unpkg로 대체되는 게 정상. 테스트에서 CDN 응답엔 `access-control-allow-origin:*` 헤더를 줘야 SRI가 통과함.
 - 한계: 공개 키라 그럴듯한 가짜 기록(예: 40초)은 서버가 진짜인지 알 수 없음 → 관리자가 Table Editor에서 지우기.
 
 ## Supabase
