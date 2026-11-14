@@ -168,7 +168,7 @@ body[data-pad=square]{--bw:76px;--bh:76px}
 #modes>*:not(.bg){position:relative;z-index:1}
 #modes h1{margin:0;font-size:clamp(22px,4.6vh,38px);font-weight:800;letter-spacing:.05em;text-align:center;line-height:1.2}
 #modes h1 small{display:block;margin-bottom:6px;font-size:clamp(10px,1.7vh,12.5px);font-weight:600;letter-spacing:.3em;color:#8d96a3}
-.mcards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(10px,2vw,22px);width:min(100%,980px)}
+.mcards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(10px,1.6vw,20px);width:min(100%,1180px)}
 .mcards[hidden],.mname[hidden]{display:none}
 .mc{font:inherit;color:#eef;text-align:left;cursor:pointer;position:relative;overflow:hidden;display:flex;flex-direction:column;gap:clamp(6px,1.4vh,12px);min-height:clamp(150px,36vh,290px);padding:clamp(14px,3vh,26px) clamp(14px,1.8vw,22px);background:linear-gradient(165deg,#151b2c,#0b0d17);border:2px solid var(--line);border-radius:8px;transition:transform .14s,border-color .14s,box-shadow .14s}
 .mc:hover{transform:translateY(-4px);border-color:var(--gold);box-shadow:0 10px 30px #f2c2301f}
@@ -370,7 +370,7 @@ body[data-mode=duel] #tl>div:nth-child(3){display:none}
   /* 모드 선택·이름·1대1 로비: 위가 잘리지 않게 위에서부터 쌓고, 카드 3장은 한 줄로 */
   #modes{justify-content:flex-start;gap:10px;padding:10px max(12px,env(safe-area-inset-right)) 14px max(12px,env(safe-area-inset-left))}
   #modes h1{font-size:20px}#modes h1 small{margin-bottom:2px}
-  .mcards{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+  .mcards{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.mc ul li{font-size:10.5px;padding:2px 7px}
   .mc{min-height:0;padding:12px;gap:5px}.mc i{font-size:30px}.mc b{font-size:16px}.mc p{display:none}.mc .tag{top:8px;right:8px;font-size:10.5px}
   .mname{padding:14px;gap:9px}.dmaps img{aspect-ratio:3/1}.dpick button{min-height:0;padding:12px}.dcode{font-size:40px;padding:8px 0 8px .3em}
 }
@@ -378,6 +378,20 @@ body[data-mode=duel] #tl>div:nth-child(3){display:none}
   #start .cspec em{display:none}
   #jh{top:44px;padding:5px 12px}
 }
+/* ===== 연습장 ===== */
+#start .stl div em{font-style:normal;font-size:11px;color:#ff8f84;white-space:nowrap}
+body[data-mode=practice] #start .modebar>span:nth-child(2){display:none}
+.mc.prac{border-color:#24412f}.mc.prac i{color:#3ddc84}.mc.prac:hover{border-color:#3ddc84;box-shadow:0 10px 30px #3ddc8422}
+#ph{position:fixed;left:50%;top:8px;transform:translateX(-50%);z-index:4;display:none;align-items:center;gap:12px;padding:6px 12px;background:#0b0d14d9;border:1px solid #2f5a3f;border-radius:10px;font-size:12.5px;color:#cdd7e6;white-space:nowrap;text-shadow:0 1px 3px #000}
+body[data-mode=practice] #ph{display:flex}
+body[data-mode=practice] #tl,body[data-mode=practice] #bt,body[data-mode=practice] #lbp,body[data-mode=practice] #start .maps,body[data-mode=practice] #lbBtn{display:none!important}
+#ph b{color:#3ddc84;font-size:13px;letter-spacing:.06em}
+#ph em{font-style:normal}
+#ph i{font-style:normal;font-weight:800;color:#fff;font-variant-numeric:tabular-nums;display:inline-block;min-width:2.4em;text-align:right}
+#ph i.hot{color:#f2c230}
+#ph button{font-size:12px;padding:4px 10px;border-color:#2f5a3f;cursor:pointer}
+@media (max-width:900px){#ph .opt{display:none}}
+@media (orientation:landscape) and (max-height:500px){#ph{top:4px;gap:8px;font-size:10.5px;padding:4px 8px}#ph b{font-size:11px}#ph button{font-size:10.5px;padding:3px 7px}#ph em{display:none}}
 </style>
 </head>
 <body>
@@ -426,7 +440,7 @@ body[data-mode=duel] #tl>div:nth-child(3){display:none}
       <button role="radio" aria-checked="false" data-map="mountain"><img src="DATAURI" alt=""><b>Mountain Pass</b><em>어려움 · 내리막 산길</em></button>
       <button role="radio" aria-checked="false" data-map="xmas"><img src="DATAURI" alt=""><b>Christmas</b><em>쉬움 · 눈 내리는 밤</em></button>
     </div>
-    <div class="stages"><div class="stl" id="stList"></div><p>스테이지를 하나씩 클리어해요. 벽이나 장애물에 5번 부딪히면 폭발!</p></div>
+    <div class="stages"><div class="stl" id="stList"></div><p>스테이지를 하나씩 클리어해요. 벽에 부딪혀도 되는 횟수가 10번부터 스테이지마다 1번씩 줄어요!</p></div>
     <div class="duelinfo" id="duelInfo"><div><span>나</span><b id="diMe"></b></div><div><span id="diOppN">상대</span><b id="diOpp"></b></div></div>
     <div class="cta">
       <button class="btn play" id="go"><span>플레이</span></button>
@@ -475,7 +489,8 @@ body[data-mode=duel] #tl>div:nth-child(3){display:none}
   <div class="mcards" id="mStep1">
     <button class="mc" data-mode="duel"><span class="tag">NEW</span><i>1 : 1</i><b>1대1 대결</b><p>방을 만들고 비밀번호를 정해서 친구와 같은 코스를 달려요.</p><ul><li>방 + 비밀번호</li><li>친구와 함께</li></ul></button>
     <button class="mc" data-mode="lap"><i>LAP</i><b>개인 랩타임</b><p>혼자 한 바퀴 기록에 도전해요. 맵마다 순위표가 따로 있어요.</p><ul><li>맵 3개</li><li>맵별 순위표</li></ul></button>
-    <button class="mc hard" data-mode="hard"><i>×5</i><b>하드 랩타임</b><p>벽에 5번 부딪히면 차가 폭발해요. 스테이지를 하나씩 올라가요.</p><ul><li>충돌 5회 실패</li><li>스테이지 진행</li><li>순위표</li></ul></button>
+    <button class="mc prac" data-mode="practice"><i>FREE</i><b>연습장</b><p>넓은 공간에서 마음껏 달리고 드리프트를 연습해요. 기록은 남지 않아요.</p><ul><li>드리프트 원</li><li>8자 코스</li><li>슬라럼</li><li>직선 가속</li></ul></button>
+    <button class="mc hard" data-mode="hard"><i>×10</i><b>하드 랩타임</b><p>벽에 너무 많이 부딪히면 차가 폭발해요. 스테이지마다 허용 횟수가 10번부터 줄어들어요.</p><ul><li>충돌 10→9→8…</li><li>스테이지 진행</li><li>순위표</li></ul></button>
   </div>
   <form class="mname" id="mStep2" hidden autocomplete="off">
     <span class="mchip" id="mnMode"></span>
@@ -521,13 +536,14 @@ body[data-mode=duel] #tl>div:nth-child(3){display:none}
 <div id="stg" role="status"><b id="stgT"></b><span id="stgS"></span></div>
 <div id="fail" role="alertdialog" aria-labelledby="failT"><div class="fcard">
   <h2 id="failT"></h2><p id="failSub"></p>
-  <dl><dt>도달 스테이지</dt><dd id="fStage"></dd><dt>클리어</dt><dd id="fClear"></dd><dt>누적 시간</dt><dd id="fTime"></dd><dt>벽 충돌</dt><dd id="fHits"></dd></dl>
+  <dl><dt>도달 스테이지</dt><dd id="fStage"></dd><dt>클리어</dt><dd id="fClear"></dd><dt>누적 시간</dt><dd id="fTime"></dd><dt>벽 충돌 (전체)</dt><dd id="fHits"></dd></dl>
   <p class="net" id="failNet"></p>
   <div class="mrow"><button class="mbtn play" id="failRetry">다시 도전</button><button class="mbtn ghost" id="failMenu">모드 선택</button></div>
 </div></div>
 <div id="toast" role="alert" aria-live="assertive"></div>
 <div id="dh"><div><small>순위</small><b id="dhPos">1st</b></div><div><small>LAP</small><b id="dhLap">1 / 3</b></div><div><small>상대</small><b id="dhOpp">LAP 1</b></div></div>
 <div id="cd" aria-live="assertive"></div>
+<div id="ph"><b>연습장</b><span>드리프트 각도 <i id="phAng">0°</i></span><span>드리프트 <i id="phDr">0.0초</i><em> · 최고 <i id="phBest">0.0초</i></em></span><span class="opt">최고 속도 <i id="phTop">0</i> km/h</span><button id="phReset" type="button">처음 위치 (R)</button></div>
 <div id="dres" role="alertdialog" aria-labelledby="drT"><div class="fcard">
   <h2 id="drT"></h2><p id="drSub"></p>
   <dl><dt>내 기록</dt><dd id="drMe"></dd><dt>상대 기록</dt><dd id="drOpp"></dd><dt>맵</dt><dd id="drMap"></dd></dl>
@@ -996,12 +1012,12 @@ function setMap(id){
   BR=null;RIVER=null;WATERT=null;if(D.bridge)planBridge();JMP=null;OBS=[];LAPEND=N;if(D.ship)shipPlan();
   TSL=[];for(let i=0;i<N;i++)TSL.push((TY[(i+4)%N]-TY[(i+N-4)%N])/(8*TLEN/N));
   if(D.open){for(let k=0;k<5;k++){TSL[k]=TSL[5];TSL[N-1-k]=TSL[N-6]}for(let i=0;i<N;i++)TSL[i]=clamp(TSL[i],-.2,.2)}
-  sx=TP[0][0];sz=TP[0][1];sh=TH[0];
+  sx=TP[0][0];sz=TP[0][1];sh=TH[0];if(D.start){sx=D.start[0];sz=D.start[1];sh=D.start[2]}
   S.background=new THREE.Color(D.bg);S.fog=new THREE.Fog(D.fog[0],D.fog[1],D.fog[2]);
   gnd.material.map=null;gnd.material.needsUpdate=true;gnd.material.color.setHex(D.gnd);gnd.position.y=D.gy;
-  skyMat.map=skyTex(id);skyMat.needsUpdate=true;
-  document.documentElement.style.setProperty('--sky','url("'+SKIES[id]+'")');
-  if(D.ship)buildShip();else{
+  skyMat.map=skyTex(D.sky||id);skyMat.needsUpdate=true;
+  document.documentElement.style.setProperty('--sky','url("'+SKIES[D.sky||id]+'")');
+  if(D.practice)buildPractice();else if(D.ship)buildShip();else{
   /* 도로 */
   if(D.terrain)buildTerrain();
   if(D.shoulder){const sm=new THREE.MeshBasicMaterial({color:D.shoulder,side:THREE.DoubleSide});strip(HALF,WALL+1.2,.01,()=>[0,0],sm);strip(-WALL-1.2,-HALF,.01,()=>[0,0],sm)}
@@ -1029,12 +1045,12 @@ function setMap(id){
   if(D.trees)buildXmasTrees();
   if(D.lamps)buildLamps(D.lamps);
   }
-  /* 출발선 + 게이트 */
-  const line=new THREE.Mesh(new THREE.PlaneGeometry(1.6,HALF*2),new THREE.MeshBasicMaterial({color:0xffffff}));
+  /* 출발선 + 게이트 (연습장은 없음) */
+  if(!D.practice){const line=new THREE.Mesh(new THREE.PlaneGeometry(1.6,HALF*2),new THREE.MeshBasicMaterial({color:0xffffff}));
   line.rotation.x=-Math.PI/2;line.rotation.z=-sh;line.position.set(sx,TY[0]+.04,sz);MG.add(line);
   const yel=new THREE.MeshBasicMaterial({color:0xf2c230});
   [-1,1].forEach(sd=>{const m=new THREE.Mesh(new THREE.BoxGeometry(.5,7,.5),yel);m.position.set(sx+TN[0][0]*(HALF+1.5)*sd,TY[0]+3.5,sz+TN[0][1]*(HALF+1.5)*sd);MG.add(m)});
-  const gb=new THREE.Mesh(new THREE.BoxGeometry(.5,1,(HALF+1.5)*2),yel);gb.position.set(sx,TY[0]+7,sz);gb.rotation.y=-sh;MG.add(gb);
+  const gb=new THREE.Mesh(new THREE.BoxGeometry(.5,1,(HALF+1.5)*2),yel);gb.position.set(sx,TY[0]+7,sz);gb.rotation.y=-sh;MG.add(gb);}
   /* 상태 초기화 */
   bestLap=null;$('best').textContent='-';$('last').textContent='-';$('send').disabled=true;
   $('msg').textContent='한 바퀴를 완주하면 올릴 수 있어요.';
@@ -1057,7 +1073,7 @@ const kn=e=>map[e.key.length>1?e.key:e.key.toLowerCase()];
 addEventListener('keydown',e=>{
   if(e.target.tagName==='INPUT'||!started)return;
   const k=kn(e);if(k){keys[k]=1;e.preventDefault()}
-  const l=e.key.toLowerCase();if((l==='n'||e.key==='Shift')&&!e.repeat){fireNitro();e.preventDefault()}if(l==='r'&&MODE==='lap')reset();if(l==='l'&&MODE!=='duel')$('lbp').classList.toggle('on');
+  const l=e.key.toLowerCase();if((l==='n'||e.key==='Shift')&&!e.repeat){fireNitro();e.preventDefault()}if(l==='r'&&(MODE==='lap'||MODE==='practice'))reset();if(l==='l'&&MODE!=='duel')$('lbp').classList.toggle('on');
 });
 addEventListener('keyup',e=>{const k=kn(e);if(k)keys[k]=0});
 document.querySelectorAll('.pad button').forEach(b=>{
@@ -1076,6 +1092,7 @@ function nearest(x,z,from,win){
 }
 function reset(){
   c={x:sx,z:sz,h:sh,vx:0,vz:0};steer=0;AIR=false;cvy=0;cy=TY[0]||0;camY=TY[0]||0;camP=0;hitK=0;ci=0;prog=0;lapStart=null;NIT.ready=true;NIT.on=false;NIT.t=0;
+  if(MAPID==='practice')pracReset();
 }
 reset();
 let slip=0;
@@ -1134,7 +1151,8 @@ function step(dt){
     const vn=c.vx*n[0]*sg2+c.vz*n[1]*sg2;if(vn>0){c.vx-=n[0]*sg2*vn*1.3;c.vz-=n[1]*sg2*vn*1.3}
   }
   if(MODE==='duel')duelCollide(dt);
-  if(prog>=LAPEND&&!AIR){
+  if(MAPID==='practice')practiceBounds();
+  if(prog>=LAPEND&&!AIR&&MODE!=='practice'){
     prog-=LAPEND;NIT.ready=true;
     if(lapStart!==null){
       const t=Math.round(performance.now()-lapStart);lapStart=performance.now();
@@ -1234,6 +1252,7 @@ function mmSetup(){
   if(JMP){const a=TP[JMP.iLip],b=TP[JMP.iLand];mbg.strokeStyle='#2f7fe0';mbg.lineWidth=7*mdpr;mbg.beginPath();mbg.moveTo(a[0]*msc+mox,a[1]*msc+moz);mbg.lineTo(b[0]*msc+mox,b[1]*msc+moz);mbg.stroke()}
   const sX=TP[0][0]*msc+mox,sY=TP[0][1]*msc+moz;
   mbg.save();mbg.translate(sX,sY);mbg.rotate(TH[0]+Math.PI/2);mbg.fillStyle='#fff';mbg.fillRect(-4.5*mdpr,-1*mdpr,9*mdpr,2*mdpr);mbg.restore();
+  if(MAPID==='practice')mmPractice();
 }
 mmSetup();addEventListener('resize',mmSetup);
 let _m0='seoul';try{_m0=localStorage.getItem('drift-map')||'seoul'}catch(e){}
@@ -1247,7 +1266,7 @@ function drawMap(){
   mg.beginPath();mg.moveTo(8*u,0);mg.lineTo(-5*u,-5*u);mg.lineTo(-2.5*u,0);mg.lineTo(-5*u,5*u);mg.closePath();mg.fill();mg.stroke();
   mg.restore();
   mg.fillStyle='#cdd7e6';mg.font=(11*u)+'px system-ui,sans-serif';mg.textBaseline='top';
-  mg.fillText(Math.min(99,Math.floor(prog/LAPEND*100))+'%',8*u,6*u);
+  if(MODE!=='practice')mg.fillText(Math.min(99,Math.floor(prog/LAPEND*100))+'%',8*u,6*u);
 }
 
 /* ---------- 니트로: 한 바퀴에 한 번, 4초 동안 추가 가속 ---------- */
@@ -1294,6 +1313,7 @@ function loop(now){
   if(started&&!HOLD&&!DEAD)step(dt);
   drive(dt);
   if(MODE==='duel')duelFrame(dt,now);
+  if(MODE==='practice'&&started)pracFrame(dt);
   const fx=Math.cos(c.h),fz=Math.sin(c.h),rx=-fz,rz=fx;
   const sp=Math.hypot(c.vx,c.vz),bump=Math.sin(now*.05)*.004*Math.min(sp/30,1);
   camY+=((AIR?cy:(TY[ci]||0))-camY)*Math.min(1,dt*(AIR?16:10));camP+=((AIR?cvy/Math.max(Math.hypot(c.vx,c.vz),6):(TSL[ci]||0))-camP)*Math.min(1,dt*3);
@@ -1511,8 +1531,11 @@ var RICH=null;
 var MODE='lap',HOLD=false,DEAD=false,PLAYER='';
 const MAPLABEL={seoul:'Seoul',mountain:'Mountain Pass',xmas:'Christmas',ship:'Cargo Ship'};
 const HARD_STAGES=['xmas','seoul','mountain','ship']; /* 쉬운 순서. 새 맵은 이 배열 뒤에 이름만 추가하면 다음 스테이지가 돼요 */
-const HARD_HITS=5;                              /* 벽에 이 횟수만큼 박으면 폭발 */
-const HARD_RESET_PER_STAGE=false;               /* true면 스테이지마다 충돌 횟수를 새로 셉니다 */
+/* 스테이지마다 허용 충돌 횟수가 줄어들어요: 1스테이지 10번 → 2스테이지 9번 → 3스테이지 8번 …
+   (맵이 6개가 되면 10·9·8·7·6·5번). 시작 횟수는 HARD_FIRST, 최소는 HARD_MIN. 충돌 횟수는 스테이지마다 새로 세요. */
+const HARD_FIRST=10,HARD_MIN=1;
+const hardLimit=i=>Math.max(HARD_MIN,HARD_FIRST-i);
+let hitsTotal=0;
 function boardUrl(){
   if(RICH===false)return SB+'?select=name,lap_ms&order=lap_ms.asc&limit=200';
   if(MODE==='hard')return SB+'?select=name,lap_ms,stage&mode=eq.hard&order=stage.desc,lap_ms.asc&limit=200';
@@ -1568,7 +1591,7 @@ const autoSend=()=>{if(PLAYER||$('name').value.trim())doSend()};
 $('send').onclick=doSend;
 
 /* ---------- 모드 선택 → 이름 입력 → 홈 ---------- */
-const MODENAME={lap:'개인 랩타임',hard:'하드 랩타임',duel:'1대1 대결'};
+const MODENAME={lap:'개인 랩타임',hard:'하드 랩타임',duel:'1대1 대결',practice:'연습장'};
 const MC=document.querySelectorAll('#modes .mc');
 let hardIdx=0,hits=0,stageTimes=[],lastHit=0,failT=0;
 function stopAudio(){if(AC){try{AC.close()}catch(e){}}AC=null;eng=null;sg=null;eg=null;nzg=null}
@@ -1584,12 +1607,13 @@ function showModes(){
 function applyMode(){
   document.body.dataset.mode=MODE;
   $('mbMode').textContent=MODENAME[MODE];$('mbName').textContent=PLAYER;
-  if(MODE==='hard'){setMap(HARD_STAGES[0])}
+  if(MODE==='practice'){setMap('practice')}else if(MODE==='hard'){setMap(HARD_STAGES[0])}
   else{let m='seoul';try{m=localStorage.getItem('drift-map')||'seoul'}catch(e){}setMap(MAPLABEL[m]?m:'seoul')}
   $('name').value=PLAYER;loadBoard();
 }
 MC.forEach(b=>b.onclick=()=>{
   const m=b.dataset.mode;
+  if(m==='practice'){MODE='practice';applyMode();$('modes').classList.remove('on');$('start').style.display='grid';return}  /* 연습장은 이름 입력 없이 바로 */
   MODE=m;
   $('mnMode').textContent=MODENAME[m];$('mnMode').classList.toggle('hard',m==='hard');
   $('mnHint').textContent=m==='hard'?'스테이지를 클리어한 기록이 이 이름으로 하드 순위표에 올라가요.':m==='duel'?'방에서 친구에게 보여 줄 이름이에요.':'이 이름으로 기록이 맵별 순위표에 올라가요.';
@@ -1611,7 +1635,7 @@ $('mbChange').onclick=showModes;
 /* 하드 스테이지 목록 (홈) */
 (function(){
   const row=$('stList');
-  HARD_STAGES.forEach((id,i)=>{const d=document.createElement('div');d.innerHTML='<span></span><b></b>';d.children[0].textContent='STAGE '+(i+1);d.children[1].textContent=MAPLABEL[id];row.append(d)});
+  HARD_STAGES.forEach((id,i)=>{const d=document.createElement('div');d.innerHTML='<span></span><b></b><em></em>';d.children[0].textContent='STAGE '+(i+1);d.children[1].textContent=MAPLABEL[id];d.children[2].textContent='충돌 '+hardLimit(i)+'번';row.append(d)});
   const n=document.createElement('div');n.className='next';n.innerHTML='<span>NEXT</span><b>준비 중</b>';row.append(n);
 })();
 
@@ -1634,12 +1658,12 @@ $('go').onclick=()=>{
 const hardTotal=()=>stageTimes.reduce((a,b)=>a+b,0);
 function updateHH(){
   $('hhStage').textContent='STAGE '+(hardIdx+1)+' / '+HARD_STAGES.length+' · '+MAPLABEL[HARD_STAGES[hardIdx]];
-  const p=$('hhPips');while(p.children.length<HARD_HITS)p.append(document.createElement('i'));
+  const L=hardLimit(hardIdx),p=$('hhPips');while(p.children.length<L)p.append(document.createElement('i'));while(p.children.length>L)p.lastChild.remove();
   [...p.children].forEach((el,i)=>el.classList.toggle('x',i<hits));
-  $('hhLeft').textContent='벽 충돌 '+hits+' / '+HARD_HITS;
+  $('hhLeft').textContent='벽 충돌 '+hits+' / '+L+' (이 스테이지)';
 }
 function hardBegin(){
-  hardIdx=0;hits=0;stageTimes=[];DEAD=false;HOLD=false;clearTimeout(failT);
+  hardIdx=0;hits=0;hitsTotal=0;stageTimes=[];DEAD=false;HOLD=false;clearTimeout(failT);
   ['boom','fail','stg','hit'].forEach(i=>$(i).classList.remove('on','win','water'));
   if(MAPID!==HARD_STAGES[0])setMap(HARD_STAGES[0]);
   updateHH();$('hh').classList.add('on');
@@ -1647,9 +1671,9 @@ function hardBegin(){
 function wallHit(){
   if(DEAD||HOLD)return;
   const t=performance.now();if(t-lastHit<900)return;lastHit=t;
-  hits++;updateHH();
+  hits++;hitsTotal++;updateHH();
   const h=$('hit');h.classList.remove('on');void h.offsetWidth;h.classList.add('on');
-  if(hits>=HARD_HITS)explode();
+  if(hits>=hardLimit(hardIdx))explode();
 }
 function explodeSound(){
   if(!AC)return;try{AC.resume()}catch(e){}
@@ -1691,11 +1715,11 @@ async function showFail(win,why){
   const cleared=stageTimes.length;
   $('fail').classList.toggle('win',win);
   $('failT').textContent=win?'ALL CLEAR':why==='water'?'추락':'실패';
-  $('failSub').textContent=win?'모든 스테이지를 클리어했어요!':why==='water'?'바다에 빠졌어요. 점프할 때 속도가 모자랐거나 방향이 틀어졌어요.':'차량이 폭발했어요. 벽에 '+HARD_HITS+'번 부딪혔어요.';
+  $('failSub').textContent=win?'모든 스테이지를 클리어했어요!':why==='water'?'바다에 빠졌어요. 점프할 때 속도가 모자랐거나 방향이 틀어졌어요.':'차량이 폭발했어요. 이 스테이지에서 벽에 '+hardLimit(hardIdx)+'번 부딪혔어요.';
   $('fStage').textContent=win?HARD_STAGES.length+' / '+HARD_STAGES.length:(hardIdx+1)+' / '+HARD_STAGES.length+' · '+MAPLABEL[HARD_STAGES[hardIdx]];
   $('fClear').textContent=cleared+'개';
   $('fTime').textContent=cleared?fmt(hardTotal()):'-';
-  $('fHits').textContent=hits+'회';
+  $('fHits').textContent=hitsTotal+'회';
   const net=$('failNet');
   $('fail').classList.add('on');$('hh').classList.remove('on');
   if(!cleared){net.textContent='스테이지를 1개 이상 클리어하면 순위표에 올라가요.';return}
@@ -1717,7 +1741,7 @@ function hardLapDone(t){
   $('stgS').textContent=fmt(t)+' · 다음 '+MAPLABEL[HARD_STAGES[hardIdx+1]];
   $('stg').classList.add('on');
   setTimeout(()=>{
-    hardIdx++;if(HARD_RESET_PER_STAGE)hits=0;
+    hardIdx++;hits=0;
     setMap(HARD_STAGES[hardIdx]);updateHH();
     $('stg').classList.remove('on');HOLD=false;
   },2300);
@@ -2249,6 +2273,132 @@ function duelOff(){
   document.body.classList.remove('dready');
 }
 addEventListener('pagehide',()=>{if(D.ch)dSend('bye',{})});
+
+/* ================= 연습장 (기록 없이 자유 주행) =================
+   520m × 520m 평지. 가운데 출발, 드리프트 원 / 8자 코스 / 슬라럼 / 직선 가속 구간. 콘은 부딪히면 쓰러져요(R로 원위치).
+   코스 점(TP)은 바깥 경계 사각형이라 미니맵에 테두리로 보이고, 실제 벽 충돌은 practiceBounds()가 처리해요. */
+const PA=260;                                   /* 연습장 반 크기(m) */
+const PZ={drift:{x:110,z:95,r:26},eight:[{x:-150,z:95,r:25},{x:-100,z:95,r:25}],slalom:{z:-45,x0:-120,x1:120,gap:16},run:{z:-170,x0:-230,x1:230}};
+function practicePts(){
+  const P=[],L=8*PA;
+  for(let i=0;i<N;i++){const s=i/N*L,e=Math.floor(s/(2*PA)),u=s-e*2*PA-PA;
+    P.push(e===0?[u,-PA]:e===1?[PA,u]:e===2?[-u,PA]:[-PA,-u])}
+  return P;
+}
+MAPS.practice={half:600,wall:0,practice:true,sky:'mountain',bg:0x9db7d6,fog:[0xaec4d8,160,900],gnd:0x5f7a55,gy:-2.5,asph:0x9aa0aa,kerb:['#fff','#c4352b'],pts:practicePts,start:[0,0,0]};
+MAPLABEL.practice='연습장';
+let CONES=[],coneM=null,coneW=null;
+function decal(text,x,z,w,rot,col){
+  const cv=document.createElement('canvas');cv.width=1024;cv.height=256;const g=cv.getContext('2d');
+  g.font='900 170px system-ui,sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillStyle=col||'rgba(255,255,255,.85)';g.fillText(text,512,136);
+  const t=new THREE.CanvasTexture(cv);t.anisotropy=8;
+  const m=new THREE.Mesh(new THREE.PlaneGeometry(w,w/4),new THREE.MeshBasicMaterial({map:t,transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2}));
+  m.rotation.set(-Math.PI/2,0,rot||0);m.position.set(x,.03,z);MG.add(m);
+}
+function ring(x,z,r,wd,col,op){
+  const m=new THREE.Mesh(new THREE.RingGeometry(r-wd/2,r+wd/2,128),new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:op||.85,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2}));
+  m.rotation.x=-Math.PI/2;m.position.set(x,.025,z);MG.add(m);
+}
+function paintLine(x0,z0,x1,z1,wd,col,dash){
+  const len=Math.hypot(x1-x0,z1-z0),n=dash?Math.floor(len/dash/2):1,mat=new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:.85,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2});
+  for(let k=0;k<n;k++){const a=dash?k*2*dash:0,l=dash||len,cx=x0+(x1-x0)*(a+l/2)/len,cz=z0+(z1-z0)*(a+l/2)/len;
+    const m=new THREE.Mesh(new THREE.PlaneGeometry(l,wd),mat);m.rotation.set(-Math.PI/2,0,-Math.atan2(z1-z0,x1-x0));m.position.set(cx,.025,cz);MG.add(m)}
+}
+function sign(text,x,z,rot){
+  const cv=document.createElement('canvas');cv.width=256;cv.height=128;const g=cv.getContext('2d');
+  g.fillStyle='#14171c';g.fillRect(0,0,256,128);g.fillStyle='#f2c230';g.fillRect(0,0,256,14);g.fillRect(0,114,256,14);
+  g.font='900 64px system-ui,sans-serif';g.fillStyle='#fff';g.textAlign='center';g.textBaseline='middle';g.fillText(text,128,66);
+  const b=new THREE.Mesh(new THREE.BoxGeometry(.2,1.6,3.2),[0,1,2,3,4,5].map(i=>new THREE.MeshBasicMaterial(i===0||i===1?{map:new THREE.CanvasTexture(cv)}:{color:0x14171c})));
+  b.position.set(x,2.2,z);b.rotation.y=rot||0;MG.add(b);
+  [-1.2,1.2].forEach(o=>{const p=new THREE.Mesh(new THREE.CylinderGeometry(.06,.06,1.6,6),new THREE.MeshBasicMaterial({color:0x888c96}));p.position.set(x+Math.sin(rot||0)*o,.7,z+Math.cos(rot||0)*o);MG.add(p)});
+}
+function buildPractice(){
+  /* 바닥 아스팔트 */
+  const at=asphT.clone();at.needsUpdate=true;at.wrapS=at.wrapT=THREE.RepeatWrapping;at.repeat.set(2*PA/9,2*PA/9);
+  const pad=new THREE.Mesh(new THREE.PlaneGeometry(2*PA+20,2*PA+20,40,40),  /* 큰 판 하나는 카메라 뒤로 넘어갈 때 그래픽카드가 잘못 자를 수 있어 잘게 나눠요 */
+    new THREE.MeshBasicMaterial({map:at,color:MAPS.practice.asph}));
+  pad.rotation.x=-Math.PI/2;pad.position.y=0;MG.add(pad);
+  /* 바깥 타이어 벽 (빨강·흰색 줄무늬) */
+  const st=mkTex(64,16,x=>{x.fillStyle='#c4352b';x.fillRect(0,0,32,16);x.fillStyle='#eef0f4';x.fillRect(32,0,32,16)});st.repeat.set(2*PA/4,1);
+  const wm=new THREE.MeshBasicMaterial({map:st});
+  [[0,-PA-.6,2*PA+2,1.2],[0,PA+.6,2*PA+2,1.2],[-PA-.6,0,1.2,2*PA+2],[PA+.6,0,1.2,2*PA+2]].forEach(([x,z,w,d])=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,1.1,d),wm);m.position.set(x,.55,z);MG.add(m)});
+  /* 출발 위치 */
+  paintLine(-6,-5,6,-5,.3,0xffffff);paintLine(-6,5,6,5,.3,0xffffff);paintLine(-6,-5,-6,5,.3,0xffffff);paintLine(6,-5,6,5,.3,0xffffff);
+  decal('START',-14,0,16,-Math.PI/2);
+  /* 드리프트 원 */
+  const D1=PZ.drift;ring(D1.x,D1.z,D1.r,.5,0xffffff);ring(D1.x,D1.z,D1.r+8,.35,0xf2c230,.7);ring(D1.x,D1.z,3,.4,0xf2c230);
+  decal('DRIFT',D1.x,D1.z-D1.r-16,26,0);sign('DRIFT',D1.x-D1.r-14,D1.z-D1.r-6,Math.PI/4);
+  /* 8자 */
+  PZ.eight.forEach(e=>{ring(e.x,e.z,e.r,.5,0xffffff);ring(e.x,e.z,2.5,.4,0xf2c230)});
+  decal('FIGURE 8',-125,95-25-16,30,0);sign('8',-125,95+40,0);
+  /* 슬라럼 */
+  const SL=PZ.slalom;decal('SLALOM',SL.x0-20,SL.z,22,-Math.PI/2);paintLine(SL.x0-8,SL.z-8,SL.x1+8,SL.z-8,.25,0xf2c230,4);paintLine(SL.x0-8,SL.z+8,SL.x1+8,SL.z+8,.25,0xf2c230,4);
+  /* 직선 가속 구간 */
+  const R=PZ.run;paintLine(R.x0,R.z-12,R.x1,R.z-12,.4,0xffffff);paintLine(R.x0,R.z+12,R.x1,R.z+12,.4,0xffffff);paintLine(R.x0,R.z,R.x1,R.z,.3,0xffffff,6);
+  decal('SPEED',R.x0+30,R.z,20,-Math.PI/2);
+  for(let d=100;d<R.x1-R.x0;d+=100){const x=R.x0+d;paintLine(x,R.z-12,x,R.z+12,.6,0xf2c230);sign(d+'m',x,R.z-15.5,Math.PI/2)}
+  decal('BRAKE',R.x1-22,R.z,18,-Math.PI/2,'rgba(255,90,74,.9)');
+  /* 콘 */
+  const pos=[];
+  for(let a=0;a<360;a+=20){const t=a*Math.PI/180;pos.push([D1.x+Math.cos(t)*(D1.r+8),D1.z+Math.sin(t)*(D1.r+8)])}
+  for(let k=0;k<4;k++){const t=k*Math.PI/2;pos.push([D1.x+Math.cos(t)*1.2,D1.z+Math.sin(t)*1.2])}
+  PZ.eight.forEach(e=>{for(let k=0;k<3;k++){const t=k*2.1;pos.push([e.x+Math.cos(t)*1,e.z+Math.sin(t)*1])}});
+  for(let x=SL.x0;x<=SL.x1;x+=SL.gap)pos.push([x,SL.z]);
+  [[R.x0,R.z-11],[R.x0,R.z+11],[R.x1,R.z-11],[R.x1,R.z+11]].forEach(p=>pos.push(p));
+  CONES=pos.map(([x,z])=>({x0:x,z0:z,x,z,vx:0,vz:0,ry:Math.random()*6,tilt:0,down:false}));
+  const cg=new THREE.ConeGeometry(.28,.72,10);cg.translate(0,.36,0);
+  const bg=new THREE.CylinderGeometry(.205,.235,.12,10);bg.translate(0,.36,0);
+  coneM=new THREE.InstancedMesh(cg,new THREE.MeshBasicMaterial({color:0xff6a1a}),CONES.length);
+  coneW=new THREE.InstancedMesh(bg,new THREE.MeshBasicMaterial({color:0xf4f4f4}),CONES.length);
+  coneM.instanceMatrix.setUsage(THREE.DynamicDrawUsage);coneW.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  MG.add(coneM);MG.add(coneW);CONES.forEach((k,i)=>coneSet(i));
+}
+const _co=new THREE.Object3D();
+function coneSet(i){const k=CONES[i];_co.position.set(k.x,0,k.z);_co.rotation.set(0,k.ry,0);_co.rotateZ(k.tilt);_co.updateMatrix();coneM.setMatrixAt(i,_co.matrix);coneW.setMatrixAt(i,_co.matrix)}
+function pracReset(){
+  if(!coneM)return;
+  CONES.forEach((k,i)=>{k.x=k.x0;k.z=k.z0;k.vx=k.vz=0;k.tilt=0;k.down=false;coneSet(i)});
+  coneM.instanceMatrix.needsUpdate=coneW.instanceMatrix.needsUpdate=true;
+  PR.drift=0;PR.cur=0;
+}
+/* 바깥 벽: 넘어가지 않게 막고 살짝 튕김 */
+function practiceBounds(){
+  const L=PA-1.4;
+  [['x','vx'],['z','vz']].forEach(([p,v])=>{
+    if(Math.abs(c[p])>L){const sg=Math.sign(c[p]);c[p]=sg*L;const vn=c[v]*sg;if(vn>0){c[v]=-sg*vn*.35;c.vx*=.85;c.vz*=.85;hitK=Math.min(1,Math.max(hitK,vn/14));if(vn>2.5)thump(Math.min(1,vn/14))}}
+  });
+}
+/* 연습장 화면: 드리프트 각도·시간, 최고 속도, 콘 쓰러뜨리기, 니트로 다시 채우기 */
+const PR={drift:0,best:0,top:0,cur:0,nitCd:0};
+function pracFrame(dt){
+  const sp=Math.hypot(c.vx,c.vz),kmh=sp*3.6,fx=Math.cos(c.h),fz=Math.sin(c.h);
+  const vf=c.vx*fx+c.vz*fz,vl=-c.vx*fz+c.vz*fx,ang=kmh>20?Math.abs(Math.atan2(vl,Math.abs(vf)))*180/Math.PI:0;
+  PR.cur+=(ang-PR.cur)*Math.min(1,dt*8);
+  if(ang>12&&kmh>25){PR.drift+=dt;if(PR.drift>PR.best)PR.best=PR.drift}else if(ang<6)PR.drift=Math.max(0,PR.drift-dt*4);
+  if(kmh>PR.top)PR.top=kmh;
+  $('phAng').textContent=Math.round(PR.cur)+'°';$('phAng').classList.toggle('hot',PR.cur>12&&kmh>25);
+  $('phDr').textContent=PR.drift.toFixed(1)+'초';$('phBest').textContent=PR.best.toFixed(1)+'초';$('phTop').textContent=Math.round(PR.top);
+  if(!NIT.ready&&!NIT.on){PR.nitCd+=dt;if(PR.nitCd>5){NIT.ready=true;PR.nitCd=0}}
+  /* 콘 */
+  if(!coneM)return;let moved=false;
+  CONES.forEach((k,i)=>{
+    if(!k.down&&Math.hypot(k.x-c.x,k.z-c.z)<1.35&&sp>1){k.down=true;const a=Math.random()-.5;k.vx=c.vx*.9+a*3;k.vz=c.vz*.9-a*3;if(sp>6)thump(.25)}
+    if(k.down&&(k.vx||k.vz||k.tilt<1.45)){k.x+=k.vx*dt;k.z+=k.vz*dt;const f=Math.exp(-2.5*dt);k.vx*=f;k.vz*=f;if(Math.hypot(k.vx,k.vz)<.2)k.vx=k.vz=0;
+      k.tilt=Math.min(1.5,k.tilt+dt*6);k.ry+=dt*3*Math.min(1,Math.hypot(k.vx,k.vz)/5);
+      if(Math.abs(k.x)>PA-1)k.vx=-k.vx*.3,k.x=Math.sign(k.x)*(PA-1);if(Math.abs(k.z)>PA-1)k.vz=-k.vz*.3,k.z=Math.sign(k.z)*(PA-1);
+      coneSet(i);moved=true}
+  });
+  if(moved)coneM.instanceMatrix.needsUpdate=coneW.instanceMatrix.needsUpdate=true;
+}
+/* 미니맵에 구역 표시 */
+function mmPractice(){
+  const u=mdpr,X=x=>x*msc+mox,Y=z=>z*msc+moz;
+  mbg.strokeStyle='#cfd5e2';mbg.lineWidth=1.6*u;
+  [PZ.drift,...PZ.eight].forEach(e=>{mbg.beginPath();mbg.arc(X(e.x),Y(e.z),e.r*msc,0,7);mbg.stroke()});
+  mbg.strokeStyle='#f2c230';mbg.beginPath();mbg.moveTo(X(PZ.slalom.x0),Y(PZ.slalom.z));mbg.lineTo(X(PZ.slalom.x1),Y(PZ.slalom.z));mbg.setLineDash([3*u,3*u]);mbg.stroke();mbg.setLineDash([]);
+  mbg.strokeStyle='#e9eaf0';mbg.lineWidth=3*u;mbg.beginPath();mbg.moveTo(X(PZ.run.x0),Y(PZ.run.z));mbg.lineTo(X(PZ.run.x1),Y(PZ.run.z));mbg.stroke();
+}
+$('phReset').onclick=e=>{e.preventDefault();reset()};
 
 /* ---------- 시작: 모드 선택 화면부터 ---------- */
 $('start').style.display='none';
