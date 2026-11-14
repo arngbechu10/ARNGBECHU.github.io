@@ -10,6 +10,7 @@
 | `index.html` | **실제 게임 전체 (약 6MB, 파일 하나)**. 이미지·소리가 전부 base64로 들어 있어요. 배포는 이 파일 하나면 됩니다. |
 | `index.readable.html` | base64를 `DATAURI`로 바꾼 읽기 전용 사본 (줄 번호 원본과 같음). `python3 tools/strip_data_uris.py`로 다시 만들 수 있어요. |
 | `supabase_setup.sql` | 순위표를 맵·모드별로 나누는 SQL. **2026-11-14 사용자가 실행 완료**(Success). |
+| `supabase_security.sql` | 순위표 보안 SQL(이름 1~20자·욕설·꺾쇠 금지, 기록 20초~1시간, 맵·모드 값 제한(NOT VALID라 옛 기록은 그대로), 같은 이름 20초에 1번·전체 1분 40번 트리거, update/delete 권한 회수). 사용자가 실행해야 함. 새 맵 id를 추가하면 `scores_kind_ok`의 맵 목록도 고쳐야 함! |
 | `assets/` | 게임에 들어간 원본 에셋: 차량 이미지(앞모습·콕핏·핸들, 720S 뒷모습), 엔진·시동 소리(wav), 사용자가 보낸 원본 엔진 녹음(mp3), 맵 하늘·바다 이미지 |
 | `build/` | 채팅에서 쓰던 **빌드 기록 (참고용)**. 중간 파일(t_nitro.html 등)이 없어서 그대로 다시 돌리진 못해요. 앞으로는 `index.html`을 직접 고치면 됩니다. |
 | `tests/` | Playwright 테스트 스크립트 (참고용, 경로는 채팅 환경 기준이라 수정 필요) |
@@ -67,6 +68,13 @@
 - 기타: 니트로(한 바퀴 1번), 드리프트(핸드브레이크) 누를 때만 타이어 소리(`buildSkid`/`skidMix`: 사용자가 보낸 실제 드리프트 녹음 `assets/sounds/original/drifting_sound.mp3`의 1.0~5.35초 끽 소리를 4초 루프 `assets/sounds/skid_loop.wav`로 만들어 `SKIDSND`에 넣음. 미끄러짐에 따라 크기·재생 속도 조절), 핸드브레이크 중 회전량 ×1.7, 핸드브레이크 감속 `exp(-.3dt)` + **드리프트 속도 유지**(가속을 밟고 있으면 옆미끄럼으로 잃는 속도의 35%를 앞으로 되돌림; 30° 드리프트 4초 유지 시 90→82km/h, 예전엔 90→65), **니트로 준비 상태 강조**(`#nit:not(.spent):not(.burn)` 진한 파랑·빛, 터치 니트로 버튼도), **길 안내 표지판**(`buildGuide()`, 모든 맵(연습장 제외) 코너 35~55m 앞 오른쪽에 노란 다이아몬드: 방향 화살표 / 반경 22m 미만은 U자 헤어핀, 결승 300m·100m 앞 FINISH, 70m 안엔 하나만), 터치 버튼 모양/위치/크기/투명도 편집, 미니맵.
 
 - **폰 가로 화면 전용 레이아웃**: CSS 끝의 `@media (orientation:landscape) and (max-height:500px)` 블록(PC·태블릿은 높이가 커서 영향 없음). 홈은 왼쪽(차·맵·플레이)/오른쪽(조작 설정) 두 칸이 각각 스크롤, 플레이 버튼은 아래에 고정. 운전 화면은 미니맵·HUD 축소, 콕핏 이미지를 135%로 키워(top:-14%, 사용자가 고른 B안: 핸들 위쪽 절반 보임) 천장선은 화면 맨 위·대시보드는 아래로 가서 도로가 넓게 보이고 속도계는 가운데 아래. 모드 선택 카드 3장 한 줄. 테스트는 Playwright `devices['iPhone 13 landscape']`(750×342), `Galaxy S9+ landscape`(658×320).
+
+## 보안 (아이들에게 배포 후 추가)
+- `<head>`에 **CSP** 메타(스크립트: self·jsDelivr·cdnjs·unpkg·blob + 'unsafe-inline'·'wasm-unsafe-eval'(Draco), 통신: Supabase https/wss·jsDelivr·unpkg, object-src none, base-uri none) + `referrer no-referrer`. 새 외부 주소를 쓰면 CSP에 추가해야 함.
+- **SRI**: three.min.js는 jsDelivr `three@0.128.0/build/three.min.js` + integrity(실패하면 바로 다음 인라인 스크립트가 cdnjs로 대체). 동적 스크립트(supabase-js, GLTFLoader, DRACOLoader)는 `loadScript()`가 `SRI` 표의 해시로 받고 실패하면 unpkg로 한 번 더. 해시는 같은 버전 npm 파일로 계산(jsDelivr npm은 바이트 그대로). 버전 바꾸면 해시도 다시 계산.
+- 이름: `cleanName()`(제어·보이지 않는 문자·`<>` 제거, 20자) + `BAD_NAME` 욕설 정규식(서버 SQL과 같은 목록). 순위표·상대 이름은 전부 textContent라 XSS 없음.
+- `sendScore`는 이름·시간(20초~1시간) 검사 후 보냄. 1대1 메시지는 모양 검사(`onDuelMsg`), fin 시간 범위 검사.
+- 한계: 공개 키라 그럴듯한 가짜 기록(예: 40초)은 서버가 진짜인지 알 수 없음 → 관리자가 Table Editor에서 지우기.
 
 ## Supabase
 - URL `https://payqqpkkdpydypinyptz.supabase.co`, 표 `scores`(name, lap_ms + SQL 실행 후 map, mode, stage), publishable 키는 index.html 안에 있음(공개용 키, RLS로 select/insert만 허용).
