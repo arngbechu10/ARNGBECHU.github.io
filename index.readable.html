@@ -393,6 +393,10 @@ body[data-mode=practice] #tl,body[data-mode=practice] #bt,body[data-mode=practic
 #ph button{font-size:12px;padding:4px 10px;border-color:#2f5a3f;cursor:pointer}
 @media (max-width:900px){#ph .opt{display:none}}
 @media (orientation:landscape) and (max-height:500px){#ph{top:4px;gap:8px;font-size:10.5px;padding:4px 8px}#ph b{font-size:11px}#ph button{font-size:10.5px;padding:3px 7px}#ph em{display:none}}
+/* 운전 중 나가기 버튼 */
+#back{position:fixed;right:14px;top:72px;z-index:6;padding:6px 12px;font-size:13px;cursor:pointer}
+#back:hover{border-color:#f2c230;color:#f2c230}
+@media (orientation:landscape) and (max-height:500px){#back{top:44px;right:max(8px,env(safe-area-inset-right));padding:4px 9px;font-size:11px}#bt{top:78px!important}#lbp{top:112px!important;max-height:calc(100vh - 122px)!important}}
 </style>
 </head>
 <body>
@@ -411,6 +415,7 @@ body[data-mode=practice] #tl,body[data-mode=practice] #bt,body[data-mode=practic
 </div>
 <div class="hud" id="tr"><div id="bar"><i id="rpm"></i></div><div id="snd" style="font-size:12px;margin-top:6px;color:#cdd7e6"></div></div>
 <button id="bt">순위표 (L)</button>
+<button id="back" type="button">← 나가기</button>
 <aside id="lbp">
   <h2 id="lbTitle">리더보드</h2>
   <ol id="lb"><li><span class="m">불러오는 중...</span></li></ol>
@@ -488,7 +493,7 @@ body[data-mode=practice] #tl,body[data-mode=practice] #bt,body[data-mode=practic
   <div class="bg"></div>
   <h1><small>ARNGBECHU RACING</small>모드 선택</h1>
   <div class="mcards" id="mStep1">
-    <button class="mc" data-mode="duel"><span class="tag">NEW</span><i>1 : 1</i><b>1대1 대결</b><p>방을 만들고 비밀번호를 정해서 친구와 같은 코스를 달려요.</p><ul><li>방 + 비밀번호</li><li>친구와 함께</li></ul></button>
+    <button class="mc" data-mode="duel"><i>1 : 1</i><b>1대1 대결</b><p>방을 만들고 비밀번호를 정해서 친구와 같은 코스를 달려요.</p><ul><li>방 + 비밀번호</li><li>친구와 함께</li></ul></button>
     <button class="mc" data-mode="lap"><i>LAP</i><b>개인 랩타임</b><p>혼자 한 바퀴 기록에 도전해요. 맵마다 순위표가 따로 있어요.</p><ul><li>맵 3개</li><li>맵별 순위표</li></ul></button>
     <button class="mc prac" data-mode="practice"><i class="two">PRACTICE<br>ZONE</i><b>연습장</b><p>넓은 공간에서 마음껏 달리고 드리프트를 연습해요. 기록은 남지 않아요.</p><ul><li>드리프트 원</li><li>8자 코스</li><li>슬라럼</li><li>직선 가속</li></ul></button>
     <button class="mc hard" data-mode="hard"><i>HARD</i><b>하드 랩타임</b><p>벽에 너무 많이 부딪히면 차가 폭발해요. 스테이지마다 허용 횟수가 10번부터 줄어들어요.</p><ul><li>충돌 10→9→8…</li><li>스테이지 진행</li><li>순위표</li></ul></button>
@@ -1742,6 +1747,7 @@ function hardLapDone(t){
   $('stgS').textContent=fmt(t)+' · 다음 '+MAPLABEL[HARD_STAGES[hardIdx+1]];
   $('stg').classList.add('on');
   setTimeout(()=>{
+    if(!started)return;   /* 그 사이에 나가기를 눌렀으면 넘어가지 않음 */
     hardIdx++;hits=0;
     setMap(HARD_STAGES[hardIdx]);updateHH();
     $('stg').classList.remove('on');HOLD=false;
@@ -2401,6 +2407,21 @@ function mmPractice(){
 }
 $('phReset').onclick=e=>{e.preventDefault();reset()};
 
+
+/* ---------- 운전 중 나가기 버튼: 차 선택(홈) 화면으로 ---------- */
+function goBack(){
+  if(!started)return;
+  if(MODE==='duel'){if(!confirm('대결을 그만두고 방에서 나갈까요?'))return;showModes();return}
+  if(MODE==='hard'&&!DEAD&&!confirm('하드 도전을 그만둘까요? 지금까지 진행한 스테이지는 사라져요.'))return;
+  for(const k in keys)keys[k]=0;document.querySelectorAll('.pad button').forEach(b=>b.classList.remove('on'));
+  stopAudio();started=false;HOLD=false;DEAD=false;clearTimeout(failT);
+  ['hh','boom','fail','stg','hit','jh'].forEach(i=>$(i).classList.remove('on','win','water'));
+  $('lbp').classList.remove('on','top');
+  if(MODE==='hard'&&MAPID!==HARD_STAGES[0])setMap(HARD_STAGES[0]);
+  reset();$('start').style.display='grid';
+}
+$('back').onclick=e=>{e.preventDefault();goBack()};
+addEventListener('keydown',e=>{if(e.key==='Escape'&&started&&!$('lbp').classList.contains('on')&&!$('fail').classList.contains('on')&&!$('dres').classList.contains('on')){e.preventDefault();goBack()}});
 /* ---------- 시작: 모드 선택 화면부터 ---------- */
 $('start').style.display='none';
 loadBoard();
