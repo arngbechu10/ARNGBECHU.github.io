@@ -1204,7 +1204,7 @@ function alpsTY(){
   return a;
 }
 MAPS.alps={half:6.5,wall:1.4,rail:'guard',bg:0x0e1630,fog:[0x18223c,90,640],gnd:0x2a3448,gy:-40,lamps:{gap:42,col:'255,190,120',size:13},night:[.42,.5,.72],asph:0x8d929c,kerb:['#e8eef4','#c4352b'],
-  pts:()=>closedSpline(ALPS_CTRL),tyFn:alpsTY,alps:true,limit:110,sky:'alps'};
+  pts:()=>closedSpline(ALPS_CTRL),tyFn:alpsTY,alps:true,limit:90,sky:'alps'};
 /* --- 붉은 협곡 --- */
 const CANYON_CTRL=[[0,0],[110,0],[190,-8],[240,-36],[262,-84],[244,-130],[198,-150],[150,-140],[112,-112],[72,-120],[44,-160],[54,-212],[100,-244],[180,-256],[262,-240],[322,-200],[352,-140],[360,-60],[342,8],[294,48],[224,60],[164,88],[102,106],[42,98],[-6,68],[-28,30],[-20,6]];
 const CANYON_FLOOR=-90,CANYON_HW=5.2,CANYON_BRIDGE=[.60,.665],CANYON_BRIDGE_HW=3.6;
@@ -1212,7 +1212,7 @@ const CANYON_ROCKS=[[.13,2.6],[.335,-2.4],[.475,2.4],[.82,-2.6],[.9,2.3]];
 function canyonTY(){const a=[];for(let i=0;i<N;i++){const u=i/N*Math.PI*2;a.push(7*Math.sin(u*3)+4*Math.sin(u*5+1)-4*Math.sin(u))}
   const d=a[0];return a.map(v=>v-d)}
 MAPS.canyon={half:CANYON_HW,wall:0,bg:0xc87048,fog:[0xc0704c,150,880],gnd:0x6a2a1c,gy:CANYON_FLOOR,asph:0xb27458,kerb:['#e8c8a8','#8a3a2a'],
-  pts:()=>closedSpline(CANYON_CTRL),tyFn:canyonTY,canyon:true,cliff:true,limit:82,sky:'canyon'};
+  pts:()=>closedSpline(CANYON_CTRL),tyFn:canyonTY,canyon:true,cliff:true,limit:65,sky:'canyon'};
 const fIdx=f=>Math.round(f*N)%N;
 const inRange=(i,a,b)=>{const u=i/N;return u>=a&&u<=b};
 
