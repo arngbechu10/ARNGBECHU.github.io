@@ -3,6 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<!-- 보안: 허락한 곳(게임 파일·CDN·Supabase)에서만 스크립트를 받고 통신해요 -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com blob:; worker-src 'self' blob:; connect-src 'self' https://payqqpkkdpydypinyptz.supabase.co wss://payqqpkkdpydypinyptz.supabase.co https://cdn.jsdelivr.net https://unpkg.com data: blob:; img-src 'self' data: blob:; media-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
 <title>Arngbechu Racing</title>
 <style>
 html,body{margin:0;height:100%;background:#000;overflow:hidden;color:#eef;font:14px/1.4 system-ui,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;user-select:none;-webkit-user-select:none}
@@ -607,7 +610,8 @@ body[data-mode=hard] .lbtabs{display:none}
   <button class="eb" data-k="left">◀</button><button class="eb" data-k="right">▶</button>
   <button class="eb" data-k="hand">드리프트</button><button class="eb" data-k="brake">브레이크</button><button class="eb" data-k="gas">가속</button><button class="eb" data-k="nitro">니트로</button>
 </div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js" integrity="sha384-CI3ELBVUz9XQO+97x6nwMDPosPR5XvsxW2ua7N1Xeygeh1IxtgqtCkGfQY9WWdHu" crossorigin="anonymous"></script>
+<script>window.THREE||document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><\/script>')</script>
 <script>
 const $=id=>document.getElementById(id);
 const fmt=ms=>{const m=Math.floor(ms/60000),s=Math.floor(ms%60000/1000),r=Math.floor(ms%1000);return m+':'+String(s).padStart(2,'0')+'.'+String(r).padStart(3,'0')};
@@ -2340,6 +2344,7 @@ async function loadBoard(m){
 }
 /* 기록 올리기. 'ok' 올림 / 'pending' 이 순위표는 아직 준비 중 / 실패하면 throw */
 async function sendScore(p){
+  p.name=cleanName(p.name);if(!p.name||BAD_NAME.test(p.name)||!(p.lap_ms>=20000&&p.lap_ms<=3600000))return 'pending';   /* 서버도 같은 규칙으로 거절해요 */
   if(RICH!==false){
     const r=await fetch(SB,{method:'POST',headers:{...HDR,Prefer:'return=minimal'},body:JSON.stringify(p)});
     if(r.ok){RICH=true;return 'ok'}
@@ -2402,7 +2407,8 @@ MC.forEach(b=>b.onclick=()=>{
 $('mnBack').onclick=()=>{$('mStep1').hidden=false;$('mStep2').hidden=true};
 $('mStep2').onsubmit=e=>{
   e.preventDefault();
-  const n=$('mnName').value.trim().slice(0,20);
+  const n=cleanName($('mnName').value);
+  if(n&&BAD_NAME.test(n)){$('mnHint').textContent='이 이름은 쓸 수 없어요. 다른 이름을 써 주세요.';$('mnHint').classList.add('err');$('mnName').focus();return}
   if(!n){$('mnHint').textContent='이름을 입력해 주세요.';$('mnHint').classList.add('err');$('mnName').focus();return}
   PLAYER=n;try{localStorage.setItem('drift-name',n)}catch(e){}
   if(MODE==='duel'){duelLobby();return}
@@ -2573,15 +2579,26 @@ const D={ch:null,role:null,code:'',map:'seoul',laps:DUEL_LAPS,state:'off',joined
   cdT:[],findT:0,sendT:0,hudT:0};
 const O={seen:false,x:0,z:0,y:0,h:0,vx:0,vz:0,ci:0,lap:0,pr:0,tx:0,tz:0,ty:0,th:0,at:0};
 
+/* 보안: 외부 스크립트는 해시(SRI)가 맞을 때만 실행. 실패하면 다른 CDN(unpkg)에서 한 번 더 */
+const SRI={
+  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js':'sha384-BWcjm9OdFth9TbhCxZPdm+gAOUMAzQy9nmTs12ioXdCcbVnJaPMn+fMUoQCLt60R',
+  'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js':'sha384-fljlqkjWlmSFjkESkQvm77heIZpoWmXEOzlCA7kOpGUH+95Zk0yGfQieWM2q136E',
+  'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js':'sha384-TNRcLasZnnfIJJskDY5XlrfmsKTjBSy98MtyLuX+3rQWRbpSQvtFIdikNpcOh3SN'
+};
+function loadScript(src){return new Promise((ok,no)=>{
+  const add=(u,sri,next)=>{const s=document.createElement('script');s.src=u;s.async=true;if(sri){s.integrity=sri;s.crossOrigin='anonymous'}
+    s.onload=ok;s.onerror=()=>{s.remove();next?next():no(new Error('load'))};document.head.append(s)};
+  add(src,SRI[src],()=>add(src.replace('https://cdn.jsdelivr.net/npm/','https://unpkg.com/'),null,null));
+})}
+/* 보안: 이름 정리 (보이지 않는 문자·꺾쇠 빼기, 20자) + 욕설 막기 */
+const BAD_NAME=/(시발|씨발|씨빨|ㅅㅂ|ㅆㅂ|병신|ㅂㅅ|좆|존나|지랄|fuck|shit|bitch)/i;
+const cleanName=s=>String(s||'').replace(/[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u202a-\u202e<>]/g,'').trim().slice(0,20);
 /* --- Supabase 라이브러리는 1대1을 처음 열 때만 불러와요 --- */
 let sbClient=null,sbLoading=null;
 function sbLib(){
   if(sbClient)return Promise.resolve(sbClient);
   if(!sbLoading)sbLoading=new Promise((ok,no)=>{
-    const s=document.createElement('script');s.src=DUEL_LIB;s.async=true;
-    s.onload=()=>{try{sbClient=window.supabase.createClient(DUEL_URL,KEY);ok(sbClient)}catch(e){sbLoading=null;no(e)}};
-    s.onerror=()=>{sbLoading=null;s.remove();no(new Error('load'))};
-    document.head.append(s);
+    loadScript(DUEL_LIB).then(()=>{try{sbClient=window.supabase.createClient(DUEL_URL,KEY);ok(sbClient)}catch(e){sbLoading=null;no(e)}},e=>{sbLoading=null;no(e)});
   });
   return sbLoading;
 }
@@ -2685,7 +2702,7 @@ const M3S={};let m3dLib=null,OPP3D=null;
 function m3dLibLoad(){
   if(!m3dLib)m3dLib=M3D_JS.reduce((p,src)=>p.then(()=>new Promise((ok,no)=>{
     if(/GLTF/.test(src)&&THREE.GLTFLoader||/DRACO/.test(src)&&THREE.DRACOLoader)return ok();
-    const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>{s.remove();no(new Error('lib'))};document.head.append(s)})),Promise.resolve()).catch(e=>{m3dLib=null;throw e});
+    loadScript(src).then(ok,no)})),Promise.resolve()).catch(e=>{m3dLib=null;throw e});
   return m3dLib;
 }
 /* 불러오기 시작(이미 했으면 그대로). 준비되면 M3S[id].val */
@@ -2898,11 +2915,11 @@ function onPresence(){
   }
 }
 function hostAccept(id,name){
-  D.oppId=id;D.oppName=(name||'').slice(0,20)||'친구';D.oppReady=false;D.oppCar='gtr';
+  D.oppId=id;D.oppName=cleanName(name)||'친구';D.oppReady=false;D.oppCar='gtr';
   dSend('room',{to:id,map:D.map,laps:D.laps,name:PLAYER});duelGarage();
 }
 function onDuelMsg(m){
-  if(!m.k||m.from===MYID||(m.to&&m.to!==MYID))return;
+  if(!m||typeof m.k!=='string'||typeof m.from!=='string'||m.from.length>40||m.from===MYID||(m.to&&m.to!==MYID))return;   /* 보안: 모양이 이상한 메시지는 무시 */
   if(m.k==='hi'){
     if(D.role!=='host')return;
     if(!D.oppId&&D.state==='lobby')hostAccept(m.from,m.name);
@@ -2911,7 +2928,7 @@ function onDuelMsg(m){
   }
   if(m.k==='room'){
     if(D.role!=='guest'||D.oppId)return;
-    clearTimeout(D.findT);D.oppId=m.from;D.oppName=(m.name||'').slice(0,20)||'친구';D.oppReady=false;D.oppCar='gtr';
+    clearTimeout(D.findT);D.oppId=m.from;D.oppName=cleanName(m.name)||'친구';D.oppReady=false;D.oppCar='gtr';
     D.map=DUEL_MAPS.includes(m.map)?m.map:'seoul';D.laps=clamp(m.laps|0,1,9)||DUEL_LAPS;duelGarage();return;
   }
   if(m.from!==D.oppId)return;
@@ -2919,7 +2936,7 @@ function onDuelMsg(m){
     case 'car':if(CARS[m.car]){D.oppCar=m.car;m3dLoad(m.car)}D.oppReady=!!m.ready;setOppColor();duelInfo();if(D.role==='host')maybeGo();break;
     case 'go':if(D.role==='guest'&&D.state==='garage')duelCountdown();break;
     case 'p':oppPos(m);break;
-    case 'fin':D.oppFin=Math.max(0,m.ms|0);O.lap=D.laps;onOppFin();break;
+    case 'fin':if(!(m.ms>=5000&&m.ms<3600000))break;D.oppFin=m.ms|0;O.lap=D.laps;onOppFin();break;
     case 'bye':oppGone();break;
   }
 }
