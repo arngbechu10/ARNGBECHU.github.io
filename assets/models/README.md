@@ -11,5 +11,6 @@ Blender로 엔진 같은 안 보이는 부품을 빼고, 바퀴 4개(`WHEEL_FL/F
 | chal.glb | Dodge Challenger SRT | 실버 그레이 |
 | f40.glb | Ferrari F40 | 로쏘 코르사 빨강 |
 | mcl.glb | McLaren 720S | 원래 색(검정) |
+| supra.glb | Toyota Supra MK4 | 슈퍼 화이트 (유리는 어둡게) |
 
 원본 출처·라이선스(Sketchfab 페이지 주소, 만든 사람)는 아직 적지 못했어요. 받으면 여기에 적어 주세요.
