@@ -468,6 +468,7 @@ body[data-mode=hard] .lbtabs{display:none}
       <button role="radio" aria-checked="false" data-car="chal"><img alt=""><span>Challenger</span></button>
       <button role="radio" aria-checked="false" data-car="f40"><img alt=""><span>F40</span></button>
       <button role="radio" aria-checked="false" data-car="mcl"><img alt=""><span>720S</span></button>
+      <button role="radio" aria-checked="false" data-car="supra"><img alt=""><span>Supra MK4</span></button>
       <button role="radio" aria-checked="false" aria-disabled="true" class="locked" data-car="tesla"><img alt="" src="DATAURI"><span>Tesla Roadster</span></button>
     </div>
     <div class="maps" role="radiogroup" aria-label="맵 선택">
@@ -2250,7 +2251,8 @@ const CARS={
   gt3:{name:'Porsche 911 GT3 RS',hero:'DATAURI',cabin:'DATAURI',wheel:'DATAURI',wx:38.99,wy:83.24,ww:22.05,gx:71,gy:77.3,engine:'DATAURI',launch:'DATAURI'},
   chal:{name:'Dodge Challenger SRT',hero:'DATAURI',cabin:'DATAURI',wheel:'DATAURI',wx:37.41,wy:80.41,ww:19.86,gx:71,gy:77.3,engine:'DATAURI',launch:'DATAURI'},
   f40:{name:'Ferrari F40',hero:'DATAURI',cabin:'DATAURI',wheel:'DATAURI',wx:38.55,wy:81.01,ww:20.16,gx:71,gy:77.3,engine:'DATAURI',launch:'DATAURI'},
-  mcl:{name:'McLaren 720S',hero:'DATAURI',cabin:'DATAURI',wheel:'DATAURI',wx:38.57,wy:92.88,ww:24.08,gx:71,gy:77.3,engine:'DATAURI',launch:'DATAURI'}
+  mcl:{name:'McLaren 720S',hero:'DATAURI',cabin:'DATAURI',wheel:'DATAURI',wx:38.57,wy:92.88,ww:24.08,gx:71,gy:77.3,engine:'DATAURI',launch:'DATAURI'},
+  supra:{name:'Toyota Supra RZ (MK4)',hero:'DATAURI',cabin:'DATAURI',wheel:'DATAURI',wx:71.91,wy:86.16,ww:20.38,gx:31.4,gy:77.3,engine:'DATAURI',launch:'DATAURI'}
 };
 let CARID='gtr';
 const carImg=document.querySelector('#start .car');
@@ -2262,7 +2264,8 @@ const CSPEC={
   gt3:[['525마력','1,450kg','0→100 3.2초','최고 296km/h','후륜구동'],'큰 날개 덕분에 코너링 최강'],
   chal:[['약 800마력','1,950kg','0→100 3.5초','최고 326km/h','후륜구동'],'힘은 최강, 무거워서 코너는 약함'],
   f40:[['478마력','1,100kg','0→100 4.1초','최고 324km/h','후륜구동'],'가볍지만 예민해서 잘 미끄러짐'],
-  mcl:[['720마력','1,419kg','0→100 2.9초','최고 341km/h','후륜구동'],'가속과 최고 속도 최강']
+  mcl:[['720마력','1,419kg','0→100 2.9초','최고 341km/h','후륜구동'],'가속과 최고 속도 최강'],
+  supra:[['280마력','1,510kg','0→100 4.9초','최고 250km/h','후륜구동'],'전설의 2JZ 트윈터보, 튜닝의 왕']
 };
 function showSpec(id){
   const el=$('cspec'),s=CSPEC[id];el.textContent='';if(!s)return;
@@ -2563,7 +2566,7 @@ const DUEL_LAPS=3;                                  /* 대결 바퀴 수 */
 const DUEL_MAPS=['seoul','mountain','xmas','tokyo','ny'];        /* 방 만들 때 고를 수 있는 맵 */
 const DUEL_LIB='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js';
 const DUEL_URL='https://payqqpkkdpydypinyptz.supabase.co';
-const OPP_COL={gtr:0x2b55c9,gt3:0x8fd14f,chal:0xc9302c,f40:0xe0261d,mcl:0xff7a1a};
+const OPP_COL={gtr:0x2b55c9,gt3:0x8fd14f,chal:0xc9302c,f40:0xe0261d,mcl:0xff7a1a,supra:0xe8e8ea};
 const MYID=Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4);
 const D={ch:null,role:null,code:'',map:'seoul',laps:DUEL_LAPS,state:'off',joinedAt:0,hiSent:false,
   oppId:null,oppName:'',oppCar:'gtr',oppReady:false,ready:false,done:0,raceT0:0,myFin:null,oppFin:null,oppLeft:false,
@@ -2623,7 +2626,7 @@ function setOppColor(){
    · 서스펜션: 코너에서는 바깥쪽으로 기울고(롤), 가속하면 뒤가 내려앉고(스쿼트) 브레이크를 밟으면 앞이 숙여져요(다이브).
      실제 차처럼 스프링+댐퍼로 계산해서 살짝 출렁였다가 자리를 잡아요. 바퀴는 땅에 붙어 있고 차체 윗부분만 움직여요.
    · 브레이크 등, 드리프트 타이어 연기, 니트로 배기 불꽃. */
-const REAR={gtr:'DATAURI',gt3:'DATAURI',chal:'DATAURI',f40:'DATAURI',mcl:'DATAURI'};
+const REAR={gtr:'DATAURI',gt3:'DATAURI',chal:'DATAURI',f40:'DATAURI',mcl:'DATAURI',supra:'DATAURI'};
 /* len: 차 길이(m), h: 사진 속 차 높이(m, 지붕·날개 포함). 사진 좌표는 왼쪽 위가 (0,0), 오른쪽 아래가 (1,1)
    u: 범퍼 가운데의 가로 위치, side: 사진에 보이는 옆면(L/R), tl: 미등, ex: 배기구 */
 const CARV={
@@ -2631,7 +2634,8 @@ const CARV={
   gt3:{len:4.57,h:1.72,rear:{u:.675,side:'L',asp:2.2695,tl:[[.45,.445],[.9,.445],[.675,.445]],ex:[[.765,.85]]},front:{u:.3,side:'L'}},
   chal:{len:5.02,h:1.85,rear:{u:.704,side:'L',asp:1.9632,tl:[[.525,.443],[.883,.431]],ex:[[.51,.84],[.89,.84]]},front:{u:.3,side:'L'}},
   f40:{len:4.36,h:1.5,rear:{u:.755,side:'L',asp:2.3273,tl:[[.58,.44],[.93,.44]],ex:[[.766,.75]]},front:{u:.78,side:'R'}},
-  mcl:{len:4.54,h:1.62,rear:{u:.725,side:'L',asp:2.5197,tl:[[.54,.373],[.91,.423]],ex:[[.684,.43],[.89,.43]]},front:{u:.32,side:'L'}}
+  mcl:{len:4.54,h:1.62,rear:{u:.725,side:'L',asp:2.5197,tl:[[.54,.373],[.91,.423]],ex:[[.684,.43],[.89,.43]]},front:{u:.32,side:'L'}},
+  supra:{len:4.52,h:1.6,rear:{u:.74,side:'L',asp:1.8991,tl:[[.6,.42],[.9,.42]],ex:[[.55,.88]]},front:{u:.22,side:'L'}}
 };
 const BOXM=new THREE.Group();OPPM.add(BOXM);
 OPPM.children.slice().forEach(o=>{if(o!==oppTag&&o!==BOXM&&!(o.geometry&&o.geometry.type==='PlaneGeometry'))BOXM.add(o)});
@@ -2674,7 +2678,8 @@ const M3D={
   gt3:{paint:/phong2SG1|phong3SG1/,col:0xa3a7ae},  /* 실버 */
   chal:{paint:/^Carosserie$/,col:0x8e939a},        /* 실버 그레이 */
   f40:{paint:/^F40$/,col:0xc40f1f},                /* 로쏘 코르사 */
-  mcl:{paint:null}                                 /* 원래 검정 그대로 */
+  mcl:{paint:null},                                /* 원래 검정 그대로 */
+  supra:{paint:/^Paint$/,col:0xe9e9ec,glass:/glass|window/i}   /* 슈퍼 화이트 */
 };
 const M3S={};let m3dLib=null,OPP3D=null;
 function m3dLibLoad(){
@@ -2701,10 +2706,11 @@ function m3dPrep(id,scene){
     if(o.isMesh)[].concat(o.material).forEach(m=>{
       ['map','emissiveMap'].forEach(k=>{if(m[k])m[k].encoding=THREE.LinearEncoding});   /* 게임은 선형 출력이라 맞춰 줌 */
       if(cfg.paint&&cfg.paint.test(m.name)){m.color.setHex(cfg.col);m.map=null;m.metalness=.6;m.roughness=.3}
+      if(cfg.glass&&cfg.glass.test(m.name)){m.color.setHex(0x161c24);m.map=null;m.metalness=.2;m.roughness=.08;m.transparent=true;m.opacity=.82}
       m.envMapIntensity=1.1;m.needsUpdate=true;
     });
     if(/^WHEEL_/.test(o.name)){const b=new THREE.Box3().setFromObject(o),sz=b.getSize(new THREE.Vector3());
-      wheels.push({o,front:o.position.z>0,r:Math.max(.2,sz.y/2),spin:0})}
+      wheels.push({o,front:o.position.z>0,r:clamp(sz.y/2,.2,.36),spin:0})   /* 바퀴 반지름(굴러가는 속도용): 브레이크 부품 때문에 크게 잡히는 걸 막음 */}
   });
   const b=new THREE.Box3().setFromObject(holder),len=b.max.x-b.min.x||4.5;
   return{holder,body,wheels,len};
