@@ -280,7 +280,7 @@ body[data-mode=hard] #lbp .row{display:none}
 .dpick i{font-style:normal;font-size:30px;font-weight:900;color:#f2c230;line-height:1}
 .dpick b{font-size:18px}
 .dpick span{font-size:12.5px;color:#aeb7c6;line-height:1.45}
-.dmaps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.dmaps{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
 .dmaps button{font:inherit;color:#cdd7e6;cursor:pointer;padding:0;overflow:hidden;background:#0b0d14;border:2px solid #2c3342;border-radius:8px;display:flex;flex-direction:column;text-align:left}
 .dmaps img{width:100%;aspect-ratio:16/9;object-fit:cover;display:block}
 .dmaps b{padding:6px 8px;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -402,6 +402,18 @@ body[data-mode=practice] #tl,body[data-mode=practice] #bt,body[data-mode=practic
 .lbtabs button{font-size:11.5px;padding:4px 9px;border-radius:99px;cursor:pointer;background:#0e1115}
 .lbtabs button.on{background:#f2c230;border-color:#f2c230;color:#111;font-weight:700}
 body[data-mode=hard] .lbtabs{display:none}
+/* 1대1 출발 부스터(런치 컨트롤) */
+#lc{position:fixed;left:50%;bottom:clamp(150px,30vh,260px);transform:translateX(-50%);z-index:42;display:none;flex-direction:column;align-items:center;gap:6px;width:min(420px,70vw);pointer-events:none;text-shadow:0 1px 4px #000}
+#lc.on{display:flex}
+#lc .lt{font-size:13px;color:#eef}#lc .lt b{color:#3ddc84}
+#lc .lb{position:relative;width:100%;height:16px;border-radius:8px;background:#0b0d14d9;border:1px solid #3a4250;overflow:hidden}
+#lc .lb i{position:absolute;top:0;bottom:0}
+#lc .g{left:60%;width:20%;background:#2f8f5a}#lc .p{left:66.5%;width:7%;background:#3ddc84}#lc .r{left:88%;right:0;background:#a8261e}
+#lc em{position:absolute;top:-3px;bottom:-3px;width:4px;margin-left:-2px;background:#fff;border-radius:2px;box-shadow:0 0 8px #fff;left:0}
+#lcr{position:fixed;left:50%;top:30%;transform:translate(-50%,-50%);z-index:43;display:none;font-size:clamp(26px,6vh,46px);font-weight:900;letter-spacing:.06em;font-style:italic;text-shadow:0 4px 20px #000;pointer-events:none}
+#lcr.on{display:block;animation:cdpop 1.2s ease-out both}
+#lcr.perfect{color:#3ddc84}#lcr.good{color:#f2c230}#lcr.spin{color:#ff5a4a}
+@media (orientation:landscape) and (max-height:500px){#lc{bottom:auto;top:58%;width:min(320px,60vw)}#lc .lt{font-size:11px}#lc .lb{height:12px}}
 </style>
 </head>
 <body>
@@ -452,6 +464,7 @@ body[data-mode=hard] .lbtabs{display:none}
       <button role="radio" aria-checked="false" data-map="mountain"><img src="DATAURI" alt=""><b>Mountain Pass</b><em>어려움 · 내리막 산길</em></button>
       <button role="radio" aria-checked="false" data-map="xmas"><img src="DATAURI" alt=""><b>Christmas</b><em>쉬움 · 눈 내리는 밤</em></button>
       <button role="radio" aria-checked="false" data-map="tokyo"><img src="DATAURI" alt=""><b>Tokyo Neon</b><em>어려움 · 네온 시티</em></button>
+      <button role="radio" aria-checked="false" data-map="ny"><img src="DATAURI" alt=""><b>New York</b><em>어려움 · 다운타운</em></button>
     </div>
     <div class="stages"><div class="stl" id="stList"></div><p>스테이지를 하나씩 클리어해요. 벽에 부딪혀도 되는 횟수가 10번부터 스테이지마다 1번씩 줄어요!</p></div>
     <div class="duelinfo" id="duelInfo"><div><span>나</span><b id="diMe"></b></div><div><span id="diOppN">상대</span><b id="diOpp"></b></div></div>
@@ -556,6 +569,8 @@ body[data-mode=hard] .lbtabs{display:none}
 <div id="toast" role="alert" aria-live="assertive"></div>
 <div id="dh"><div><small>순위</small><b id="dhPos">1st</b></div><div><small>LAP</small><b id="dhLap">1 / 3</b></div><div><small>상대</small><b id="dhOpp">LAP 1</b></div></div>
 <div id="cd" aria-live="assertive"></div>
+<div id="lc" aria-hidden="true"><span class="lt">런치 컨트롤 · 가속을 눌러 바늘을 <b>초록</b> 구간에!</span><div class="lb"><i class="g"></i><i class="p"></i><i class="r"></i><em id="lcN"></em></div></div>
+<div id="lcr" role="status"></div>
 <div id="ph"><b>연습장</b><span>드리프트 각도 <i id="phAng">0°</i></span><span>드리프트 <i id="phDr">0.0초</i><em> · 최고 <i id="phBest">0.0초</i></em></span><span class="opt">최고 속도 <i id="phTop">0</i> km/h</span><button id="phReset" type="button">처음 위치 (R)</button></div>
 <div id="dres" role="alertdialog" aria-labelledby="drT"><div class="fcard">
   <h2 id="drT"></h2><p id="drSub"></p>
@@ -597,7 +612,7 @@ const TL=new THREE.TextureLoader();
 const rep=t=>{t.wrapS=t.wrapT=THREE.RepeatWrapping;t.anisotropy=8;return t};
 
 /* ================= 맵 시스템 ================= */
-const SKIES={tokyo:'DATAURI',ship:'DATAURI',seoul:'DATAURI',mountain:'DATAURI',xmas:'DATAURI'};
+const SKIES={ny:'DATAURI',tokyo:'DATAURI',ship:'DATAURI',seoul:'DATAURI',mountain:'DATAURI',xmas:'DATAURI'};
 const skyCache={};
 const skyTex=id=>skyCache[id]||(skyCache[id]=rep(TL.load(SKIES[id])));
 const skyMat=new THREE.MeshBasicMaterial({map:skyTex('seoul'),side:THREE.BackSide,transparent:true,fog:false,depthWrite:false});
@@ -914,6 +929,229 @@ function tokyoFrame(dt){
   a.needsUpdate=true;
 }
 /* === Tokyo 끝 === */
+
+/* ================= New York Downtown 맵 =================
+   밤의 뉴욕 시내 2.1km. 타임스스퀘어 같은 광고판 직선 → 다운타운 코너 → 브루클린 다리(강 위 9m, 탑의 아치 2개를 통과)
+   → 워싱턴 스퀘어 개선문 → 북적이는 거리(택시·공사 드럼통·증기 굴뚝·사람들) → 출발선.
+   장애물(부딪히면 막혀요): 이중 주차 택시 3대, 다리 탑 가운데 기둥 2개(아치 왼쪽/오른쪽 골라서 통과), 증기 굴뚝 2개, 공사 구간 1곳.
+   Tokyo 맵의 도구(tkAdd/tkFlush/tkAt/tkBox/winTex/TOBS/tobsCollide)를 같이 써요. */
+const NY_CTRL=[[0,0],[110,0],[180,0],[208,10],[220,38],[220,90],[230,118],[262,130],[400,130],[540,130],[680,130],[712,142],[724,172],[724,238],[712,270],[680,282],[600,286],[520,290],[470,300],[440,328],[400,340],[330,340],[290,330],[268,306],[240,296],[180,296],[120,300],[70,312],[30,300],[10,272],[-30,262],[-80,250],[-104,222],[-110,170],[-100,110],[-104,60],[-86,20],[-46,2]];
+const NY_WATER={x0:345,x1:585,z0:-900,z1:190};       /* 이스트 강 (다리 아래) */
+const NY_TOWERS=[[402,130],[528,130]];                /* 브루클린 다리 탑 */
+const NY_DECK=9;                                     /* 다리 높이(m) */
+/* 장애물: at=[x,z] 근처 코스 점, lat=+오른쪽 */
+const NY_OBS=[
+  {type:'taxi',at:[95,0],lat:4.6},          /* 타임스스퀘어 직선: 이중 주차 택시 */
+  {type:'taxi',at:[222,70],lat:-4.6},
+  {type:'steam',at:[600,286],lat:-1.2},     /* 증기 굴뚝 (도로 한가운데) */
+  {type:'work',at:[430,334],lat:4.2,hl:9,hw:3.4},   /* 공사 구간: 오른쪽 차선 막음 */
+  {type:'steam',at:[150,297],lat:2.6},
+  {type:'taxi',at:[-108,140],lat:4.6}
+];
+const sm01n=t=>t<=0?0:t>=1?1:t*t*(3-2*t);
+function nyTY(){
+  let a=TP.map(([x,z])=>Math.abs(z-130)>22||x<250||x>700?0:NY_DECK*sm01n((x-262)/85)*sm01n((678-x)/85));
+  for(let pass=0;pass<2;pass++){const b=[];for(let i=0;i<N;i++){let s=0;for(let k=-6;k<=6;k++)s+=a[(i+k+N)%N];b.push(s/13)}a=b}
+  return a;
+}
+MAPS.ny={half:9,wall:1.6,rail:'jersey',bg:0x0b1022,fog:[0x0f1630,80,720],gnd:0x0c0e16,gy:-.03,asph:0x5a5f6c,kerb:['#d8d8d8','#33363e'],
+  pts:()=>closedSpline(NY_CTRL),tyFn:nyTY,shoulder:0x2a2c33,ny:true};
+const NYS={steam:[],water:null};
+function nyNear(x,z){let bi=0,bd=1e18;for(let i=0;i<N;i++){const dx=x-TP[i][0],dz=z-TP[i][1],d=dx*dx+dz*dz;if(d<bd){bd=d;bi=i}}return bi}
+const inWater=(x,z,m)=>x>NY_WATER.x0-m&&x<NY_WATER.x1+m&&z>NY_WATER.z0-m&&z<NY_WATER.z1+m;
+/* 광고판 모음 그림 (4×4칸) */
+let NY_ATLAS=null;
+function nyAtlas(){
+  if(NY_ATLAS)return NY_ATLAS;
+  const cv=document.createElement('canvas');cv.width=2048;cv.height=1024;const x=cv.getContext('2d'),rects=[];
+  const ads=[['BROADWAY','#ffcf3a','#7a0e14','#e8252f'],['I ♥ NY','#ffffff','#0d0d0d','#e8252f'],['NYC TAXI','#111111','#ffc21a','#ffffff'],['PIZZA $1','#ffffff','#b8221a','#ffd23a'],
+    ['GT-R R34','#ffffff','#0f2a8a','#3db6ff'],['PORSCHE','#e8e8e8','#111','#d5001c'],['TIMES SQ','#fff','#5a1aa8','#ff3df0'],['THEATRE','#ffd98a','#2a0d0d','#ffb02a'],
+    ['SALE 50%','#fff','#d81a5a','#fff'],['COFFEE','#fff','#2a1a10','#c98a4a'],['DELI 24H','#ff4b3a','#0d0d0d','#3dff7a'],['F40','#fff','#c40f1f','#ffd23a'],
+    ['HOTEL','#ff3df0','#0d0612','#ff3df0'],['BAR','#3dfcff','#06121a','#3dfcff'],['720S','#ff9a3d','#111','#ff9a3d'],['MUSEUM','#fff','#123a2a','#8affc8']];
+  ads.forEach(([t,fg,bg,acc],k)=>{const ox=(k%4)*512,oy=Math.floor(k/4)*256;x.save();x.translate(ox,oy);
+    const g=x.createLinearGradient(0,0,0,256);g.addColorStop(0,bg);g.addColorStop(1,'#000');x.fillStyle=g;x.fillRect(4,4,504,248);
+    x.strokeStyle=acc;x.lineWidth=8;x.strokeRect(10,10,492,236);x.fillStyle=acc;for(let d=24;d<492;d+=26){x.beginPath();x.arc(10+d,10,4,0,7);x.arc(10+d,246,4,0,7);x.fill()}
+    x.font='900 '+(t.length>7?92:118)+'px Impact,"Arial Black",system-ui,sans-serif';x.textAlign='center';x.textBaseline='middle';x.shadowColor=acc;x.shadowBlur=24;x.fillStyle=fg;x.fillText(t,256,134);x.restore();
+    rects.push({u0:(ox+4)/2048,u1:(ox+508)/2048,v0:1-(oy+252)/1024,v1:1-(oy+4)/1024,col:acc})});
+  const t=new THREE.CanvasTexture(cv);t.anisotropy=4;NY_ATLAS={mat:new THREE.MeshBasicMaterial({map:t}),rects};return NY_ATLAS;
+}
+function stoneT2(){return tkTex(128,256,(x,w,h)=>{x.fillStyle='#e8e2d4';x.fillRect(0,0,w,h);for(let r=0;r<16;r++){x.fillStyle='rgba(120,110,90,.35)';x.fillRect(0,r*16+15,w,1);x.fillRect((r%2?40:0)+((r*37)%60),r*16,1,16)}})}
+function buildNY(){
+  TOBS=[];TK.blink=[];TK.rain=null;TKB=new Map();NYS.steam=[];
+  let seed=29;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
+  const far=(x,z,r,skip)=>{for(let j=0;j<N;j+=3){if(skip!=null){let dj=Math.abs(j-skip);dj=Math.min(dj,N-dj);if(dj<45)continue}const dx=x-TP[j][0],dz=z-TP[j][1];if(dx*dx+dz*dz<r*r)return false}return true};
+  const glowP=(pts,cols,size,tex)=>{const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pts,3));if(cols)g.setAttribute('color',new THREE.Float32BufferAttribute(cols,3));
+    const p=new THREE.Points(g,new THREE.PointsMaterial({size,map:tex||glowTex(255,255,255),vertexColors:!!cols,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}));MG.add(p);return p};
+  const yAt=i=>TY[i]||0;
+  /* --- 강 --- */
+  {
+    const W=NY_WATER,g=new THREE.PlaneGeometry(W.x1-W.x0,W.z1-W.z0);g.rotateX(-Math.PI/2);
+    const wt=tkTex(256,256,(x,w,h)=>{x.fillStyle='#08132a';x.fillRect(0,0,w,h);for(let k=0;k<160;k++){x.fillStyle='rgba(90,130,200,'+(Math.random()*.25)+')';x.fillRect(Math.random()*w,Math.random()*h,8+Math.random()*30,1.5)}});
+    wt.wrapS=wt.wrapT=THREE.RepeatWrapping;wt.repeat.set(10,30);NYS.water=wt;
+    const m=new THREE.Mesh(g,new THREE.MeshBasicMaterial({map:wt}));m.position.set((W.x0+W.x1)/2,.04,(W.z0+W.z1)/2);MG.add(m);
+    /* 강둑 */
+    const bank=tkM(0x3a3d44);[W.x0-1,W.x1+1].forEach(x=>tkBox(2,1.2,W.z1-W.z0,bank,x,.6,(W.z0+W.z1)/2));tkBox(W.x1-W.x0+4,1.2,2,bank,(W.x0+W.x1)/2,.6,W.z1+1);
+    /* 물에 비친 도시 불빛 (세로 줄) */
+    const rm=new THREE.MeshBasicMaterial({map:glowTex(255,255,255),vertexColors:true,transparent:true,opacity:.35,depthWrite:false,blending:THREE.AdditiveBlending});
+    const pal=[0xffd58a,0xff5ad0,0x5ab4ff,0xffffff,0xffb04a];
+    for(let k=0;k<70;k++){const x=W.x0+5+rnd()*(W.x1-W.x0-10),z=W.z0+300+rnd()*(W.z1-W.z0-320),pg=new THREE.PlaneGeometry(1.2+rnd()*2,14+rnd()*30);pg.rotateX(-Math.PI/2);tkAdd(pg,rm,x,.06,z,0,new THREE.Color(pal[k%pal.length]))}
+  }
+  /* --- 건물 (높은 빌딩 + 물탱크 + 첨탑) --- */
+  const wins=[winTex(17),winTex(311),winTex(733)].map(t=>tkM(0xffffff,{map:t})),AT=nyAtlas();
+  const capM=tkM(0x14161e),tankM=tkM(0x5a3e2a),tankR=tkM(0x2e2a28),spireM=tkM(0xcfc6a8,{fog:false});
+  const reflM=new THREE.MeshBasicMaterial({map:glowTex(255,255,255),vertexColors:true,transparent:true,opacity:.3,depthWrite:false,blending:THREE.AdditiveBlending,polygonOffset:true,polygonOffsetFactor:-3,polygonOffsetUnits:-3});
+  const signs=[];
+  for(let i=0;i<N;i+=8)for(const sd of[-1,1]){
+    if(yAt(i)>.5||rnd()<.1)continue;
+    const ts=i<Math.round(.09*N)||i>Math.round(.985*N);       /* 타임스스퀘어 구간 */
+    const w=10+rnd()*10,d=12+rnd()*12,h=ts?30+rnd()*40:(sd<0?24:14)+Math.pow(rnd(),1.4)*(sd<0?90:46),off=WALL+5+d/2;
+    const [bx,bz]=tkAt(i,sd*off);if(inWater(bx,bz,d)||!far(bx,bz,off-.5)||!far(bx,bz,WALL+4+Math.hypot(w,d)/2,i))continue;
+    const ry=-TH[i],wm=wins[(i/8|0)%3];
+    tkAdd(boxWinGeo(w,h,d),wm,bx,h/2,bz,ry);
+    if(h>40&&rnd()<.5){const h2=h*.25+rnd()*20;tkAdd(boxWinGeo(w*.65,h2,d*.65),wm,bx,h+h2/2,bz,ry);
+      if(rnd()<.35){const g=new THREE.ConeGeometry(1.4,14,4);tkAdd(g,spireM,bx,h+h2+7,bz,ry+Math.PI/4)}}
+    else if(rnd()<.45){/* 옥상 물탱크 */const g=new THREE.CylinderGeometry(1.6,1.6,3,10);tkAdd(g,tankM,bx+1,h+2.8,bz,0);const c=new THREE.ConeGeometry(1.8,1.4,10);tkAdd(c,tankR,bx+1,h+5,bz,0);
+      [-1,1].forEach(e=>tkAdd(new THREE.BoxGeometry(.15,1.3,.15),capM,bx+1+e,h+.65,bz,0))}
+    /* 광고판: 타임스스퀘어는 크고 많이, 나머지는 가끔 */
+    const nAds=ts?2+(rnd()<.5?1:0):(rnd()<.25?1:0);
+    for(let q=0;q<nAds;q++){const R_=AT.rects[(rnd()*AT.rects.length)|0],sw=ts?8+rnd()*5:6,shh=sw/2,al=(rnd()-.5)*(w-sw-1),fo=sd*(off-d/2-.25);
+      const [ax,az]=tkAt(i,fo,al),n=TN[i],g=new THREE.PlaneGeometry(sw,shh),uv=g.attributes.uv;
+      for(let k=0;k<4;k++)uv.setXY(k,uv.getX(k)?R_.u1:R_.u0,uv.getY(k)?R_.v1:R_.v0);
+      tkAdd(g,AT.mat,ax,Math.min(h-shh/2-1,4+q*(shh+1.5)+rnd()*3),az,Math.atan2(-n[0]*sd,-n[1]*sd));signs.push([i,sd,al,R_.col])}
+  }
+  signs.forEach(([i,sd,al,col])=>{const [x,z]=tkAt(i,sd*(HALF-1.8),al),g=new THREE.PlaneGeometry(12,3.4);g.rotateX(-Math.PI/2);tkAdd(g,reflM,x,.03,z,-TH[i],new THREE.Color(col))});
+  /* --- 브루클린 다리 --- */
+  {
+    const stoneT=tkTex(256,512,(x,w,h)=>{const g=x.createLinearGradient(0,0,0,h);g.addColorStop(0,'#7a6a58');g.addColorStop(1,'#a8927a');x.fillStyle=g;x.fillRect(0,0,w,h);
+      for(let r=0;r<32;r++)for(let k=0;k<5;k++){const ox=(r%2?26:0)+k*52;x.fillStyle='rgba(40,30,20,'+(.05+Math.random()*.12)+')';x.fillRect(ox,r*16,50,14);x.fillStyle='rgba(30,22,16,.55)';x.fillRect(ox+50,r*16,2,16);x.fillRect(ox,r*16+14,52,2)}}),
+      stone=new THREE.MeshBasicMaterial({map:stoneT,color:0xd6c8b0}),stoneD=new THREE.MeshBasicMaterial({map:stoneT,color:0x8a7a66}),deckM=tkM(0x2a2c32),steel=tkM(0x4a4f58);
+    /* 다리 상판 밑면과 경사로 기둥 */
+    for(let i=0;i<N;i+=3){const y=yAt(i);if(y<.4)continue;const [x,z]=tkAt(i,0);
+      tkAdd(new THREE.BoxGeometry(SP*3.2,1.3,(WALL+1.1)*2),deckM,x,y-.7,z,-TH[i]);
+      if(!inWater(x,z,2)&&i%9===0)[-1,1].forEach(sd=>{const [px,pz]=tkAt(i,sd*(WALL-1));tkAdd(new THREE.BoxGeometry(1.2,y,1.2),stoneD,px,y/2,pz,-TH[i])});
+      if(i%6===0)[-1,1].forEach(sd=>{const [px,pz]=tkAt(i,sd*(WALL+1.05));tkAdd(new THREE.BoxGeometry(SP*6,1.6,.25),steel,px,y-.3,pz,-TH[i])})}
+    /* 탑 2개: 가운데 기둥 양옆으로 큰 아치 2개 (차는 아치를 통과) */
+    const TW=[],lp=[];
+    NY_TOWERS.forEach(([tx,tz])=>{const i=nyNear(tx,tz),y=yAt(i),ry=-TH[i],th=TH[i],out=WALL+4.5,TOP=y+44;
+      const [cx,cz]=tkAt(i,0);TW.push({i,top:TOP});
+      tkAdd(new THREE.BoxGeometry(10,y-.4,out*2+3),stoneD,cx,(y-.4)/2,cz,ry);                          /* 물속 받침 (상판 아래까지만) */
+      [-1,1].forEach(sd=>{const [px,pz]=tkAt(i,sd*(WALL+2.2));tkAdd(new THREE.BoxGeometry(7,TOP-y,4.6),stone,px,(y+TOP)/2,pz,ry)});   /* 바깥 기둥 */
+      tkAdd(new THREE.BoxGeometry(7,22,2.4),stone,cx,y+11,cz,ry);                                      /* 가운데 기둥 */
+      TOBS.push({x:cx,z:cz,c:Math.cos(th),s:Math.sin(th),hl:3.5,hw:1.2});
+      tkAdd(new THREE.BoxGeometry(7,TOP-y-22,out*2),stone,cx,(y+22+TOP)/2,cz,ry);                       /* 아치 위 */
+      [-1,1].forEach(sd=>{for(let k=0;k<6;k++){const a=k/5,ang=a*Math.PI/2,r=(WALL-1.2)/2,l=sd*(1.2+r-Math.cos(ang)*r),yy=y+16+Math.sin(ang)*6;const [qx,qz]=tkAt(i,l);tkAdd(new THREE.BoxGeometry(7.2,1.4,1.6),stone,qx,yy,qz,ry)}});  /* 뾰족 아치 모양 */
+      tkAdd(new THREE.BoxGeometry(8,1.6,out*2+1.6),stoneD,cx,TOP+.8,cz,ry);                           /* 꼭대기 장식 */
+      for(let l=-out;l<=out;l+=2.2){const [qx,qz]=tkAt(i,l,-3.7);lp.push(qx,y+17+Math.random()*24,qz)}
+      for(let l=-out;l<=out;l+=1.4){const [qx,qz]=tkAt(i,l,-3.7);lp.push(qx,TOP+1.8,qz)}
+    });
+    glowP(lp,null,2.2,glowTex(255,200,120));
+    /* 케이블: 양쪽 바깥 기둥 꼭대기 → 처지는 곡선, 수직 줄, 전구 */
+    const cl=[],sus=[],bulbs=[],iA=nyNear(332,130),iB=nyNear(598,130),[t1,t2]=TW;
+    const cableY=(i)=>{const y=yAt(i);
+      if(i<t1.i){const u=(i-iA)/(t1.i-iA);return y+2+(t1.top-2-y)*Math.pow(u,1.7)}
+      if(i>t2.i){const u=(iB-i)/(iB-t2.i);return y+2+(t2.top-2-y)*Math.pow(u,1.7)}
+      const u=(i-t1.i)/(t2.i-t1.i);return y+3+(t1.top-y-3)*(1-4*u*(1-u))};
+    [-1,1].forEach(sd=>{let prev=null;for(let i=iA;i<=iB;i++){const [x,z]=tkAt(i,sd*(WALL+2.2)),p=[x,cableY(i),z];if(prev)cl.push(...prev,...p);prev=p;
+      if((i-iA)%4===0){sus.push(x,cableY(i),z,x,yAt(i)+.6,z);bulbs.push(...p)}}});
+    const lg=new THREE.BufferGeometry();lg.setAttribute('position',new THREE.Float32BufferAttribute(cl,3));MG.add(new THREE.LineSegments(lg,new THREE.LineBasicMaterial({color:0xb8a88a})));
+    const sg=new THREE.BufferGeometry();sg.setAttribute('position',new THREE.Float32BufferAttribute(sus,3));MG.add(new THREE.LineSegments(sg,new THREE.LineBasicMaterial({color:0x6e6a62,transparent:true,opacity:.7})));
+    glowP(bulbs,null,1.6,glowTex(255,226,170));
+  }
+  /* --- 워싱턴 스퀘어 개선문 (돌아오는 길, 다리 기둥은 도로 밖) --- */
+  {
+    const i=nyNear(205,296),[cx,cz]=tkAt(i,0),ry=-TH[i],mar=new THREE.MeshBasicMaterial({map:stoneT2(),color:0xcfc7b6}),marD=tkM(0x9a917f),W2=WALL+3.2;
+    [-1,1].forEach(sd=>{const [px,pz]=tkAt(i,sd*W2);tkAdd(new THREE.BoxGeometry(4.5,15,5),mar,px,7.5,pz,ry)});
+    tkAdd(new THREE.BoxGeometry(4.6,7,W2*2+5),mar,cx,18.5,cz,ry);tkAdd(new THREE.BoxGeometry(5.2,1,W2*2+6),marD,cx,22.5,cz,ry);
+    for(let k=0;k<9;k++){const a=k/8*Math.PI,[qx,qz]=tkAt(i,Math.cos(a)*(W2-2.4));tkAdd(new THREE.BoxGeometry(4.7,1.2,2.2),marD,qx,15+Math.sin(a)*2.6,qz,ry)}
+    const lp=[];for(let l=-W2;l<=W2;l+=3){const [qx,qz]=tkAt(i,l,-2.6);lp.push(qx,20.5,qz)}glowP(lp,null,2.2,glowTex(255,230,190));
+  }
+  /* --- 초록 고속도로 표지판 --- */
+  [[[60,0],['95','New York','Downtown','↓'],['','Manhattan','Bridge','↗']],[[262,128],['278','Brooklyn','Bridge','↑'],['','Brooklyn','Heights','→']],[[640,286],['9A','West Side','Hwy','↑'],['','Times Sq','Broadway','←']]].forEach(([at,...bs])=>{
+    const i=nyNear(...at),th=TH[i],y=yAt(i),postM=tkM(0x5c6470);
+    [-1,1].forEach(sd=>{const [x,z]=tkAt(i,sd*(WALL+.9));tkBox(.4,8,.4,postM,x,y+4,z)});
+    const [cx,cz]=tkAt(i,0);tkBox(.5,.6,(WALL+.9)*2,postM,cx,y+7.8,cz,-th);
+    bs.forEach(([rt,l1,l2,ar],k)=>{
+      const tex=tkTex(512,256,(x,w,h)=>{x.fillStyle='#1d6b3a';x.fillRect(0,0,w,h);x.strokeStyle='#fff';x.lineWidth=8;x.strokeRect(10,10,w-20,h-20);x.textAlign='center';
+        if(rt){x.fillStyle='#1a3f9a';x.beginPath();x.moveTo(40,40);x.lineTo(120,40);x.lineTo(120,110);x.quadraticCurveTo(80,140,40,110);x.fill();x.fillStyle='#d01818';x.fillRect(40,40,80,16);x.fillStyle='#fff';x.font='900 40px system-ui';x.fillText(rt,80,98)}
+        x.fillStyle='#fff';x.font='700 54px system-ui,sans-serif';x.fillText(l1,w/2+(rt?40:0),105);x.fillText(l2,w/2+(rt?40:0),165);x.font='900 70px system-ui';x.fillText(ar,w/2,235)});
+      const [x,z]=tkAt(i,(k?1:-1)*4.2);tkBoard(x,y+6.4,z,7.2,3.6,-Math.cos(th),-Math.sin(th),new THREE.MeshBasicMaterial({map:tex}));
+    });
+  });
+  /* --- 코너 바깥 쉐브론 --- */
+  {
+    const chev=dir=>tkTex(256,96,(x,w,h)=>{x.fillStyle='#f4f4f4';x.fillRect(0,0,w,h);x.fillStyle='#d8141e';for(let k=0;k<3;k++){const o=k*86+14;x.beginPath();
+      if(dir>0){x.moveTo(o,8);x.lineTo(o+34,8);x.lineTo(o+70,48);x.lineTo(o+34,88);x.lineTo(o,88);x.lineTo(o+36,48)}else{x.moveTo(o+70,8);x.lineTo(o+36,8);x.lineTo(o,48);x.lineTo(o+36,88);x.lineTo(o+70,88);x.lineTo(o+34,48)}x.fill()}});
+    const mR=new THREE.MeshBasicMaterial({map:chev(1)}),mL=new THREE.MeshBasicMaterial({map:chev(-1)});
+    for(let i=0;i<N;i+=5){let d=TH[(i+8)%N]-TH[(i+N-8)%N];d=Math.atan2(Math.sin(d),Math.cos(d));const k=d/(16*SP);if(Math.abs(k)<1/40)continue;
+      const sd=k>0?-1:1,n=TN[i],[x,z]=tkAt(i,sd*(WALL+.08)),nx=-n[0]*sd,nz=-n[1]*sd,ph=Math.atan2(nx,nz),lx=Math.cos(ph),lz=-Math.sin(ph);
+      tkAdd(new THREE.PlaneGeometry(2.3,1.05),(lx*Math.cos(TH[i])+lz*Math.sin(TH[i])>0)?mR:mL,x,yAt(i)+.75,z,ph)}
+  }
+  /* --- 가로등 + NEW YORK 깃발, 가로수, 소화전, 신호등 --- */
+  {
+    const postM=tkM(0x1c1e24),banner=new THREE.MeshBasicMaterial({map:tkTex(128,256,(x,w,h)=>{x.fillStyle='#3a1f8a';x.fillRect(0,0,w,h);x.fillStyle='#fff';x.textAlign='center';x.font='900 30px system-ui';x.fillText('NEW',w/2,50);x.fillText('YORK',w/2,84);
+      x.fillStyle='#d8d4f0';x.beginPath();x.moveTo(w/2,110);x.lineTo(w/2-10,240);x.lineTo(w/2+10,240);x.fill();x.beginPath();x.arc(w/2,130,10,0,7);x.fill();x.fillRect(w/2+4,96,4,30)}),side:THREE.DoubleSide});
+    const trunk=tkM(0x2a221c),leaf=tkM(0x1f3a26),hyd=tkM(0xc9241c),lamps=[];
+    for(let i=0,k=0;i<N;i+=13,k++){if(yAt(i)>.4)continue;const sd=k%2?1:-1,[x,z]=tkAt(i,sd*(WALL+1.6));if(inWater(x,z,3))continue;
+      tkBox(.18,8,.18,postM,x,4,z);lamps.push(x,8.1,z);
+      const n=TN[i],[bx,bz]=tkAt(i,sd*(WALL+1.6),.55);tkAdd(new THREE.PlaneGeometry(1,2),banner,bx,5.6,bz,Math.atan2(n[0],n[1])+Math.PI/2);
+      if(k%3===0){const [tx,tz]=tkAt(i,-sd*(WALL+2.6),6);if(far(tx,tz,WALL+1.6)){tkBox(.3,3,.3,trunk,tx,1.5,tz);for(let q=0;q<3;q++)tkAdd(new THREE.IcosahedronGeometry(1.5+rnd()*.6,0),leaf,tx+(rnd()-.5)*1.6,3.6+rnd()*1.4,tz+(rnd()-.5)*1.6)}}
+      if(k%4===1){const [hx,hz]=tkAt(i,sd*(WALL+1.2),3);tkAdd(new THREE.CylinderGeometry(.18,.22,.8,8),hyd,hx,.4,hz)}}
+    glowP(lamps,null,9,glowTex(255,226,170));
+  }
+  /* --- 사람들 (보도 위, 북적북적) --- */
+  {
+    const pm=tkM(0xffffff,{vertexColors:true}),cols=[0x22252e,0x3a3f4c,0x5a2a2a,0x2a3a5a,0x6a6a72,0x8a6a3a,0x3a4a3a,0xb0b0b8,0x7a2a4a],skin=[0xe0b090,0x9a6a4a,0xc89068,0x5a3a2a];
+    for(let i=0;i<N;i+=4){if(yAt(i)>.4)continue;const busy=i<Math.round(.1*N)||(i>Math.round(.5*N)&&i<Math.round(.82*N))||i>Math.round(.97*N);if(!busy&&rnd()<.75)continue;
+      for(const sd of[-1,1]){const n=1+(rnd()*(busy?3:1.5)|0);for(let q=0;q<n;q++){const [x,z]=tkAt(i,sd*(WALL+1.4+rnd()*2.6),(rnd()-.5)*4);if(inWater(x,z,3)||!far(x,z,WALL+.9))continue;
+        const hgt=1.55+rnd()*.3,body=new THREE.CylinderGeometry(.2,.24,hgt*.82,6);tkAdd(body,pm,x,hgt*.41,z,0,new THREE.Color(cols[(rnd()*cols.length)|0]));
+        tkAdd(new THREE.SphereGeometry(.13,6,5),pm,x,hgt*.9,z,0,new THREE.Color(skin[(rnd()*skin.length)|0]))}}}
+  }
+  /* --- 장애물 --- */
+  const taxiY=tkM(0xf5b800),taxiD=tkM(0x2a2c32),tire=tkM(0x0b0b0e),stripe=tkM(0x111);
+  NY_OBS.forEach(o=>{
+    const i=nyNear(...o.at),th=TH[i],ry=-th,P=(al,lt)=>tkAt(i,o.lat+(lt||0),al),y=yAt(i);
+    if(o.type==='taxi'){
+      const [x,z]=P(0);TOBS.push({x,z,c:Math.cos(th),s:Math.sin(th),hl:2.4,hw:1});
+      tkAdd(new THREE.BoxGeometry(4.8,.85,1.85),taxiY,x,y+.72,z,ry);
+      const [cx2,cz2]=P(-.3);tkAdd(new THREE.BoxGeometry(2.5,.72,1.66),taxiD,cx2,y+1.5,cz2,ry);
+      const sign=new THREE.MeshBasicMaterial({map:tkTex(128,48,(x,w,h)=>{x.fillStyle='#fff7c0';x.fillRect(0,0,w,h);x.fillStyle='#111';x.font='900 34px system-ui';x.textAlign='center';x.fillText('TAXI',w/2,36)}),fog:false});
+      tkAdd(new THREE.BoxGeometry(.9,.32,.36),sign,cx2,y+2.02,cz2,ry);
+      [[-1.8,-.94],[-1.8,.94],[1.5,-.94],[1.5,.94]].forEach(([a,l])=>{const [wx,wz]=P(a,l),g=new THREE.CylinderGeometry(.36,.36,.28,12);g.rotateX(Math.PI/2);tkAdd(g,tire,wx,y+.36,wz,ry)});
+      const hz=[];[[2.42,.7],[2.42,-.7],[-2.42,.7],[-2.42,-.7]].forEach(([a,l])=>{const [hx,hz2]=P(a,l);hz.push(hx,y+.85,hz2)});TK.blink.push({o:glowP(hz,null,1.6,glowTex(255,160,30)),per:.8});
+    }
+    if(o.type==='steam'){
+      const [x,z]=P(0);TOBS.push({x,z,c:Math.cos(th),s:Math.sin(th),hl:.6,hw:.6});
+      const st=new THREE.MeshBasicMaterial({map:tkTex(64,128,(c,w,h)=>{for(let k=0;k<8;k++){c.fillStyle=k%2?'#f4f4f4':'#ff6a14';c.fillRect(0,k*16,w,16)}})});
+      tkAdd(new THREE.CylinderGeometry(.55,.62,2.6,14),st,x,y+1.3,z);
+      const cg=new THREE.ConeGeometry(.26,.7,10);cg.translate(0,.35,0);const cm=tkM(0xff5a14);
+      for(let k=0;k<6;k++){const a=k/6*Math.PI*2,[cx2,cz2]=P(Math.cos(a)*1.6,Math.sin(a)*1.6);tkAdd(cg.clone(),cm,cx2,y,cz2)}
+      NYS.steam.push({x,y:y+2.6,z});
+    }
+    if(o.type==='work'){
+      const [x,z]=P(0);TOBS.push({x,z,c:Math.cos(th),s:Math.sin(th),hl:o.hl,hw:o.hw});
+      const drumM=new THREE.MeshBasicMaterial({map:tkTex(32,64,(c,w,h)=>{for(let k=0;k<5;k++){c.fillStyle=k%2?'#f4f4f4':'#ff5a14';c.fillRect(0,k*13,w,13)}})});
+      for(let a=-o.hl;a<=o.hl;a+=1.8)for(const lt of[-o.hw,o.hw]){const [dx,dz]=P(a,lt);tkAdd(new THREE.CylinderGeometry(.36,.4,1.05,10),drumM,dx,y+.53,dz)}
+      for(let l=-o.hw;l<=o.hw;l+=1.4)for(const a of[-o.hl,o.hl]){const [dx,dz]=P(a,l);tkAdd(new THREE.CylinderGeometry(.36,.4,1.05,10),drumM,dx,y+.53,dz)}
+      const jm=tkM(0xc8c8c8);for(let a=-o.hl+1.5;a<=o.hl-1.5;a+=3.2){const [jx,jz]=P(a,0);tkAdd(new THREE.BoxGeometry(3,.9,.6),jm,jx,y+.45,jz,ry)}
+      const sign=new THREE.MeshBasicMaterial({map:tkTex(256,256,(c,w,h)=>{c.fillStyle='#ff8a1a';c.translate(w/2,h/2);c.rotate(Math.PI/4);c.fillRect(-88,-88,176,176);c.rotate(-Math.PI/4);c.fillStyle='#111';c.font='900 34px system-ui';c.textAlign='center';c.fillText('ROAD',0,-8);c.fillText('WORK',0,28)}),transparent:true});
+      const [sx2,sz2]=P(-o.hl-1.4,0);tkBoard(sx2,y+1.6,sz2,1.8,1.8,-Math.cos(th),-Math.sin(th),sign);tkBox(.08,1,.08,jm,sx2,y+.5,sz2);
+      const lp=[];for(let a=-o.hl;a<=o.hl;a+=1.8)for(const lt of[-o.hw,o.hw]){const [q1,q2]=P(a,lt);lp.push(q1,y+1.2,q2)}TK.blink.push({o:glowP(lp,null,1.3,glowTex(255,140,30)),per:.6});
+    }
+  });
+  /* 증기 */
+  NYS.steam.forEach(s=>{const n=26,pos=new Float32Array(n*3),life=[];for(let k=0;k<n;k++){life.push(k/n);pos.set([s.x,s.y,s.z],k*3)}
+    const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(pos,3));
+    s.p=new THREE.Points(g,new THREE.PointsMaterial({size:3.2,map:glowTex(230,230,235),transparent:true,opacity:.35,depthWrite:false}));s.life=life;MG.add(s.p)});
+  tkFlush();
+}
+function nyFrame(dt){
+  TK.t+=dt;TK.blink.forEach(b=>{b.o.visible=(TK.t%b.per)<b.per*.55});
+  if(NYS.water)NYS.water.offset.y+=dt*.01;
+  NYS.steam.forEach(s=>{if(!s.p)return;const a=s.p.geometry.attributes.position;
+    for(let k=0;k<s.life.length;k++){let l=s.life[k]+dt*.35;if(l>1)l-=1;s.life[k]=l;a.setXYZ(k,s.x+Math.sin(l*7+k)*l*1.2,s.y+l*7,s.z+Math.cos(l*5+k)*l*1.2)}a.needsUpdate=true});
+}
+function mmNY(){const W=NY_WATER,y0=Math.max(0,W.z0*msc+moz),y1=W.z1*msc+moz;mbg.fillStyle='#1d3a7a';if(y1>y0)mbg.fillRect(W.x0*msc+mox,y0,(W.x1-W.x0)*msc,y1-y0)}
+/* === New York 끝 === */
 
 function clearMap(){
   if(!MG)return;S.remove(MG);
@@ -1260,14 +1498,14 @@ function setMap(id){
   if(!MAPS[id])id='seoul';const D=MAPS[id];
   clearMap();MAPID=id;MG=new THREE.Group();S.add(MG);
   HALF=D.half;WALL=D.wall?HALF+D.wall:0;
-  TP=D.pts();TY=D.elev?elev(...D.elev):new Array(N).fill(0);if(D.ship)TY=shipTY();OPENP=!!D.open;
+  TP=D.pts();TY=D.elev?elev(...D.elev):new Array(N).fill(0);if(D.ship)TY=shipTY();if(D.tyFn)TY=D.tyFn();OPENP=!!D.open;
   TS=[0];TN=[];TH=[];
   for(let i=1;i<=N;i++){const a=TP[i%N],b=TP[i-1];TS.push(TS[i-1]+Math.hypot(a[0]-b[0],a[1]-b[1]))}
   TLEN=TS[N];if(D.open)TLEN=TS[N-1]*N/(N-1);SP=TLEN/N;
   for(let i=0;i<N;i++){const a=TP[(i+N-1)%N],b=TP[(i+1)%N],dx=b[0]-a[0],dz=b[1]-a[1],l=Math.hypot(dx,dz);
     TH.push(Math.atan2(dz,dx));TN.push([-dz/l,dx/l])}
   if(D.open){TH[0]=TH[1];TN[0]=TN[1];TH[N-1]=TH[N-2];TN[N-1]=TN[N-2]}
-  BR=null;RIVER=null;WATERT=null;if(D.bridge)planBridge();JMP=null;OBS=[];LAPEND=N;if(D.ship)shipPlan();
+  BR=null;RIVER=null;TOBS=[];WATERT=null;if(D.bridge)planBridge();JMP=null;OBS=[];LAPEND=N;if(D.ship)shipPlan();
   TSL=[];for(let i=0;i<N;i++)TSL.push((TY[(i+4)%N]-TY[(i+N-4)%N])/(8*TLEN/N));
   if(D.open){for(let k=0;k<5;k++){TSL[k]=TSL[5];TSL[N-1-k]=TSL[N-6]}for(let i=0;i<N;i++)TSL[i]=clamp(TSL[i],-.2,.2)}
   sx=TP[0][0];sz=TP[0][1];sh=TH[0];if(D.start){sx=D.start[0];sz=D.start[1];sh=D.start[2]}
@@ -1303,6 +1541,7 @@ function setMap(id){
   if(D.trees)buildXmasTrees();
   if(D.lamps)buildLamps(D.lamps);
   if(D.tokyo)buildTokyo();
+  if(D.ny)buildNY();
   }
   /* 출발선 + 게이트 (연습장은 없음) */
   if(!D.practice){const line=new THREE.Mesh(new THREE.PlaneGeometry(1.6,HALF*2),new THREE.MeshBasicMaterial({color:0xffffff}));
@@ -1368,7 +1607,9 @@ function step(dt){
   const fx=Math.cos(c.h),fz=Math.sin(c.h),rx=-fz,rz=fx;
   let vf=c.vx*fx+c.vz*fz,vl=c.vx*rx+c.vz*rz;
   const speed=Math.hypot(c.vx,c.vz),off=Math.abs(side)>HALF+1.2;
-  if(keys.gas){vf+=13*Math.max(0,1-vf/80)*dt;if(lapStart===null)lapStart=performance.now()}
+  if(keys.gas){vf+=13*Math.max(0,1-vf/80)*dt*(LC.spin>0?.12:1);if(lapStart===null)lapStart=performance.now()}
+  if(LC.b>0){vf+=LC.bp*Math.max(0,1-vf/70)*dt;LC.b-=dt}
+  if(LC.spin>0){LC.spin-=dt;hitK=Math.max(hitK,.12)}
   if(NIT.on){vf+=22*clamp(vf/25,.35,1)*Math.max(0,1-vf/105)*dt;NIT.t-=dt;if(NIT.t<=0){NIT.on=false;NIT.t=0}}
   vf-=9.8*.55*TSL[ci]*Math.cos(c.h-TH[ci])*dt;
   if(keys.brake)vf-=(vf>0.5?24:7)*dt;
@@ -1411,7 +1652,7 @@ function step(dt){
   }
   if(MODE==='duel')duelCollide(dt);
   if(MAPID==='practice')practiceBounds();
-  if(MAPID==='tokyo')tobsCollide();
+  if(TOBS.length)tobsCollide();
   if(prog>=LAPEND&&!AIR&&MODE!=='practice'){
     prog-=LAPEND;NIT.ready=true;
     if(lapStart!==null){
@@ -1473,13 +1714,14 @@ function drive(dt){
   let g=0;while(g<4&&kmh>=EDGE[g+1])g++;gearI=g;
   let t=.35+.65*clamp((kmh-EDGE[g])/(EDGE[g+1]-EDGE[g]),0,1);
   if(!keys.gas&&kmh<3)t=.2;else if(keys.gas&&kmh<10)t=Math.max(t,.7);
+  if(MODE==='duel'&&D.state==='count')t=.2+.8*LC.r;else if(LC.spin>0)t=.95;
   if(NIT.on)t=Math.min(1,t+.12);
-  nitroK+=((NIT.on?1:0)-nitroK)*Math.min(1,dt*(NIT.on?6:3));if(nitroK<.002)nitroK=0;
+  const nb=NIT.on||LC.b>0;nitroK+=((nb?1:0)-nitroK)*Math.min(1,dt*(nb?6:3));if(nitroK<.002)nitroK=0;
   rpm+=(t-rpm)*Math.min(1,dt*7);
   if(eng&&sg){
     eng.playbackRate.value=.3+.75*rpm+.12*nitroK;ef.frequency.value=900+5000*rpm;
     eg.gain.value=(DEAD?0:1)*(.25+.45*rpm*(keys.gas?1:.55))*(1+.3*nitroK)*clamp((AC.currentTime-t0a-1.4)/.8,0,1);
-    const sl=keys.hand&&kmh>15?clamp((slip-2.5)/10,0,1):0;
+    const sl=LC.spin>0?.85:keys.hand&&kmh>15?clamp((slip-2.5)/10,0,1):0;
     skG+=(sl-skG)*Math.min(1,dt*(sl>skG?10:4));sg.gain.value=DEAD?0:1;skidMix(skG,kmh,dt);
     if(nzg)nzg.gain.value=nitroK*.22;
   }
@@ -1506,6 +1748,7 @@ function mmSetup(){
   mox=(mw-(x1-x0)*msc)/2-x0*msc;moz=(mh-(z1-z0)*msc)/2-z0*msc;
   mbg.clearRect(0,0,mw,mh);mbg.lineJoin='round';mbg.lineCap='round';
   if(RIVER){mbg.strokeStyle='#2a58c4';mbg.lineWidth=10*mdpr;mbg.beginPath();mbg.moveTo(RIVER.a[0]*msc+mox,RIVER.a[1]*msc+moz);mbg.lineTo(RIVER.b[0]*msc+mox,RIVER.b[1]*msc+moz);mbg.stroke()}
+  if(MAPID==='ny')mmNY();
   const path=()=>{mbg.beginPath();TP.forEach((p,i)=>{const X=p[0]*msc+mox,Y=p[1]*msc+moz;i?mbg.lineTo(X,Y):mbg.moveTo(X,Y)});if(!OPENP)mbg.closePath()};
   path();mbg.strokeStyle='#e9eaf0';mbg.lineWidth=6*mdpr;mbg.stroke();
   path();mbg.strokeStyle='#3a3f52';mbg.lineWidth=3.6*mdpr;mbg.stroke();
@@ -1572,9 +1815,9 @@ function loop(now){
   const dt=Math.min((now-t0)/1000,.05);t0=now;
   if(started&&!HOLD&&!DEAD)step(dt);
   drive(dt);
-  if(MODE==='duel')duelFrame(dt,now);
+  if(MODE==='duel'){lcTick(dt);duelFrame(dt,now)}
   if(MODE==='practice'&&started)pracFrame(dt);
-  if(MAPID==='tokyo')tokyoFrame(dt);
+  if(MAPID==='tokyo')tokyoFrame(dt);else if(MAPID==='ny')nyFrame(dt);
   const fx=Math.cos(c.h),fz=Math.sin(c.h),rx=-fz,rz=fx;
   const sp=Math.hypot(c.vx,c.vz),bump=Math.sin(now*.05)*.004*Math.min(sp/30,1);
   camY+=((AIR?cy:(TY[ci]||0))-camY)*Math.min(1,dt*(AIR?16:10));camP+=((AIR?cvy/Math.max(Math.hypot(c.vx,c.vz),6):(TSL[ci]||0))-camP)*Math.min(1,dt*3);
@@ -1790,7 +2033,7 @@ const HDR={apikey:KEY,'Content-Type':'application/json'};
 /* RICH: scores 표에 map / mode / stage 열이 있으면 true, 없으면 false (처음엔 모름) */
 var RICH=null;
 var MODE='lap',HOLD=false,DEAD=false,PLAYER='';
-const MAPLABEL={seoul:'Seoul',mountain:'Mountain Pass',xmas:'Christmas',tokyo:'Tokyo Neon',ship:'Cargo Ship'};
+const MAPLABEL={seoul:'Seoul',mountain:'Mountain Pass',xmas:'Christmas',tokyo:'Tokyo Neon',ny:'New York',ship:'Cargo Ship'};
 const HARD_STAGES=['xmas','seoul','mountain','ship']; /* 쉬운 순서. 새 맵은 이 배열 뒤에 이름만 추가하면 다음 스테이지가 돼요 */
 /* 스테이지마다 허용 충돌 횟수가 줄어들어요: 1스테이지 10번 → 2스테이지 9번 → 3스테이지 8번 …
    (맵이 6개가 되면 10·9·8·7·6·5번). 시작 횟수는 HARD_FIRST, 최소는 HARD_MIN. 충돌 횟수는 스테이지마다 새로 세요. */
@@ -1803,7 +2046,7 @@ function boardUrl(){
   return SB+'?select=name,lap_ms&mode=eq.lap&map=eq.'+LBMAP+'&order=lap_ms.asc&limit=200';
 }
 /* 개인 랩타임 순위표는 맵마다 따로. 위쪽 탭으로 다른 맵 순위도 볼 수 있어요 (m을 안 주면 지금 맵) */
-const LB_MAPS=['seoul','mountain','xmas','tokyo'];
+const LB_MAPS=['seoul','mountain','xmas','tokyo','ny'];
 let LBMAP='seoul';
 function lbTabs(){
   const row=$('lbTabs');if(!row.children.length)LB_MAPS.forEach(id=>{const b=document.createElement('button');b.type='button';b.setAttribute('role','tab');b.dataset.map=id;b.textContent=MAPLABEL[id];b.onclick=()=>loadBoard(id);row.append(b)});
@@ -2055,7 +2298,7 @@ $('failMenu').onclick=showModes;
         → 둘 다 차고에서 차 고르고 '준비' → 5,4,3,2,1 GO! → DUEL_LAPS 바퀴 먼저 도는 사람이 승리
    통신: Supabase Realtime 채널(방 비밀번호마다 하나). presence = 누가 방에 있는지, broadcast = 위치·준비·결승 메시지 */
 const DUEL_LAPS=3;                                  /* 대결 바퀴 수 */
-const DUEL_MAPS=['seoul','mountain','xmas','tokyo'];        /* 방 만들 때 고를 수 있는 맵 */
+const DUEL_MAPS=['seoul','mountain','xmas','tokyo','ny'];        /* 방 만들 때 고를 수 있는 맵 */
 const DUEL_LIB='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js';
 const DUEL_URL='https://payqqpkkdpydypinyptz.supabase.co';
 const OPP_COL={gtr:0x2b55c9,gt3:0x8fd14f,chal:0xc9302c,f40:0xe0261d,mcl:0xff7a1a};
@@ -2207,7 +2450,7 @@ function m3dPrep(id,scene){
 /* 조명: 모델(빛을 받는 재질)에만 영향. 맵마다 밝기, 하늘 사진으로 반사 */
 const m3dHemi=new THREE.HemisphereLight(0xdfe8ff,0x2a2630,1),m3dSun=new THREE.DirectionalLight(0xffffff,1);
 m3dSun.position.set(.6,1,.35);S.add(m3dHemi);S.add(m3dSun);
-const M3L={seoul:[.85,.75],xmas:[.95,.7],tokyo:[.8,.65],mountain:[1.15,1.25]};
+const M3L={seoul:[.85,.75],xmas:[.95,.7],tokyo:[.8,.65],ny:[.85,.7],mountain:[1.15,1.25]};
 let m3dPM=null;const m3dEnv={};
 function m3dEnvFor(id){
   if(m3dEnv[id]!==undefined)return m3dEnv[id];
@@ -2417,7 +2660,7 @@ function onDuelMsg(m){
 function duelGarage(){
   D.state='garage';D.ready=false;D.cdT.forEach(clearTimeout);D.cdT=[];
   stopAudio();started=false;HOLD=false;DEAD=false;hideOpp();O.seen=false;
-  ['dh','cd','dres','stg'].forEach(i=>$(i).classList.remove('on','win'));
+  ['dh','cd','dres','stg','lc'].forEach(i=>$(i).classList.remove('on','win'));LC.r=LC.b=LC.spin=0;
   document.body.classList.remove('dready');document.body.dataset.mode='duel';
   if(MAPID!==D.map)setMap(D.map);
   $('mbMode').textContent='1대1 · 방 '+D.code+' · '+MAPLABEL[D.map]+' '+D.laps+'바퀴';$('mbName').textContent=PLAYER;$('mbChange').textContent='방 나가기';
@@ -2444,10 +2687,30 @@ document.querySelectorAll('.cars button').forEach(b=>b.addEventListener('click',
 /* 메시지가 빠져도 괜찮도록 차고에서는 2초마다 내 상태를 다시 보내요 */
 setInterval(()=>{if(D.state==='garage'&&D.oppId){dSend('car',{car:CARID,ready:D.ready});if(D.role==='host')maybeGo()}},2000);
 
+
+/* --- 출발 부스터 (런치 컨트롤) ---
+   카운트다운 동안 가속을 누르면 회전수 바늘이 올라가고(떼면 내려감) GO! 순간 바늘 위치로 결과가 정해져요.
+   초록 한가운데(0.665~0.735) PERFECT: 1.3초 추가 가속 / 초록(0.6~0.8) GOOD: 0.8초 약한 추가 가속
+   빨강(0.88 이상) 휠스핀: 1.1초 동안 바퀴가 헛돌아 거의 못 나감 / 그 밖: 보통 출발 */
+const LC={r:0,b:0,bp:0,spin:0};
+function lcTick(dt){
+  if(D.state!=='count'){if($('lc').classList.contains('on'))$('lc').classList.remove('on');return}
+  LC.r=clamp(LC.r+(keys.gas?.62:-.85)*dt,0,1);
+  $('lc').classList.add('on');$('lcN').style.left=(LC.r*100).toFixed(1)+'%';
+}
+function lcGo(){
+  const r=LC.r;$('lc').classList.remove('on');LC.b=LC.bp=LC.spin=0;let cls='',txt='';
+  if(r>=.665&&r<=.735){LC.b=1.3;LC.bp=7;cls='perfect';txt='PERFECT START!';nitroBlast()}
+  else if(r>=.6&&r<=.8){LC.b=.8;LC.bp=5;cls='good';txt='GOOD START'}
+  else if(r>=.88){LC.spin=1.1;cls='spin';txt='WHEELSPIN!'}
+  LC.last=cls||'none';LC.lastR=r;LC.r=0;if(!cls)return;
+  const el=$('lcr');el.className='';void el.offsetWidth;el.textContent=txt;el.className='on '+cls;
+  D.cdT.push(setTimeout(()=>el.className='',1300));
+}
 /* --- 출발: 나란히 서서 5,4,3,2,1 --- */
 const laneOf=role=>(role==='host'?-1:1)*HALF*.42;
 function duelCountdown(){
-  D.state='count';D.ready=false;D.oppReady=false;D.done=0;D.myFin=null;D.oppFin=null;D.oppLeft=false;
+  D.state='count';LC.r=LC.b=LC.spin=0;D.ready=false;D.oppReady=false;D.done=0;D.myFin=null;D.oppFin=null;D.oppLeft=false;
   document.body.classList.remove('dready');$('lbp').classList.remove('on','top');$('start').style.display='none';
   reset();const n=TN[0],my=laneOf(D.role),op=laneOf(D.role==='host'?'guest':'host');
   c.x+=n[0]*my;c.z+=n[1]*my;
@@ -2458,7 +2721,7 @@ function duelCountdown(){
   $('dh').classList.add('on');updDH();
   D.cdT.forEach(clearTimeout);D.cdT=[];
   for(let i=0;i<=5;i++)D.cdT.push(setTimeout(()=>cdShow(i<5?String(5-i):'GO!'),i*1000));
-  D.cdT.push(setTimeout(()=>{if(D.state!=='count')return;D.state='race';HOLD=false;D.raceT0=performance.now();lapStart=D.raceT0},5000));
+  D.cdT.push(setTimeout(()=>{if(D.state!=='count')return;D.state='race';HOLD=false;D.raceT0=performance.now();lapStart=D.raceT0;lcGo()},5000));
   D.cdT.push(setTimeout(()=>$('cd').classList.remove('on'),5900));
 }
 function cdShow(t){
@@ -2559,7 +2822,7 @@ function duelFrame(dt,now){
   if(!live){hideOpp();return}
   if(D.state!=='done'&&now-D.sendT>75){
     D.sendT=now;const r=v=>Math.round(v*100)/100;
-    dSend('p',{x:r(c.x),z:r(c.z),y:r(AIR?cy:(TY[ci]||0)),h:Math.round(c.h*1000)/1000,vx:r(c.vx),vz:r(c.vz),ci,lap:D.done,pr:prog,f:(keys.brake?1:0)|(keys.gas?2:0)|(keys.hand?4:0)|(NIT.on?8:0),t:Math.round(now)});
+    dSend('p',{x:r(c.x),z:r(c.z),y:r(AIR?cy:(TY[ci]||0)),h:Math.round(c.h*1000)/1000,vx:r(c.vx),vz:r(c.vz),ci,lap:D.done,pr:prog,f:(keys.brake?1:0)|(keys.gas?2:0)|(keys.hand?4:0)|(NIT.on||LC.b>0?8:0)|(LC.spin>0?4:0),t:Math.round(now)});
   }
   if(now-D.hudT>200){D.hudT=now;updDH()}
   if(!O.seen||!D.oppId){hideOpp();return}
