@@ -402,6 +402,18 @@ body[data-mode=practice] #tl,body[data-mode=practice] #bt,body[data-mode=practic
 .lbtabs button{font-size:11.5px;padding:4px 9px;border-radius:99px;cursor:pointer;background:#0e1115}
 .lbtabs button.on{background:#f2c230;border-color:#f2c230;color:#111;font-weight:700}
 body[data-mode=hard] .lbtabs{display:none}
+/* 1대1 출발 부스터(런치 컨트롤) */
+#lc{position:fixed;left:50%;bottom:clamp(150px,30vh,260px);transform:translateX(-50%);z-index:42;display:none;flex-direction:column;align-items:center;gap:6px;width:min(420px,70vw);pointer-events:none;text-shadow:0 1px 4px #000}
+#lc.on{display:flex}
+#lc .lt{font-size:13px;color:#eef}#lc .lt b{color:#3ddc84}
+#lc .lb{position:relative;width:100%;height:16px;border-radius:8px;background:#0b0d14d9;border:1px solid #3a4250;overflow:hidden}
+#lc .lb i{position:absolute;top:0;bottom:0}
+#lc .g{left:60%;width:20%;background:#2f8f5a}#lc .p{left:66.5%;width:7%;background:#3ddc84}#lc .r{left:88%;right:0;background:#a8261e}
+#lc em{position:absolute;top:-3px;bottom:-3px;width:4px;margin-left:-2px;background:#fff;border-radius:2px;box-shadow:0 0 8px #fff;left:0}
+#lcr{position:fixed;left:50%;top:30%;transform:translate(-50%,-50%);z-index:43;display:none;font-size:clamp(26px,6vh,46px);font-weight:900;letter-spacing:.06em;font-style:italic;text-shadow:0 4px 20px #000;pointer-events:none}
+#lcr.on{display:block;animation:cdpop 1.2s ease-out both}
+#lcr.perfect{color:#3ddc84}#lcr.good{color:#f2c230}#lcr.spin{color:#ff5a4a}
+@media (orientation:landscape) and (max-height:500px){#lc{bottom:auto;top:58%;width:min(320px,60vw)}#lc .lt{font-size:11px}#lc .lb{height:12px}}
 </style>
 </head>
 <body>
@@ -556,6 +568,8 @@ body[data-mode=hard] .lbtabs{display:none}
 <div id="toast" role="alert" aria-live="assertive"></div>
 <div id="dh"><div><small>순위</small><b id="dhPos">1st</b></div><div><small>LAP</small><b id="dhLap">1 / 3</b></div><div><small>상대</small><b id="dhOpp">LAP 1</b></div></div>
 <div id="cd" aria-live="assertive"></div>
+<div id="lc" aria-hidden="true"><span class="lt">런치 컨트롤 · 가속을 눌러 바늘을 <b>초록</b> 구간에!</span><div class="lb"><i class="g"></i><i class="p"></i><i class="r"></i><em id="lcN"></em></div></div>
+<div id="lcr" role="status"></div>
 <div id="ph"><b>연습장</b><span>드리프트 각도 <i id="phAng">0°</i></span><span>드리프트 <i id="phDr">0.0초</i><em> · 최고 <i id="phBest">0.0초</i></em></span><span class="opt">최고 속도 <i id="phTop">0</i> km/h</span><button id="phReset" type="button">처음 위치 (R)</button></div>
 <div id="dres" role="alertdialog" aria-labelledby="drT"><div class="fcard">
   <h2 id="drT"></h2><p id="drSub"></p>
@@ -1368,7 +1382,9 @@ function step(dt){
   const fx=Math.cos(c.h),fz=Math.sin(c.h),rx=-fz,rz=fx;
   let vf=c.vx*fx+c.vz*fz,vl=c.vx*rx+c.vz*rz;
   const speed=Math.hypot(c.vx,c.vz),off=Math.abs(side)>HALF+1.2;
-  if(keys.gas){vf+=13*Math.max(0,1-vf/80)*dt;if(lapStart===null)lapStart=performance.now()}
+  if(keys.gas){vf+=13*Math.max(0,1-vf/80)*dt*(LC.spin>0?.12:1);if(lapStart===null)lapStart=performance.now()}
+  if(LC.b>0){vf+=LC.bp*Math.max(0,1-vf/70)*dt;LC.b-=dt}
+  if(LC.spin>0){LC.spin-=dt;hitK=Math.max(hitK,.12)}
   if(NIT.on){vf+=22*clamp(vf/25,.35,1)*Math.max(0,1-vf/105)*dt;NIT.t-=dt;if(NIT.t<=0){NIT.on=false;NIT.t=0}}
   vf-=9.8*.55*TSL[ci]*Math.cos(c.h-TH[ci])*dt;
   if(keys.brake)vf-=(vf>0.5?24:7)*dt;
@@ -1473,13 +1489,14 @@ function drive(dt){
   let g=0;while(g<4&&kmh>=EDGE[g+1])g++;gearI=g;
   let t=.35+.65*clamp((kmh-EDGE[g])/(EDGE[g+1]-EDGE[g]),0,1);
   if(!keys.gas&&kmh<3)t=.2;else if(keys.gas&&kmh<10)t=Math.max(t,.7);
+  if(MODE==='duel'&&D.state==='count')t=.2+.8*LC.r;else if(LC.spin>0)t=.95;
   if(NIT.on)t=Math.min(1,t+.12);
-  nitroK+=((NIT.on?1:0)-nitroK)*Math.min(1,dt*(NIT.on?6:3));if(nitroK<.002)nitroK=0;
+  const nb=NIT.on||LC.b>0;nitroK+=((nb?1:0)-nitroK)*Math.min(1,dt*(nb?6:3));if(nitroK<.002)nitroK=0;
   rpm+=(t-rpm)*Math.min(1,dt*7);
   if(eng&&sg){
     eng.playbackRate.value=.3+.75*rpm+.12*nitroK;ef.frequency.value=900+5000*rpm;
     eg.gain.value=(DEAD?0:1)*(.25+.45*rpm*(keys.gas?1:.55))*(1+.3*nitroK)*clamp((AC.currentTime-t0a-1.4)/.8,0,1);
-    const sl=keys.hand&&kmh>15?clamp((slip-2.5)/10,0,1):0;
+    const sl=LC.spin>0?.85:keys.hand&&kmh>15?clamp((slip-2.5)/10,0,1):0;
     skG+=(sl-skG)*Math.min(1,dt*(sl>skG?10:4));sg.gain.value=DEAD?0:1;skidMix(skG,kmh,dt);
     if(nzg)nzg.gain.value=nitroK*.22;
   }
@@ -1572,7 +1589,7 @@ function loop(now){
   const dt=Math.min((now-t0)/1000,.05);t0=now;
   if(started&&!HOLD&&!DEAD)step(dt);
   drive(dt);
-  if(MODE==='duel')duelFrame(dt,now);
+  if(MODE==='duel'){lcTick(dt);duelFrame(dt,now)}
   if(MODE==='practice'&&started)pracFrame(dt);
   if(MAPID==='tokyo')tokyoFrame(dt);
   const fx=Math.cos(c.h),fz=Math.sin(c.h),rx=-fz,rz=fx;
@@ -2417,7 +2434,7 @@ function onDuelMsg(m){
 function duelGarage(){
   D.state='garage';D.ready=false;D.cdT.forEach(clearTimeout);D.cdT=[];
   stopAudio();started=false;HOLD=false;DEAD=false;hideOpp();O.seen=false;
-  ['dh','cd','dres','stg'].forEach(i=>$(i).classList.remove('on','win'));
+  ['dh','cd','dres','stg','lc'].forEach(i=>$(i).classList.remove('on','win'));LC.r=LC.b=LC.spin=0;
   document.body.classList.remove('dready');document.body.dataset.mode='duel';
   if(MAPID!==D.map)setMap(D.map);
   $('mbMode').textContent='1대1 · 방 '+D.code+' · '+MAPLABEL[D.map]+' '+D.laps+'바퀴';$('mbName').textContent=PLAYER;$('mbChange').textContent='방 나가기';
@@ -2444,10 +2461,30 @@ document.querySelectorAll('.cars button').forEach(b=>b.addEventListener('click',
 /* 메시지가 빠져도 괜찮도록 차고에서는 2초마다 내 상태를 다시 보내요 */
 setInterval(()=>{if(D.state==='garage'&&D.oppId){dSend('car',{car:CARID,ready:D.ready});if(D.role==='host')maybeGo()}},2000);
 
+
+/* --- 출발 부스터 (런치 컨트롤) ---
+   카운트다운 동안 가속을 누르면 회전수 바늘이 올라가고(떼면 내려감) GO! 순간 바늘 위치로 결과가 정해져요.
+   초록 한가운데(0.665~0.735) PERFECT: 1.3초 추가 가속 / 초록(0.6~0.8) GOOD: 0.8초 약한 추가 가속
+   빨강(0.88 이상) 휠스핀: 1.1초 동안 바퀴가 헛돌아 거의 못 나감 / 그 밖: 보통 출발 */
+const LC={r:0,b:0,bp:0,spin:0};
+function lcTick(dt){
+  if(D.state!=='count'){if($('lc').classList.contains('on'))$('lc').classList.remove('on');return}
+  LC.r=clamp(LC.r+(keys.gas?.62:-.85)*dt,0,1);
+  $('lc').classList.add('on');$('lcN').style.left=(LC.r*100).toFixed(1)+'%';
+}
+function lcGo(){
+  const r=LC.r;$('lc').classList.remove('on');LC.b=LC.bp=LC.spin=0;let cls='',txt='';
+  if(r>=.665&&r<=.735){LC.b=1.3;LC.bp=7;cls='perfect';txt='PERFECT START!';nitroBlast()}
+  else if(r>=.6&&r<=.8){LC.b=.8;LC.bp=5;cls='good';txt='GOOD START'}
+  else if(r>=.88){LC.spin=1.1;cls='spin';txt='WHEELSPIN!'}
+  LC.last=cls||'none';LC.lastR=r;LC.r=0;if(!cls)return;
+  const el=$('lcr');el.className='';void el.offsetWidth;el.textContent=txt;el.className='on '+cls;
+  D.cdT.push(setTimeout(()=>el.className='',1300));
+}
 /* --- 출발: 나란히 서서 5,4,3,2,1 --- */
 const laneOf=role=>(role==='host'?-1:1)*HALF*.42;
 function duelCountdown(){
-  D.state='count';D.ready=false;D.oppReady=false;D.done=0;D.myFin=null;D.oppFin=null;D.oppLeft=false;
+  D.state='count';LC.r=LC.b=LC.spin=0;D.ready=false;D.oppReady=false;D.done=0;D.myFin=null;D.oppFin=null;D.oppLeft=false;
   document.body.classList.remove('dready');$('lbp').classList.remove('on','top');$('start').style.display='none';
   reset();const n=TN[0],my=laneOf(D.role),op=laneOf(D.role==='host'?'guest':'host');
   c.x+=n[0]*my;c.z+=n[1]*my;
@@ -2458,7 +2495,7 @@ function duelCountdown(){
   $('dh').classList.add('on');updDH();
   D.cdT.forEach(clearTimeout);D.cdT=[];
   for(let i=0;i<=5;i++)D.cdT.push(setTimeout(()=>cdShow(i<5?String(5-i):'GO!'),i*1000));
-  D.cdT.push(setTimeout(()=>{if(D.state!=='count')return;D.state='race';HOLD=false;D.raceT0=performance.now();lapStart=D.raceT0},5000));
+  D.cdT.push(setTimeout(()=>{if(D.state!=='count')return;D.state='race';HOLD=false;D.raceT0=performance.now();lapStart=D.raceT0;lcGo()},5000));
   D.cdT.push(setTimeout(()=>$('cd').classList.remove('on'),5900));
 }
 function cdShow(t){
@@ -2559,7 +2596,7 @@ function duelFrame(dt,now){
   if(!live){hideOpp();return}
   if(D.state!=='done'&&now-D.sendT>75){
     D.sendT=now;const r=v=>Math.round(v*100)/100;
-    dSend('p',{x:r(c.x),z:r(c.z),y:r(AIR?cy:(TY[ci]||0)),h:Math.round(c.h*1000)/1000,vx:r(c.vx),vz:r(c.vz),ci,lap:D.done,pr:prog,f:(keys.brake?1:0)|(keys.gas?2:0)|(keys.hand?4:0)|(NIT.on?8:0),t:Math.round(now)});
+    dSend('p',{x:r(c.x),z:r(c.z),y:r(AIR?cy:(TY[ci]||0)),h:Math.round(c.h*1000)/1000,vx:r(c.vx),vz:r(c.vz),ci,lap:D.done,pr:prog,f:(keys.brake?1:0)|(keys.gas?2:0)|(keys.hand?4:0)|(NIT.on||LC.b>0?8:0)|(LC.spin>0?4:0),t:Math.round(now)});
   }
   if(now-D.hudT>200){D.hudT=now;updDH()}
   if(!O.seen||!D.oppId){hideOpp();return}
