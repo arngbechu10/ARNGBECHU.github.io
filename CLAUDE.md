@@ -10,7 +10,7 @@
 | `index.html` | **실제 게임 전체 (약 6MB, 파일 하나)**. 이미지·소리가 전부 base64로 들어 있어요. 배포는 이 파일 하나면 됩니다. |
 | `index.readable.html` | base64를 `DATAURI`로 바꾼 읽기 전용 사본 (줄 번호 원본과 같음). `python3 tools/strip_data_uris.py`로 다시 만들 수 있어요. |
 | `supabase_setup.sql` | 순위표를 맵·모드별로 나누는 SQL. **2026-11-14 사용자가 실행 완료**(Success). |
-| `supabase_security.sql` | 순위표 보안 SQL(이름 1~20자·욕설·꺾쇠 금지, 기록 20초~1시간, 맵·모드 값 제한(NOT VALID라 옛 기록은 그대로), 같은 이름 20초에 1번·전체 1분 40번 트리거, update/delete 권한 회수). 사용자가 실행해야 함. 새 맵 id를 추가하면 `scores_kind_ok`의 맵 목록도 고쳐야 함! |
+| `supabase_security.sql` | **2026-11-14 사용자가 실행 완료**(Success). 순위표 보안 SQL(이름 1~20자·욕설·꺾쇠 금지, 기록 20초~1시간, 맵·모드 값 제한(NOT VALID라 옛 기록은 그대로), 같은 이름 20초에 1번·전체 1분 40번 트리거, update/delete 권한 회수). 새 맵 id를 추가하면 `scores_kind_ok`의 맵 목록도 고쳐야 함! |
 | `assets/` | 게임에 들어간 원본 에셋: 차량 이미지(앞모습·콕핏·핸들, 720S 뒷모습), 엔진·시동 소리(wav), 사용자가 보낸 원본 엔진 녹음(mp3), 맵 하늘·바다 이미지 |
 | `build/` | 채팅에서 쓰던 **빌드 기록 (참고용)**. 중간 파일(t_nitro.html 등)이 없어서 그대로 다시 돌리진 못해요. 앞으로는 `index.html`을 직접 고치면 됩니다. |
 | `tests/` | Playwright 테스트 스크립트 (참고용, 경로는 채팅 환경 기준이라 수정 필요) |
