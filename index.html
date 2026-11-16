@@ -436,6 +436,9 @@ body[data-mode=practice] #tl,body[data-mode=practice] #bt,body[data-mode=practic
 /* 순위표 맵 탭 */
 #mlbBtn{display:inline-flex;align-items:center;gap:8px;padding:12px 26px;border-radius:99px;border:1.5px solid #f2c230;background:#14171ce6;color:#f2c230;font:700 clamp(14px,2.2vh,17px)/1 inherit;letter-spacing:.04em;cursor:pointer;box-shadow:0 0 18px #f2c23033}
 #mlbBtn:hover{background:#f2c230;color:#111}
+#modes>#bgmBtn{position:absolute;left:max(14px,env(safe-area-inset-left));top:14px;z-index:3;width:44px;height:44px;border-radius:50%;border:1.5px solid #3a4258;background:#0e1117cc;color:#f2c230;display:grid;place-items:center;cursor:pointer;padding:0}
+#bgmBtn:hover{border-color:#f2c230}#bgmBtn .x{display:none}#bgmBtn.off{color:#8d96a3}#bgmBtn.off .x{display:inline}#bgmBtn.off .w1,#bgmBtn.off .w2{display:none}
+#bgmBtn.on .w2{animation:bgmw 1.2s ease-in-out infinite}@keyframes bgmw{50%{opacity:.25}}
 #mbtns{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
 #mrpBtn{display:inline-flex;align-items:center;gap:8px;padding:12px 26px;border-radius:99px;border:1.5px solid #ff6b5e;background:#14171ce6;color:#ff8a7e;font:700 clamp(14px,2.2vh,17px)/1 inherit;letter-spacing:.04em;cursor:pointer;box-shadow:0 0 18px #ff5a4a33}
 #mrpBtn:hover{background:#ff5a4a;color:#111}
@@ -592,6 +595,7 @@ body[data-mode=hard] .lbtabs{display:none}
   </section>
 </div>
 <div id="modes" class="on" role="dialog" aria-label="모드 선택">
+  <button type="button" id="bgmBtn" aria-label="배경 음악 켜기/끄기" aria-pressed="true"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path class="w1" d="M16 8.5a5 5 0 0 1 0 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path class="w2" d="M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path class="x" d="M16 9l5 6M21 9l-5 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
   <div class="bg"></div>
   <h1><small>ARNGBECHU RACING</small>모드 선택</h1>
   <div class="mcards" id="mStep1">
@@ -3070,6 +3074,24 @@ function rpStop(){
 }
 $('send').onclick=doSend;
 
+/* ---------- 메뉴 배경 음악: 모드 선택·차 선택(홈) 화면에서만, 게임 들어가면 꺼짐. 스피커 버튼으로 끄고 켜기(drift-bgm) ---------- */
+const BGM={el:null,want:false,muted:false,vol:0};
+try{BGM.muted=localStorage.getItem('drift-bgm')==='off'}catch(e){}
+function bgmUI(){const b=$('bgmBtn');b.classList.toggle('off',BGM.muted);b.classList.toggle('on',!BGM.muted&&!!BGM.el&&!BGM.el.paused);b.setAttribute('aria-pressed',!BGM.muted)}
+function bgmTick(){
+  const menu=!started&&MODE!=='replay'&&($('modes').classList.contains('on')||$('start').style.display==='grid');
+  const want=menu&&!BGM.muted&&BGM.ready;
+  if(want&&!BGM.el){BGM.el=new Audio('assets/sounds/bgm.mp3');BGM.el.loop=true;BGM.el.volume=0}
+  if(!BGM.el)return;
+  BGM.vol+=((want?.38:0)-BGM.vol)*(want?.2:.35);if(BGM.vol<.02&&!want)BGM.vol=0;BGM.el.volume=Math.min(1,Math.max(0,BGM.vol));
+  if(want&&BGM.el.paused)BGM.el.play().then(bgmUI).catch(()=>{});
+  if(!want&&BGM.vol===0&&!BGM.el.paused){BGM.el.pause();bgmUI()}
+}
+setInterval(bgmTick,100);
+/* 브라우저는 사용자가 한 번 누르기 전엔 소리를 못 틀어요 → 처음 누르거나 키를 누르면 시작 */
+['pointerdown','keydown'].forEach(t=>addEventListener(t,()=>{if(!BGM.ready){BGM.ready=true;bgmTick()}},{capture:true}));
+$('bgmBtn').onclick=e=>{e.stopPropagation();BGM.muted=!BGM.muted;try{localStorage.setItem('drift-bgm',BGM.muted?'off':'on')}catch(err){}BGM.ready=true;bgmTick();bgmUI()};
+bgmUI();
 /* ---------- 모드 선택 → 이름 입력 → 홈 ---------- */
 const MODENAME={lap:'개인 랩타임',hard:'하드 랩타임',duel:'1vs1 대결',practice:'연습장',bike:'오토바이 랩타임'};
 const MC=document.querySelectorAll('#modes .mc');
