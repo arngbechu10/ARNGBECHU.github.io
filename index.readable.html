@@ -1307,7 +1307,25 @@ const TG_CTRL=[[0,0],[80,-4],[160,6],[230,-10],[300,0],[350,25],
 const TG_TOP=160,TG_DROP=.16;
 const TG_RAILS=[[0,.14],[.19,.23],[.27,.32],[.37,.42],[.50,.62],[.67,.80],[.93,1]];   /* 골짜기 쪽 가드레일 있는 구간(코스 비율) */
 const TG_CLIFF=[[.04,.12],[.20,.30],[.38,.48],[.55,.66],[.72,.86]];                     /* 산 쪽 바위 절벽 */
-const TG_LAMPS=[[0,.25],[.45,.6],[.85,1]];                                              /* 주황 가로등 */
+const TG_LAMPS=[[0,.25],[.45,.6],[.85,1]];
+const TG_DROPS=[[.155,.185],[.435,.495],[.82,.92]];   /* 바리케이드 없이 낭떠러지(떨어지면 20m 뒤에서 다시 출발) */
+const TG_ROCKS=[[.105,-3,1.4],[.109,2.6,.9],[.255,3,1.6],[.345,-4,1.3],[.351,1.2,.8],[.565,0,1.5],[.605,4,1.2],[.735,-2.6,1.5],[.741,4.4,1],[.785,2,1.3]];  /* 도로 위 돌 [비율, 옆(+오른쪽), 크기] */
+let TG_SD=[],TG_K=[],DROPS=null;
+/* 코스마다 한 번: 커브·골짜기 쪽·낭떠러지 구간 계산 (지형보다 먼저) */
+function tgPrep(){
+  const K=[];for(let i=0;i<N;i++){const a=Math.max(0,i-4),b=Math.min(N-1,i+4);let d=TH[b]-TH[a];d=Math.atan2(Math.sin(d),Math.cos(d));K.push(d/((b-a)*SP))}
+  const SD=[];let prev=1;for(let i=0;i<N;i++){let s=prev;if(Math.abs(K[i])>1/40)s=-Math.sign(K[i]);else if(Math.abs(TN[i][1])>.25)s=Math.sign(TN[i][1]);SD.push(s);prev=s}
+  TG_K=K;TG_SD=SD;DROPS=new Int8Array(N);
+  TG_DROPS.forEach(([a,b])=>{for(let i=Math.round(a*(N-1));i<=Math.round(b*(N-1));i++)DROPS[i]=SD[i]});
+}
+/* 낭떠러지 옆 지형을 깊게 파요 */
+function tgCarve(x,z,h){
+  let bd=1e18,bj=-1,ad=1e18;
+  for(let i=0;i<N;i+=3){const dx=x-TP[i][0],dz=z-TP[i][1],d=dx*dx+dz*dz;if(d<ad)ad=d;if(DROPS[i]&&d<bd){bd=d;bj=i}}
+  if(bj<0||bd>2500||bd>ad+60)return h;
+  const lat=((x-TP[bj][0])*TN[bj][0]+(z-TP[bj][1])*TN[bj][1])*DROPS[bj];if(lat<HALF+1.5)return h;
+  return h-Math.min(42,(lat-HALF-1.5)*3.4)*(1-sm01((lat-(HALF+24))/16));
+}                                              /* 주황 가로등 */
 /* 끝이 열린 곡선(처음과 끝이 이어지지 않음) */
 function openSpline(ctrl){
   const P=[[2*ctrl[0][0]-ctrl[1][0],2*ctrl[0][1]-ctrl[1][1]],...ctrl,[2*ctrl.at(-1)[0]-ctrl.at(-2)[0],2*ctrl.at(-1)[1]-ctrl.at(-2)[1]]],d=[];
@@ -1333,12 +1351,11 @@ function tougeTY(){
   return a;
 }
 MAPS.touge={half:7.5,wall:1.2,open:true,laps:1,touge:true,terrain:true,tbase:tgBase,night:[.19,.23,.36],bg:0x070914,fog:[0x090b17,40,520],gnd:0x04050a,gy:-320,
-  asph:0x3f434b,kerb:['#4c4f56','#3a3d43'],pts:()=>openSpline(TG_CTRL),tyFn:tougeTY,finXZ:[440,954]};
+  asph:0x3f434b,kerb:['#4c4f56','#3a3d43'],pts:()=>openSpline(TG_CTRL),tyFn:tougeTY,finXZ:[440,954],prep:tgPrep,tmod:tgCarve,respawn:true};
 function buildTouge(){
   const fi=f=>Math.max(0,Math.min(N-1,Math.round(f*(N-1)))),inR=(R,i)=>R.some(([a,b])=>i>=fi(a)&&i<=fi(b));
-  const K=[];for(let i=0;i<N;i++){const a=Math.max(0,i-4),b=Math.min(N-1,i+4);let d=TH[b]-TH[a];d=Math.atan2(Math.sin(d),Math.cos(d));K.push(d/((b-a)*SP))}
-  /* 골짜기 쪽(+1이면 오른쪽 TN 방향): 급커브는 바깥쪽, 아니면 아래(+z) 쪽 */
-  const SD=[];let prev=1;for(let i=0;i<N;i++){let s=prev;if(Math.abs(K[i])>1/40)s=-Math.sign(K[i]);else if(Math.abs(TN[i][1])>.25)s=Math.sign(TN[i][1]);SD.push(s);prev=s}
+  /* 골짜기 쪽(+1이면 오른쪽 TN 방향): 급커브는 바깥쪽, 아니면 아래(+z) 쪽 (tgPrep에서 계산) */
+  const K=TG_K,SD=TG_SD;
   const runs=(test,fn)=>{let a=-1;for(let i=0;i<=N;i++){const ok=i<N&&test(i);if(ok&&a<0)a=i;if((!ok||(i<N&&a>=0&&SD[i]!==SD[a]))&&a>=0){fn(a,Math.min(i,N-1),SD[a]);a=ok?i:-1}}};
   /* 도로 선: 가운데 노란 두 줄, 가장자리 흰 줄 */
   const ylM=tkM(0xe2b42a),whM=tkM(0xcfd2d8);
@@ -1347,7 +1364,7 @@ function buildTouge(){
   const railM=new THREE.MeshBasicMaterial({map:railTex('guard'),transparent:true,alphaTest:.5,side:THREE.DoubleSide,color:0x9aa0ae});
   runs(i=>inR(TG_RAILS,i),(a,b,sd)=>wallStrip(sd*(WALL+.35),.9,railM,4,a,b));
   const curbM=tkM(0x55585e,{side:THREE.DoubleSide}),post=[];
-  runs(i=>!inR(TG_RAILS,i),(a,b,sd)=>{wallStrip(sd*(WALL+.3),.28,curbM,4,a,b);for(let i=a;i<b;i+=5)post.push(tkAt(i,sd*(WALL+.3)).concat(TY[i]))});
+  runs(i=>!inR(TG_RAILS,i)&&!DROPS[i],(a,b,sd)=>{wallStrip(sd*(WALL+.3),.28,curbM,4,a,b);for(let i=a;i<b;i+=5)post.push(tkAt(i,sd*(WALL+.3)).concat(TY[i]))});
   if(post.length){const pg=new THREE.BoxGeometry(.14,1.05,.14),pm=new THREE.InstancedMesh(pg,tkM(0x9c9ea4),post.length),d=new THREE.Object3D(),rp=[];
     post.forEach((p,k)=>{d.position.set(p[0],p[2]+.52,p[1]);d.updateMatrix();pm.setMatrixAt(k,d.matrix);rp.push(p[0],p[2]+.92,p[1])});MG.add(pm);
     const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(rp,3));
@@ -1360,6 +1377,19 @@ function buildTouge(){
   const rockM=new THREE.MeshBasicMaterial({map:rockT,color:0x646a7a,side:THREE.DoubleSide});
   runs(i=>inR(TG_CLIFF,i),(a,b,sd)=>{wallStrip(-sd*(WALL+.7),7,rockM,9,a,b,-.3);wallStrip(-sd*(WALL+2.6),9,rockM,11,a,b,5)});
   runs(i=>!inR(TG_CLIFF,i),(a,b,sd)=>wallStrip(-sd*(WALL+.3),.45,curbM,4,a,b));
+  /* 낭떠러지: 도로 끝에서 아래로 바위 벽 + 경고판 */
+  runs(i=>DROPS[i]!==0,(a,b,sd)=>{wallStrip(sd*(HALF+1.45),30,rockM,9,a,b,-30.1)});
+  const warn=(txt,col)=>tkM(0xffffff,{map:tkTex(128,128,(x,w,h)=>{x.fillStyle=col;x.beginPath();x.moveTo(64,6);x.lineTo(122,116);x.lineTo(6,116);x.closePath();x.fill();x.fillStyle='#111';x.beginPath();x.moveTo(64,22);x.lineTo(108,106);x.lineTo(20,106);x.closePath();x.fill();
+    x.fillStyle=col;x.beginPath();x.moveTo(64,30);x.lineTo(101,101);x.lineTo(27,101);x.closePath();x.fill();x.fillStyle='#111';x.font='900 21px sans-serif';x.textAlign='center';x.fillText(txt,64,92)}),side:THREE.DoubleSide});
+  const wDrop=warn('추락','#f2c230'),wRock=warn('낙석','#f2c230'),wp=tkM(0x8a8d92),sign=(f,mat)=>{const i=Math.max(2,Math.round(f*(N-1))-Math.round(70/SP)),sd=-(TG_SD[i]||1),[x,z]=tkAt(i,sd*(WALL+.9));
+    tkBoard(x,TY[i]+2.3,z,1.5,1.5,-Math.cos(TH[i]),-Math.sin(TH[i]),mat);tkAdd(new THREE.BoxGeometry(.1,2,.1),wp,x,TY[i]+1,z,0)};
+  TG_DROPS.forEach(([a])=>sign(a,wDrop));
+  /* 도로 위 돌 (부딪히면 막혀요) */
+  const rM=tkM(0x6b6870),rD=tkM(0x48464e),rockG=r=>{const g=new THREE.IcosahedronGeometry(r,1),p=g.attributes.position,sd=Math.random()*100;for(let k=0;k<p.count;k++){const X=p.getX(k),Y=p.getY(k),Z=p.getZ(k),f=Math.sin((X*12.9+Y*78.2+Z*37.7)/r+sd)*43758.5,s=.78+.38*(f-Math.floor(f));p.setXYZ(k,X*s,Y*s*.75,Z*s)}return g};
+  let lastSign=-1;TG_ROCKS.forEach(([f,lat,r])=>{const i=Math.round(f*(N-1)),[x,z]=tkAt(i,lat),h=TH[i];
+    tkAdd(rockG(r),rM,x,TY[i]+r*.5,z,Math.random()*6);TOBS.push({x,z,c:Math.cos(h),s:Math.sin(h),hl:r*.75,hw:r*.75});
+    for(let k=0;k<5;k++){const [a,b]=tkAt(i,lat+(Math.random()-.5)*5,(Math.random()-.5)*6);tkAdd(rockG(.15+Math.random()*.25),rD,a,TY[i]+.1,b,0)}
+    if(f-lastSign>.03){sign(f,wRock);lastSign=f}});
   /* 주황 가로등(산 쪽) + 젖은 도로에 비친 빛 */
   const lp=[],glowRoad=[];for(let i=4;i<N-4;i+=22){if(!inR(TG_LAMPS,i))continue;const sd=-SD[i],[x,z]=tkAt(i,sd*(WALL+1.4));lp.push([x,z,TY[i],i,sd])}
   const pole=new THREE.InstancedMesh(new THREE.CylinderGeometry(.11,.15,9,6),tkM(0x24262c),lp.length),arm=new THREE.InstancedMesh(new THREE.BoxGeometry(2.4,.12,.12),tkM(0x24262c),lp.length),d=new THREE.Object3D(),hp=[];
@@ -1475,12 +1505,20 @@ function onIce(){const u=ci/N;for(const z of ICE)if(u>=z[0]&&u<=z[1]&&side>=z[2]
 
 /* ---------- 추락 (협곡) ---------- */
 function startFall(){
-  if(FALL||DEAD)return;FALL=true;fallT=0;AIR=true;cy=TY[ci]||0;cvy=1.2;
+  if(FALL||DEAD)return;FALL=true;fallT=0;fallI=ci;AIR=true;cy=TY[ci]||0;cvy=1.2;
   for(const k in keys)keys[k]=0;if(eg)eg.gain.value=.15;
 }
 function fallStep(dt){
   fallT+=dt;c.x+=c.vx*dt;c.z+=c.vz*dt;c.vx*=Math.exp(-.4*dt);c.vz*=Math.exp(-.4*dt);cvy-=9.8*dt;cy+=cvy*dt;c.h+=.6*dt;
-  if(fallT>1.7&&!DEAD){if(MODE==='hard')hardFall();else{FALL=false;reset()}}
+  if(fallT>1.7&&!DEAD){if(MODE==='hard')hardFall();else if(MAPS[MAPID].respawn)respawn();else{FALL=false;reset()}}
+}
+let fallI=0;
+/* 떨어지면 떨어진 곳 20m 뒤 도로 가운데에서 다시 출발 (시간은 계속 흘러요) */
+function respawn(){
+  const i=Math.max(0,fallI-Math.round(20/SP));FALL=false;AIR=false;cvy=0;
+  prog-=fallI-i;c={x:TP[i][0],z:TP[i][1],h:TH[i],vx:0,vz:0};ci=i;cy=TY[i];camY=TY[i];camP=TSL[i]||0;steer=0;hitK=0;
+  for(const k in keys)keys[k]=0;document.querySelectorAll('.pad button').forEach(b=>b.classList.remove('on'));
+  $('stgT').textContent='추락!';$('stgS').textContent='조금 뒤에서 다시 출발해요';$('stg').classList.add('on');clearTimeout(respawn.t);respawn.t=setTimeout(()=>$('stg').classList.remove('on'),1300);
 }
 function hardFall(){
   if(DEAD)return;DEAD=true;c.vx=c.vz=0;if(eg)eg.gain.value=0;if(sg)sg.gain.value=0;thump(1);
@@ -1722,7 +1760,7 @@ function buildTerrain(){
   TP.forEach(p=>{x0=Math.min(x0,p[0]);x1=Math.max(x1,p[0]);z0=Math.min(z0,p[1]);z1=Math.max(z1,p[1])});
   x0-=pad;x1+=pad;z0-=pad;z1+=pad;
   const gx=Math.ceil((x1-x0)/cell)+1,gz=Math.ceil((z1-z0)/cell)+1,e0=HALF+16;
-  const TD=MAPS[MAPID],NT=TD.night||[1,1,1],base=TD.tbase||((x,z)=>78-.2*z+9*Math.sin(x*.011+z*.007)+6*Math.sin(x*.023-z*.017)+3*Math.sin(x*.05+z*.04));
+  const TD=MAPS[MAPID],NT=TD.night||[1,1,1],TMOD=TD.tmod,base=TD.tbase||((x,z)=>78-.2*z+9*Math.sin(x*.011+z*.007)+6*Math.sin(x*.023-z*.017)+3*Math.sin(x*.05+z*.04));
   terrH=(x,z)=>{
     let sw=0,sy=0,dmin=1e9;
     for(let i=0;i<N;i+=2){const dx=x-TP[i][0],dz=z-TP[i][1],d2=dx*dx+dz*dz,k=1/((d2+1)*(d2+1));sw+=k;sy+=k*TY[i];if(d2<dmin)dmin=d2}
@@ -1730,7 +1768,7 @@ function buildTerrain(){
     return (sy/sw-.4)*a+base(x,z)*(1-a);
   };
   const H=new Float32Array(gx*gz);
-  for(let j=0;j<gz;j++)for(let i=0;i<gx;i++)H[j*gx+i]=terrH(x0+i*cell,z0+j*cell);
+  for(let j=0;j<gz;j++)for(let i=0;i<gx;i++){const x=x0+i*cell,z=z0+j*cell;H[j*gx+i]=TMOD?TMOD(x,z,terrH(x,z)):terrH(x,z)}
   const pos=new Float32Array(gx*gz*3),col=new Float32Array(gx*gz*3),ix=[];
   const sun=[-.45,.75,.35],sl=Math.hypot(...sun);
   const grass=[[.26,.42,.20],[.33,.50,.25]],rock=[.56,.53,.49],dirt=[.50,.45,.36];
@@ -2024,6 +2062,7 @@ function setMap(id){
   document.documentElement.style.setProperty('--sky','url("'+SKIES[D.sky||id]+'")');document.documentElement.style.setProperty('--msky','url("'+SKIES.seoul+'")');
   if(D.practice)buildPractice();else if(D.ship)buildShip();else if(D.canyon)buildCanyon();else{
   /* 도로 */
+  DROPS=null;if(D.prep)D.prep();
   if(D.terrain)buildTerrain();
   if(D.shoulder){const sm=new THREE.MeshBasicMaterial({color:D.shoulder,side:THREE.DoubleSide});strip(HALF,WALL+1.2,.01,()=>[0,0],sm);strip(-WALL-1.2,-HALF,.01,()=>[0,0],sm)}
   strip(-HALF,HALF,0,(i,s)=>[s*1.6,TS[i]/10],new THREE.MeshBasicMaterial({map:asphT,color:D.asph,side:THREE.DoubleSide}));
@@ -2153,7 +2192,8 @@ function step(dt){
   if(JMP&&ci>=JMP.iLip&&ci<JMP.iLand&&vf>0){launch(vf);return}
   if(OBS.length)obsCollide();
   /* 코스 밖 가드: 너무 멀리 벗어나면 막아서 지름길을 방지 */
-  if(WALL&&Math.abs(side)>WALL){
+  if(DROPS&&DROPS[ci]&&!AIR&&Math.sign(side)===DROPS[ci]&&Math.abs(side)>HALF+1.6){startFall();return}
+  if(WALL&&Math.abs(side)>WALL&&!(DROPS&&DROPS[ci]&&Math.sign(side)===DROPS[ci])){
     const n=TN[ci],sg=side>0?1:-1,over=Math.abs(side)-WALL;
     c.x-=n[0]*sg*over;c.z-=n[1]*sg*over;
     const vn=c.vx*n[0]*sg+c.vz*n[1]*sg;
