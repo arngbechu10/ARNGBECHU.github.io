@@ -480,7 +480,7 @@ body[data-mode=hard] .lbtabs{display:none}
       <button role="radio" aria-checked="false" data-map="xmas"><img src="DATAURI" alt=""><b>Christmas</b><em>쉬움 · 눈 내리는 밤</em></button>
       <button role="radio" aria-checked="false" data-map="tokyo"><img src="DATAURI" alt=""><b>Tokyo Neon</b><em>어려움 · 네온 시티</em></button>
       <button role="radio" aria-checked="false" data-map="ny"><img src="DATAURI" alt=""><b>New York</b><em>어려움 · 다운타운</em></button>
-      <button role="radio" aria-checked="false" data-map="pyongyang"><img src="DATAURI" alt=""><b>Pyongyang</b><em>보통 · 동상 광장</em></button>
+      <button role="radio" aria-checked="false" data-map="pyongyang"><img src="DATAURI" alt=""><b>North Korea</b><em>보통 · 동상 광장</em></button>
     </div>
     <div class="stages"><div class="stl" id="stList"></div><p>스테이지를 하나씩 클리어해요. 벽에 부딪혀도 되는 횟수가 10번부터 스테이지마다 1번씩 줄어요!</p></div>
     <div class="duelinfo" id="duelInfo"><div><span>나</span><b id="diMe"></b></div><div><span id="diOppN">상대</span><b id="diOpp"></b></div></div>
@@ -2405,7 +2405,7 @@ const HDR={apikey:KEY,'Content-Type':'application/json'};
 /* RICH: scores 표에 map / mode / stage 열이 있으면 true, 없으면 false (처음엔 모름) */
 var RICH=null;
 var MODE='lap',HOLD=false,DEAD=false,PLAYER='';
-const MAPLABEL={seoul:'Seoul',mountain:'Mountain Pass',xmas:'Christmas',tokyo:'Tokyo Neon',ny:'New York',pyongyang:'Pyongyang',ship:'Cargo Ship',alps:'Alps',canyon:'Red Canyon'};
+const MAPLABEL={seoul:'Seoul',mountain:'Mountain Pass',xmas:'Christmas',tokyo:'Tokyo Neon',ny:'New York',pyongyang:'North Korea',ship:'Cargo Ship',alps:'Alps',canyon:'Red Canyon'};
 const HARD_STAGES=['xmas','seoul','mountain','ship','alps','canyon']; /* 쉬운 순서. 새 맵은 이 배열 뒤에 이름만 추가하면 다음 스테이지가 돼요 */
 /* 스테이지마다 허용 충돌 횟수가 줄어들어요: 1스테이지 10번 → 2스테이지 9번 → 3스테이지 8번 …
    (맵이 6개가 되면 10·9·8·7·6·5번). 시작 횟수는 HARD_FIRST, 최소는 HARD_MIN. 충돌 횟수는 스테이지마다 새로 세요. */
