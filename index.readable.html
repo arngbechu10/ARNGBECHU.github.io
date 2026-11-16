@@ -529,7 +529,7 @@ body[data-mode=hard] .lbtabs{display:none}
       <button role="radio" aria-checked="false" aria-disabled="true" class="locked" data-car="tesla"><img alt="" src="DATAURI"><span>Tesla Roadster</span></button>
     </div>
     <div class="cars bikes" role="radiogroup" aria-label="오토바이 선택"><button role="radio" aria-checked="true" data-bike="h2r"><img alt="" src="DATAURI"><span>Ninja H2R</span></button></div>
-    <div class="bmap"><img src="DATAURI" alt=""><div><b>Coastal Cliff Highway</b><em>오토바이 전용 · 해안 절벽 5km · 드리프트 코너 14개 · 해안 터널 · 바다 위 아치 다리</em></div></div>
+    <div class="bmap"><img src="DATAURI" alt=""><div><b>Coastal Cliff Highway</b><em>오토바이 전용 · 해안 섬 5.1km · 코너 18개 · 해안 터널 · 바다 위 아치 다리 · 관중석</em></div></div>
     <div class="maps" role="radiogroup" aria-label="맵 선택">
       <button role="radio" aria-checked="true" data-map="seoul"><img src="DATAURI" alt=""><b>Seoul</b><em>보통 · 야경 도심</em></button>
       <button role="radio" aria-checked="false" data-map="mountain"><img src="DATAURI" alt=""><b>Mountain Pass</b><em>어려움 · 내리막 산길</em></button>
@@ -1525,11 +1525,11 @@ function buildTouge(){
    급커브가 확실해요(반지름 18~30m 드리프트 코너 14개). 해안 고속도로 출발 → 절벽 옆 S자(안쪽 거대한 바위 절벽, 바깥 바다)
    → 헤어핀 → 해안 터널(CO_TUN) → 능선 꼭대기(92m) → 빠른 고속도로 → 왼쪽 헤어핀 → 바다 위 긴 아치 다리(CO_BRIDGE) → 결승.
    지형은 buildTerrain(D.tbase=바다 밑바닥+언덕, D.tmod=터널 위 산/다리 밑 바다, D.tcut=터널 입구 구멍) 재사용. */
-const CO_W=[[0,0,0],[400,0,22],[420,-240,26],[1080,-240,30],[1060,-330,20],[1095,-405,18],[1040,-470,18],[1092,-545,22],[1090,-685,24],[700,-685,40],[600,-618,25],[470,-622,25],[380,-662,35],[100,-650,60],[-180,-552,30],[-200,-420,22],[-330,-360,40],[-560,-372,50],[-790,-432,25],[-855,-300,30],[-840,-128,25],[-560,-95,40],[-440,0,30]];
-const CO_ELEV=[[0,22],[.08,24],[.126,30],[.256,48],[.29,55],[.323,62],[.351,70],[.36,73],[.42,75],[.45,80],[.5,92],[.554,88],[.614,70],[.668,55],[.715,48],[.762,40],[.825,32],[.881,26],[.905,22],[.98,22],[1,22]];
-const CO_BRIDGE=[.917,.973],CO_TUN=[.362,.42];
-const CO_HILLS=[[960,-430,125,80],[905,-720,150,110],[1170,-770,85,70],[300,-860,150,170],[-100,-800,125,160],[-520,-230,62,170],[200,-140,48,120],[-660,150,40,170],[700,-120,42,140],[-880,-520,70,120]];
-const CO_LIGHT=[1172,-772];
+const CO_W=[[0,0,0],[0,-265,35],[318,-327,25],[300,-481,35],[28,-500,40],[-15,-625,80],[12,-752,35],[215,-732,90],[423,-752,22],[423,-999,30],[690,-985,140],[941,-999,28],[880,-850,70],[812,-691,22],[577,-715,25],[577,-506,25],[790,-522,80],[1003,-493,40],[997,-284,40],[639,-284,22],[614,-86,25],[390,-62,200],[158,-12,30],[148,130,15],[0,130,15]];   /* 사용자 구상도(2번째) 모양: 출발 왼쪽 아래 → 1~3 → 4~5 → 6~7 → 터널 → 8~9 꼭대기 → 10 절벽 → 11~12 → 13~14 다리 → U자 */
+const CO_ELEV=[[0,20],[.05,22],[.14,30],[.193,36],[.242,45],[.32,62],[.366,72],[.42,88],[.463,92],[.525,70],[.569,62],[.607,55],[.689,45],[.726,40],[.795,32],[.832,26],[.846,24],[.905,24],[.921,22],[.975,20],[1,20]];
+const CO_BRIDGE=[.846,.905],CO_TUN=[.329,.357];
+const CO_HILLS=[[440,-880,150,110],[760,-860,120,90],[1065,-1065,80,70],[200,-600,60,170],[300,-200,45,140],[800,-380,50,130],[-140,-700,140,130],[-120,-230,60,105],[650,170,40,170],[1150,-600,60,110]];
+const CO_LIGHT=[1075,-1072];
 /* 꼭짓점 사이를 반지름 r 원호로 이어요 (r=0이면 꺾임 없이 그 점을 지나감) */
 function filletPts(W,step){
   const n=W.length,out=[];
@@ -1552,7 +1552,11 @@ function coastTY(){
 }
 const coIn=(i,R)=>{const f=i/N;return f>=R[0]&&f<=R[1]};
 const coTunUp=i=>{const i0=Math.round(CO_TUN[0]*N),i1=Math.round(CO_TUN[1]*N);return 9.5+Math.min(14,.4*Math.min(i-i0,i1-i)*SP)};
-const coBase=(x,z)=>{let h=-24+3*Math.sin(x*.011+z*.008)+2*Math.sin(x*.03-z*.02);for(const [hx,hz,hh,hr] of CO_HILLS){const d2=((x-hx)*(x-hx)+(z-hz)*(z-hz))/(hr*hr);h+=hh*Math.exp(-d2)*(1+.12*Math.sin(x*.05+z*.07))}return h};
+/* 서킷 안쪽은 섬(땅), 바깥은 바다 */
+let CO_POLY=null;
+function coInside(x,z){if(!CO_POLY||CO_POLY.tp!==TP){const p=[];for(let i=0;i<N;i+=6)p.push(TP[i]);CO_POLY={tp:TP,p}}
+  const P=CO_POLY.p;let c=false;for(let i=0,j=P.length-1;i<P.length;j=i++){const a=P[i],b=P[j];if(((a[1]>z)!==(b[1]>z))&&(x<(b[0]-a[0])*(z-a[1])/(b[1]-a[1])+a[0]))c=!c}return c}
+const coBase=(x,z)=>{let h=(coInside(x,z)?14+6*Math.sin(x*.017)*Math.sin(z*.013):-24)+3*Math.sin(x*.011+z*.008)+2*Math.sin(x*.03-z*.02);for(const [hx,hz,hh,hr] of CO_HILLS){const d2=((x-hx)*(x-hx)+(z-hz)*(z-hz))/(hr*hr);h+=hh*Math.exp(-d2)*(1+.12*Math.sin(x*.05+z*.07))}return h};
 /* 터널 위는 산, 다리 밑은 바다 */
 function coMod(x,z,h){
   let bd=1e18,bi=0;for(let i=0;i<N;i+=3){const dx=x-TP[i][0],dz=z-TP[i][1],d=dx*dx+dz*dz;if(d<bd){bd=d;bi=i}}
@@ -1562,9 +1566,9 @@ function coMod(x,z,h){
   return h;
 }
 function coCut(x,y,z){for(const f of CO_TUN){const i=Math.round(f*N)%N;if((x-TP[i][0])**2+(z-TP[i][1])**2<18*18&&y>TY[i]+.3)return true}return false}
-MAPS.coast={half:8,wall:1.4,rail:'guard',coast:true,bike:true,sea:true,terrain:true,tcell:8,treeN:900,te0:12,tw:20,tbase:coBase,tmod:coMod,tcut:coCut,
-  grass:[[.30,.44,.20],[.40,.52,.26]],rock:[.62,.56,.47],bg:0x9cc8ec,fog:[0xb4d4ee,320,1800],gnd:0x1d5d8c,gy:-1.2,asph:0x5a5f68,kerb:['#e6e6e6','#9aa0a8'],
-  pts:()=>closedSpline(filletPts(CO_W,4)),tyFn:coastTY,shoulder:0x8f9296};
+MAPS.coast={half:8,wall:4.5,rail:'guard',coast:true,bike:true,sea:true,terrain:true,tcell:8,treeN:900,te0:15,tw:20,tbase:coBase,tmod:coMod,tcut:coCut,
+  grass:[[.30,.44,.20],[.40,.52,.26]],rock:[.62,.56,.47],bg:0x9cc8ec,fog:[0xb4d4ee,320,1800],gnd:0x1d5d8c,gy:-1.2,asph:0x5a5f68,kerb:['#6f8a50','#6b864d'],
+  pts:()=>closedSpline(filletPts(CO_W,4)),tyFn:coastTY,shoulder:0x6b864d};
 let CO_SEA=null;
 function buildCoast(){
   TKB=new Map();
@@ -1578,7 +1582,7 @@ function buildCoast(){
   const ylM=tkM(0xe6b62c),whM=tkM(0xe2e4e8);
   [[-.3,-.14,ylM],[.14,.3,ylM],[-HALF+.3,-HALF+.48,whM],[HALF-.48,HALF-.3,whM]].forEach(([a,b,m])=>strip(a,b,.03,()=>[0,0],m));
   /* 긴 아치 다리 */
-  {const i0=Math.round(CO_BRIDGE[0]*N),i1=Math.round(CO_BRIDGE[1]*N),con=tkM(0xc9c3b6),conD=tkM(0x9b958a),W=HALF+1.6;
+  {const i0=Math.round(CO_BRIDGE[0]*N),i1=Math.round(CO_BRIDGE[1]*N),con=tkM(0xc9c3b6),conD=tkM(0x9b958a),W=WALL+.6;
     strip2(-W,W,-1.3,i0,i1,()=>[0,0],new THREE.MeshBasicMaterial({color:0xb7b1a5,side:THREE.DoubleSide}));
     wallStrip(W,2.6,con,6,i0,i1,-1.4);wallStrip(-W,2.6,con,6,i0,i1,-1.4);
     const mid=(i0+i1)/2,hs=Math.round((i1-i0)*.31),a0=Math.round(mid-hs),a1=Math.round(mid+hs);
@@ -1610,7 +1614,7 @@ function buildCoast(){
         tkBoard(x,TY[j]+1.6,z,1.6,.8,fx,fz,chM[s]);tkAdd(new THREE.BoxGeometry(.09,1.3,.09),postM,x,TY[j]+.65,z,0)}}}
   /* 초록 고속도로 표지판 (출발 직선, 능선 고속도로) */
   {const gm=tkM(0x8e939a),sg=(t1,t2)=>new THREE.MeshBasicMaterial({map:tkTex(256,128,(x,w,h)=>{x.fillStyle='#1c7a43';x.fillRect(0,0,w,h);x.strokeStyle='#fff';x.lineWidth=4;x.strokeRect(5,5,w-10,h-10);x.fillStyle='#fff';x.font='700 30px system-ui';x.fillText('↑ '+t1,18,52);x.fillText(t2+' →',18,104)}),side:THREE.DoubleSide});
-    [[.02,'Coastal Road','Ocean View'],[.53,'Coastal Road','Lighthouse'],[.69,'Harbor Town','Cliff Bridge']].forEach(([f,a,b])=>{const i=Math.round(f*N),y=TY[i],W=WALL+1.4;
+    [[.06,'Coastal Road','Ocean View'],[.39,'Coastal Road','Lighthouse'],[.76,'Harbor Town','Cliff Bridge']].forEach(([f,a,b])=>{const i=Math.round(f*N),y=TY[i],W=WALL+1.4;
       [-1,1].forEach(sd=>{const [x,z]=tkAt(i,sd*W);tkAdd(new THREE.BoxGeometry(.4,8.6,.4),gm,x,y+4.3,z,0)});const [cx,cz]=tkAt(i,0);tkAdd(new THREE.BoxGeometry(.5,.5,W*2),gm,cx,y+8.2,cz,-TH[i]);
       const [bx,bz]=tkAt(i,2.8);tkBoard(bx,y+6.9,bz,6,3,-Math.cos(TH[i]),-Math.sin(TH[i]),sg(a,b))})}
   /* 등대 */
@@ -1619,9 +1623,57 @@ function buildCoast(){
     tkAdd(new THREE.CylinderGeometry(2.1,2.8,18,14),wm,bp[0],y+9,bp[1],0);tkAdd(new THREE.CylinderGeometry(2.5,2.5,1,14),dm,bp[0],y+18.5,bp[1],0);
     tkAdd(new THREE.CylinderGeometry(1.7,1.7,2.6,10),tkM(0xfff3c4),bp[0],y+20.3,bp[1],0);tkAdd(new THREE.ConeGeometry(2.2,2.6,12),rm,bp[0],y+22.9,bp[1],0);
     tkAdd(new THREE.BoxGeometry(9,4,7),wm,bp[0]+6,y+2,bp[1]+2,.4);tkAdd(new THREE.BoxGeometry(9.6,.8,7.6),rm,bp[0]+6,y+4.3,bp[1]+2,.4)}
+
+  /* ---- 오토바이 서킷 디테일 (MotoGP·RIDE 같은 오토바이 게임 서킷 참고) ---- */
+  {const cs=[];for(let i=0;i<N;i++){const a=Math.abs(K[i]);if(a<1/70)continue;let pk=true;for(let k=-12;k<=12;k++)if(Math.abs(K[(i+k+N)%N])>a)pk=false;if(pk&&(!cs.length||i-cs[cs.length-1]>25))cs.push(i)}
+    let seed=11;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
+    /* 빨강·흰 연석: 코너 안쪽(진입~탈출)과 탈출 바깥쪽 */
+    const kerbT=tkTex(64,16,(x,w,h)=>{x.fillStyle='#d42a22';x.fillRect(0,0,w/2,h);x.fillStyle='#f4f4f4';x.fillRect(w/2,0,w/2,h)});kerbT.wrapS=kerbT.wrapT=THREE.RepeatWrapping;
+    const kM=new THREE.MeshBasicMaterial({map:kerbT,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-2});
+    /* 자갈 (탈출로) */
+    const grT=tkTex(128,128,(x,w,h)=>{x.fillStyle='#b9a888';x.fillRect(0,0,w,h);for(let k=0;k<900;k++){const v=150+Math.random()*80|0;x.fillStyle='rgb('+v+','+(v-12)+','+(v-34)+')';x.fillRect(Math.random()*w,Math.random()*h,1.5,1.5)}});grT.wrapS=grT.wrapT=THREE.RepeatWrapping;
+    const grM=new THREE.MeshBasicMaterial({map:grT,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-1});
+    /* 에어 펜스 (오토바이 서킷의 파랑·흰 쿠션 벽) */
+    const afT=tkTex(128,64,(x,w,h)=>{x.fillStyle='#1d5fc4';x.fillRect(0,0,w,h);x.fillStyle='#f2f4f8';x.fillRect(0,0,w,10);x.fillRect(0,h-10,w,10);x.fillStyle='#174c9e';for(let X=0;X<w;X+=32)x.fillRect(X,10,2,h-20);x.fillStyle='#e9eef6';x.fillRect(0,28,w,4)});afT.wrapS=THREE.RepeatWrapping;
+    const afM=new THREE.MeshBasicMaterial({map:afT,side:THREE.DoubleSide});
+    const brd=n=>tkM(0xffffff,{map:tkTex(64,64,(x,w,h)=>{x.fillStyle='#fff';x.fillRect(0,0,w,h);x.fillStyle='#111';x.font='900 30px system-ui';x.textAlign='center';x.textBaseline='middle';x.fillText(n,w/2,h/2+2);x.strokeStyle='#111';x.lineWidth=4;x.strokeRect(2,2,w-4,h-4)}),side:THREE.DoubleSide});
+    const B3=brd('300'),B2=brd('200'),B1=brd('100'),pole=tkM(0x6d7076),tnum=[];
+    const marsh=tkM(0xe8e6df),flag=tkM(0xff8a1a);
+    cs.forEach((i,ci2)=>{const s=Math.sign(K[i]),inside=s,outside=-s,R=1/Math.abs(K[i]),tight=R<34;
+      const a=(i-Math.round(24/SP)+N)%N,b=(i+Math.round(30/SP))%N;
+      const seg=(o1,o2,i0,i1,mat)=>{if(i1<i0){strip2(o1,o2,.036,i0,N-1,(k,q)=>[TS[k]/3,q],mat);strip2(o1,o2,.036,0,i1,(k,q)=>[TS[k]/3,q],mat)}else strip2(o1,o2,.036,i0,i1,(k,q)=>[TS[k]/3,q],mat)};
+      const lo=inside>0?[HALF-.15,HALF+1.25]:[-HALF-1.25,-HALF+.15];seg(lo[0],lo[1],a,b,kM);
+      const ex=(i+Math.round(8/SP))%N,ee=(i+Math.round(40/SP))%N,lx=outside>0?[HALF-.15,HALF+1.25]:[-HALF-1.25,-HALF+.15];seg(lx[0],lx[1],ex,ee,kM);
+      if(tight){const g0=(i-Math.round(18/SP)+N)%N,g1=(i+Math.round(36/SP))%N,go=outside>0?[HALF+1.3,WALL-.2]:[-WALL+.2,-HALF-1.3];seg(go[0],go[1],g0,g1,grM);
+        /* 바깥 에어 펜스 */
+        const f0=(i-Math.round(26/SP)+N)%N,f1=(i+Math.round(44/SP))%N;if(f1>f0)wallStrip(outside*(WALL+.1),1.5,afM,4,f0,f1);
+        /* 브레이크 표지판 300·200·100 (앞에 직선이 있으면) */
+        let st=0;for(let k=20;k<120;k++){if(Math.abs(K[(i-k+N)%N])>1/90)break;st=k}
+        if(st*SP>130)[[300,B3],[200,B2],[100,B1]].forEach(([m,mat])=>{if(m>st*SP+20)return;const j=(i-Math.round((m+18)/SP)+N)%N,[x,z]=tkAt(j,outside*(WALL-.6));tkBoard(x,TY[j]+1.35,z,1.1,1.1,-Math.cos(TH[j]),-Math.sin(TH[j]),mat);tkAdd(new THREE.BoxGeometry(.08,1,.08),pole,x,TY[j]+.5,z,0)});
+        /* 마셜 포스트 (깃발) */
+        const j=(i+Math.round(12/SP))%N,[mx,mz]=tkAt(j,outside*(WALL+3.2));tkAdd(new THREE.BoxGeometry(2,2.3,1.6),marsh,mx,TY[j]+1.15,mz,-TH[j]);tkAdd(new THREE.BoxGeometry(.06,3.2,.06),pole,mx,TY[j]+2.9,mz,0);tkAdd(new THREE.BoxGeometry(.9,.6,.03),flag,mx+.45,TY[j]+4.1,mz,-TH[j]+1.57)}
+      tnum.push([i,ci2+1,inside])});
+    /* 코너 번호판 T1, T2 ... */
+    tnum.forEach(([i,n,inside])=>{const j=(i-Math.round(30/SP)+N)%N,[x,z]=tkAt(j,inside*(WALL+.9)),m=tkM(0xffffff,{map:tkTex(64,48,(x2,w,h)=>{x2.fillStyle='#111';x2.fillRect(0,0,w,h);x2.fillStyle='#f2c230';x2.font='900 26px system-ui';x2.textAlign='center';x2.textBaseline='middle';x2.fillText('T'+n,w/2,h/2+1)}),side:THREE.DoubleSide});
+      tkBoard(x,TY[j]+2.4,z,1.2,.9,-Math.cos(TH[j]),-Math.sin(TH[j]),m);tkAdd(new THREE.BoxGeometry(.08,2,.08),pole,x,TY[j]+1,z,0)});
+    /* 출발: 관중석 + 사람 + 출발 신호등 + 스폰서 광고판 + 피트 건물 */
+    const i0=Math.round(.008*N),i1=Math.round(.045*N),side=1,stand=tkM(0x8d939c),seatC=[0xd8352a,0x2457b8,0xf2c230,0xeeeeee],roofM=tkM(0x7d8691);
+    for(let i=i0;i<=i1;i+=4){const y=TY[i];for(let r=0;r<6;r++){const [x,z]=tkAt(i,side*(WALL+4+r*1.6));tkAdd(new THREE.BoxGeometry(SP*4.2,.6,1.5),stand,x,y+.6+r*.75,z,-TH[i])}
+      const [rx,rz]=tkAt(i,side*(WALL+8.5));tkAdd(new THREE.BoxGeometry(SP*4.2,.25,8),roofM,rx,y+6.4,rz,-TH[i])}
+    {const pg=new THREE.CylinderGeometry(.22,.2,.9,6),hg=new THREE.SphereGeometry(.17,6,5),pm=new THREE.MeshBasicMaterial({vertexColors:true}),skin=new THREE.Color(.62,.47,.37);
+      for(let i=i0;i<=i1;i+=1)for(let r=0;r<6;r++){if(rnd()<.35)continue;const [x,z]=tkAt(i,side*(WALL+4+r*1.6),(rnd()-.5)*2),y=TY[i]+.9+r*.75,c=new THREE.Color(seatC[(rnd()*4)|0]);
+        tkAdd(pg.clone(),pm,x,y+.45,z,0,c);tkAdd(hg.clone(),pm,x,y+1.05,z,0,skin)}}
+    {const pit=tkM(0xaab3bd),glass=tkM(0x2a4a6a);for(let i=i0;i<=i1;i+=6){const [x,z]=tkAt(i,-side*(WALL+8));tkAdd(new THREE.BoxGeometry(SP*6.2,4.4,9),pit,x,TY[i]+2.2,z,-TH[i]);const [gx,gz]=tkAt(i,-side*(WALL+3.45));tkAdd(new THREE.BoxGeometry(SP*5.4,1.4,.1),glass,gx,TY[i]+3.2,gz,-TH[i])}}
+    {const i=Math.round(.004*N),y=TY[i],W=WALL+1.4,gm=tkM(0x2b2e34);[-1,1].forEach(sd=>{const [x,z]=tkAt(i,sd*W);tkAdd(new THREE.BoxGeometry(.5,8.5,.5),gm,x,y+4.25,z,0)});const [cx,cz]=tkAt(i,0);tkAdd(new THREE.BoxGeometry(1,1.4,W*2),gm,cx,y+8,cz,-TH[i]);
+      const lp=[];for(let k=-2;k<=2;k++){const [lx,lz]=tkAt(i,k*1.6,-.6);lp.push(lx,y+8,lz)}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(lp,3));MG.add(new THREE.Points(g,new THREE.PointsMaterial({size:1.3,map:glowTex(255,40,30),transparent:true,blending:THREE.AdditiveBlending,depthWrite:false})))}
+    const ads=['ARNGBECHU','OCEAN','H2R','COASTLINE','MOTO','SPEED'],adCol=['#e3262c','#1d5fc4','#111','#f2c230','#1c8a4c','#ff7a1a'];
+    for(let k=0;k<26;k++){const i=Math.round((k/26+.013)*N)%N;if(coIn(i,CO_TUN)||coIn(i,CO_BRIDGE))continue;const sd=k%2?1:-1,[x,z]=tkAt(i,sd*(WALL+1.6)),t=ads[k%6],c=adCol[k%6];
+      const m=tkM(0xffffff,{map:tkTex(256,64,(x2,w,h)=>{x2.fillStyle=c;x2.fillRect(0,0,w,h);x2.fillStyle=c==='#f2c230'?'#111':'#fff';x2.font='900 38px system-ui';x2.textAlign='center';x2.textBaseline='middle';x2.fillText(t,w/2,h/2+2)}),side:THREE.DoubleSide});
+      const n=TN[i];tkBoard(x,TY[i]+1.1,z,6,1.5,-sd*n[0],-sd*n[1],m)}
+  }
   /* 항구 마을: 흰 벽·주황 지붕 집들 */
   {const wall=new THREE.MeshBasicMaterial({vertexColors:true}),roofM=new THREE.MeshBasicMaterial({vertexColors:true});let seed=7;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
-    for(let k=0;k<110;k++){const x=-900+rnd()*520,z=40+rnd()*230,y=terrH?terrH(x,z):coBase(x,z);if(y<2.5||y>40)continue;const [d]=nearD(x,z);if(d<HALF+12)continue;
+    for(let k=0;k<130;k++){const x=380+rnd()*560,z=60+rnd()*230,y=terrH?terrH(x,z):coBase(x,z);if(y<2.5||y>40)continue;const [d]=nearD(x,z);if(d<HALF+12)continue;
       const w=5+rnd()*6,dd=5+rnd()*5,hh=4+rnd()*7,ry=rnd()*3.14,v=.85+rnd()*.15;tkAdd(new THREE.BoxGeometry(w,hh,dd),wall,x,y+hh/2-.5,z,ry,new THREE.Color(v,v*.97,v*.92));
       const r=new THREE.ConeGeometry(Math.max(w,dd)*.75,2.4,4);r.rotateY(Math.PI/4);tkAdd(r,roofM,x,y+hh+.6,z,ry,new THREE.Color(.78+rnd()*.12,.38+rnd()*.12,.22))}}
   tkFlush();
@@ -2349,29 +2401,30 @@ var LEAN=0,NITG=0,DRIFTA=0,DOFF=0,DK=0,DDIR=0,CROLL=0;
 function bikeMotion(dt){
   steer+=(((keys.right?1:0)-(keys.left?1:0))-steer)*Math.min(1,dt*5.5);
   let v=Math.hypot(c.vx,c.vz),vh=v>1?Math.atan2(c.vz,c.vx):c.h-DOFF;
-  if(Math.cos(vh-c.h)<0){vh=c.h-DOFF;v=0}
+  if(Math.cos(vh-c.h)<0){vh=c.h-DOFF;v*=.3}
   const off=Math.abs(side)>HALF+1.2,drift=keys.hand&&v>9;
   /* 드리프트를 누르고 뗄 때 갑자기 바뀌지 않게 DK(0~1)로 부드럽게 섞어요. 미끄러지는 방향(DDIR)은 시작할 때 정하고 끝날 때까지 유지 */
-  DK+=((drift?1:0)-DK)*Math.min(1,dt*(drift?5:3.5));
+  DK+=((drift?1:0)-DK)*Math.min(1,dt*(drift?6:14));
   if(drift&&!DDIR)DDIR=Math.sign(steer)||Math.sign(LEAN)||1;if(!drift&&DK<.05)DDIR=0;
   if(keys.gas){v+=15.5*Math.max(0,1-v/84)*dt*(1-.3*Math.min(1,Math.abs(LEAN)/.95))*(1-.25*DK);if(lapStart===null)lapStart=performance.now()}
   if(NIT.on){v+=21*clamp(v/25,.35,1)*Math.max(0,1-v/110)*dt;NIT.t-=dt;if(NIT.t<=0){NIT.on=false;NIT.t=0}}
   v-=9.8*.55*TSL[ci]*Math.cos(vh-TH[ci])*dt;
   if(keys.brake)v-=(v>.5?27:7)*dt;
-  v*=Math.exp(-(keys.gas?.05:.35)*DK*dt);
+  v*=Math.exp(-(keys.gas?.04:.5)*DK*dt);
   v*=Math.exp(-(.012+(off?1.4:0))*dt);v-=Math.min(v,.4*dt);v=Math.max(0,v);
   /* 기울기 → 진행 방향 회전 (드리프트 중엔 라인이 살짝 더 안쪽으로) */
   const lmax=.12+.86*clamp((v-3)/13,0,1);
   LEAN+=(steer*lmax-LEAN)*Math.min(1,dt*(5.8+1.2*DK));
   let w=v<6?steer*1.5*Math.min(1,v/2.5):9.8*Math.tan(LEAN)/Math.max(v,6);
-  w*=1+.12*DK;
+  w*=1+.08*DK;
   vh+=w*dt;
   /* 드리프트: 차체만 코너 안쪽으로 돌아가 미끄러지는 각도(DOFF). 떼면 천천히 바로 서요 */
-  const tgt=DDIR*(.38+.3*Math.max(0,steer*DDIR))*clamp((v-9)/10,0,1)*DK;
-  DOFF+=(tgt-DOFF)*Math.min(1,dt*2.8);
-  c.h=vh+DOFF;c.vx=Math.cos(vh)*v;c.vz=Math.sin(vh)*v;c.x+=c.vx*dt;c.z+=c.vz*dt;
+  const tgt=DDIR*(.2+.14*Math.max(0,steer*DDIR))*clamp((v-9)/10,0,1)*DK;
+  DOFF+=(tgt-DOFF)*Math.min(1,dt*(drift?4:9));
+  {let dh=vh+DOFF-c.h;dh=Math.atan2(Math.sin(dh),Math.cos(dh));c.h+=Math.abs(dh)>.12?clamp(dh*Math.min(1,dt*9),-.06,.06):dh}   /* 벽에 부딪혀 방향이 확 바뀌어도 화면은 부드럽게 따라가요 */
+  c.vx=Math.cos(vh)*v;c.vz=Math.sin(vh)*v;c.x+=c.vx*dt;c.z+=c.vz*dt;
   DRIFTA=Math.abs(DOFF)*57.3;slip=drift?v*Math.sin(Math.abs(DOFF)):0;
-  if(drift&&DRIFTA>7&&v>11)NITG=Math.min(1,NITG+dt*clamp(DRIFTA/30,.3,1.4)*.26*clamp(v/25,.5,1.2));
+  if(drift&&DRIFTA>7&&v>11)NITG=Math.min(1,NITG+dt*clamp(DRIFTA/16,.3,1.4)*.26*clamp(v/25,.5,1.2));
   if(!NIT.on)NIT.ready=NITG>=1;
 }
 function step(dt){
@@ -2421,7 +2474,7 @@ function step(dt){
     if(vn>0){
       c.vx-=n[0]*sg*vn*1.3;c.vz-=n[1]*sg*vn*1.3;
       const k=Math.max(.5,1-vn*.02);c.vx*=k;c.vz*=k;
-      let dh=TH[ci]-c.h;dh=Math.atan2(Math.sin(dh),Math.cos(dh));c.h+=dh*Math.min(.5,vn*.04);
+      if(VEH==='bike'){DK=0;DOFF*=.5}else{let dh=TH[ci]-c.h;dh=Math.atan2(Math.sin(dh),Math.cos(dh));c.h+=dh*Math.min(.5,vn*.04)}
       hitK=Math.min(1,Math.max(hitK,vn/14));if(vn>2.5)thump(Math.min(1,vn/14));if(MODE==='hard'&&vn>3.5)wallHit();
     }
   }
@@ -3035,7 +3088,8 @@ function goName(m){
 }
 /* 자동차 / 오토바이 고르기 (오토바이는 아직 준비 중: 관리자 비밀번호로만 열려요) */
 const BK_HASH='6545b6349124b5cd3cdcd69ac61276641f9203a031315134631df4c90064de13';
-let VPM='lap';const bkOpen=()=>{try{return localStorage.getItem('drift-bk')===BK_HASH.slice(0,16)}catch(e){return false}};
+let VPM='lap';try{localStorage.removeItem('drift-bk')}catch(e){}
+const bkOpen=()=>{try{return sessionStorage.getItem('drift-bk')===BK_HASH.slice(0,16)}catch(e){return false}};   /* 잠금 풀림은 이 탭에서만 (새로고침·다시 접속하면 또 비밀번호) */
 function vehPick(m){
   VPM=m;$('mvMode').textContent=MODENAME[m];$('mStep1').hidden=true;$('mStep2').hidden=true;$('mStepV').hidden=false;$('mvPw').hidden=true;$('mvRow').hidden=false;
   $('vbSub').textContent=m==='duel'?'오토바이 대결은 준비 중이에요':bkOpen()?'열림 · Coastal Cliff Highway':'준비 중 🔒';
@@ -3051,7 +3105,7 @@ $('mvPwX').onclick=()=>{$('mvPw').hidden=true;$('mvRow').hidden=false};
 $('mvPw').onsubmit=async e=>{e.preventDefault();
   let h='';try{const d=await crypto.subtle.digest('SHA-256',new TextEncoder().encode($('mvPwIn').value));h=[...new Uint8Array(d)].map(x=>x.toString(16).padStart(2,'0')).join('')}catch(err){}
   if(h!==BK_HASH){$('mvHint').textContent='비밀번호가 달라요.';$('mvHint').classList.add('err');return}
-  try{localStorage.setItem('drift-bk',BK_HASH.slice(0,16))}catch(err){}
+  try{sessionStorage.setItem('drift-bk',BK_HASH.slice(0,16))}catch(err){}
   goName('bike');
 };
 $('mnBack').onclick=()=>{$('mStep2').hidden=true;if(MODE==='lap'||MODE==='duel'||MODE==='bike')vehPick(MODE==='bike'?'lap':MODE);else $('mStep1').hidden=false};
