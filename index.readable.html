@@ -408,7 +408,25 @@ body[data-mode=practice] #tl,body[data-mode=practice] #bt,body[data-mode=practic
 /* 순위표 맵 탭 */
 #mlbBtn{display:inline-flex;align-items:center;gap:8px;padding:12px 26px;border-radius:99px;border:1.5px solid #f2c230;background:#14171ce6;color:#f2c230;font:700 clamp(14px,2.2vh,17px)/1 inherit;letter-spacing:.04em;cursor:pointer;box-shadow:0 0 18px #f2c23033}
 #mlbBtn:hover{background:#f2c230;color:#111}
-#mStep1[hidden]~#mlbBtn,#mStep1[hidden]~#mcredit{display:none}
+#mbtns{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
+#mrpBtn{display:inline-flex;align-items:center;gap:8px;padding:12px 26px;border-radius:99px;border:1.5px solid #ff6b5e;background:#14171ce6;color:#ff8a7e;font:700 clamp(14px,2.2vh,17px)/1 inherit;letter-spacing:.04em;cursor:pointer;box-shadow:0 0 18px #ff5a4a33}
+#mrpBtn:hover{background:#ff5a4a;color:#111}
+#mStep1[hidden]~#mbtns,#mStep1[hidden]~#mcredit{display:none}
+#modes>#mrp{position:fixed;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;background:#05060cb8;padding:14px}
+#modes>#mrp[hidden]{display:none}
+#mrp .box{width:min(440px,94vw);max-height:88vh;overflow:auto;background:#14171cf5;border:1px solid #2c3342;border-radius:14px;padding:16px 18px}
+#mrp .hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}#mrp .hd b{font-size:18px}
+#mrp .hd button{background:none;border:0;color:#cdd7e6;font-size:20px;cursor:pointer;padding:2px 6px}
+#mrp .note{font-size:12px;color:#8d96a3;margin:0 0 10px;line-height:1.5}
+#mrpInfo{min-height:118px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;background:#0b0d14;border:1px solid #2c3342;border-radius:10px;padding:14px;font-size:14px;color:#cdd7e6}
+#mrpInfo .who{font-size:20px;font-weight:800;color:#f2c230}#mrpInfo .tm{font:800 22px/1 ui-monospace,Menlo,Consolas,monospace;color:#fff}#mrpInfo .car{font-size:12px;color:#8d96a3}
+#mrpPlay{margin-top:12px;width:100%;padding:12px;border-radius:10px;border:0;background:#ff5a4a;color:#111;font:800 16px/1 inherit;cursor:pointer}
+#mrpPlay:disabled{background:#3a3f4c;color:#8d96a3;cursor:default}
+#rph{position:fixed;left:50%;top:clamp(66px,10.5vh,86px);transform:translateX(-50%);z-index:41;display:none;align-items:center;gap:8px;padding:5px 12px;border-radius:99px;background:#0b0d14cc;border:1px solid #ff5a4a88;font-size:13px;color:#eef;white-space:nowrap}
+#rph.on{display:flex}#rph b{color:#ff5a4a;letter-spacing:.12em}#rph b::before{content:'';display:inline-block;width:8px;height:8px;border-radius:50%;background:#ff3b30;margin-right:6px;animation:rpblink 1s steps(2) infinite}
+@keyframes rpblink{50%{opacity:.2}}
+@media (orientation:landscape) and (max-height:500px){#rph{top:44px;font-size:11px;padding:3px 9px}}
+body[data-mode=replay] #lbp,body[data-mode=replay] #bt,body[data-mode=replay] .pad,body[data-mode=replay] #ph,body[data-mode=replay] #hh{display:none!important}
 #modes #mcredit{margin:-8px 0 0;font-size:12px;letter-spacing:.08em;color:#8d96a3;opacity:.85}
 #modes>#mlb{position:fixed;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;background:#05060cb8;padding:14px}
 #modes>#mlb[hidden]{display:none}
@@ -550,7 +568,14 @@ body[data-mode=hard] .lbtabs{display:none}
     <button class="mc prac" data-mode="practice"><i class="two">PRACTICE<br>ZONE</i><b>연습장</b><p>넓은 공간에서 마음껏 달리고 드리프트를 연습해요. 기록은 남지 않아요.</p><ul><li>드리프트 원</li><li>8자 코스</li><li>슬라럼</li><li>직선 가속</li></ul></button>
     <button class="mc hard" data-mode="hard"><i>HARD</i><b>하드 랩타임</b><p>벽에 너무 많이 부딪히면 차가 폭발해요. 스테이지마다 허용 횟수가 10번부터 줄어들어요.</p><ul><li>충돌 10→9→8…</li><li>스테이지 진행</li><li>순위표</li></ul></button>
   </div>
-  <button type="button" id="mlbBtn">🏆 리더보드 보기</button>
+  <div id="mbtns"><button type="button" id="mlbBtn">🏆 리더보드 보기</button><button type="button" id="mrpBtn">🎬 1등 리플레이</button></div>
+  <div id="mrp" hidden role="dialog" aria-label="1등 리플레이"><div class="box">
+    <div class="hd"><b>🎬 1등 리플레이</b><button type="button" id="mrpX" aria-label="닫기">✕</button></div>
+    <p class="note">개인 랩타임 맵마다 1등의 한 바퀴를 1인칭으로 볼 수 있어요. 새로 1등을 한 주행부터 저장돼요.</p>
+    <div class="lbtabs" id="mrpMaps" role="tablist" aria-label="맵"></div>
+    <div id="mrpInfo"></div>
+    <button type="button" id="mrpPlay" disabled>▶ 재생</button>
+  </div></div>
   <p id="mcredit">제작자 : 양희주</p>
   <div id="mlb" hidden role="dialog" aria-label="리더보드"><div class="box">
     <div class="hd"><b id="mlbTitle">리더보드</b><button type="button" id="mlbX" aria-label="닫기">✕</button></div>
@@ -599,6 +624,7 @@ body[data-mode=hard] .lbtabs{display:none}
 <div id="hit"></div>
 <div id="jh" role="status"><b>JUMP</b><span id="jhD"></span><em id="jhV"></em></div>
 <div id="boom"><i class="f1"></i><i class="f2"></i><i class="sm"></i></div>
+<div id="rph" role="status"><b>REPLAY</b><span id="rphT"></span></div>
 <div id="stg" role="status"><b id="stgT"></b><span id="stgS"></span></div>
 <div id="fail" role="alertdialog" aria-labelledby="failT"><div class="fcard">
   <h2 id="failT"></h2><p id="failSub"></p>
@@ -2236,7 +2262,7 @@ function step(dt){
   if(prog>=LAPEND&&!AIR&&MODE!=='practice'){
     prog-=LAPEND;NIT.ready=true;
     if(lapStart!==null){
-      const t=Math.round(performance.now()-lapStart);lapStart=performance.now();
+      const t=Math.round(performance.now()-lapStart);if(MODE==='lap')recLap(t);lapStart=performance.now();
       $('last').textContent=fmt(t);
       if(MODE==='hard'){hardLapDone(t)}else if(MODE==='duel'){duelLap(t)}else{const nb=bestLap===null||t<bestLap;if(nb){bestLap=t;$('best').textContent=fmt(t);$('send').disabled=false;
         $('msg').textContent='새 기록이에요!';$('lbp').classList.add('on');autoSend()}if(OPENP)openFinish(t,nb)}
@@ -2401,6 +2427,7 @@ function loop(now){
   requestAnimationFrame(loop);
   const dt=Math.min((now-t0)/1000,.05);t0=now;
   if(started&&!HOLD&&!DEAD)step(dt);
+  if(RP)rpTick(dt);else if(MODE==='lap'&&started&&!HOLD&&lapStart!==null)recTick();
   drive(dt);
   if(MODE==='duel'){lcTick(dt);duelFrame(dt,now)}
   if(MODE==='practice'&&started)pracFrame(dt);
@@ -2684,12 +2711,104 @@ async function doSend(){
   const ms=bestLap,mp=MAPID;
   $('send').disabled=true;$('msg').textContent='올리는 중...';
   try{
-    const res=await sendScore({name,lap_ms:ms,map:mp,mode:'lap'});
-    if(res==='ok'){$('msg').textContent=fmt(ms)+' 기록을 올렸어요.';loadBoard()}
+    const sp={name,lap_ms:ms,map:mp,mode:'lap'},res=await sendScore(sp);
+    if(res==='ok'){$('msg').textContent=fmt(ms)+' 기록을 올렸어요.';loadBoard();replayUpload(sp.name,ms,mp)}
     else $('msg').textContent='새 기록이에요! (이 맵 순위표는 아직 준비 중이에요)';
   }catch(e){$('msg').textContent='올리지 못했어요. 잠시 후 다시 눌러주세요.';$('send').disabled=false}
 }
 const autoSend=()=>{if(PLAYER||$('name').value.trim())doSend()};
+
+/* ================= 1등 리플레이 =================
+   개인 랩타임에서 한 바퀴를 0.1초마다 기록(위치·방향·속도·핸들·페달, 한 칸 12바이트)해 두었다가,
+   그 바퀴가 맵 1등이 되면 서버 함수 submit_replay로 올려요(맵마다 1개만 저장, 서버가 진짜 1등인지 확인).
+   모드 선택 화면 "1등 리플레이"에서 맵을 골라 1인칭으로 다시 봐요(MODE='replay', step 대신 rpTick). */
+const RP_DT=100,RPC=SB.replace('/scores','/rpc/submit_replay'),RPT=SB.replace('/scores','/replays');
+let REC={ls:null,a:[],next:0},LASTREP=null,RP=null;
+function recTick(){
+  if(REC.ls!==lapStart){REC={ls:lapStart,a:[],next:0}}
+  const el=performance.now()-lapStart;if(REC.a.length>36000)return;
+  const v=Math.hypot(c.vx,c.vz),f=(keys.brake?1:0)|(keys.gas?2:0)|(keys.hand?4:0)|(NIT.on?8:0);
+  while(el>=REC.next){REC.a.push(Math.round(c.x*10),Math.round(c.z*10),Math.round(Math.atan2(Math.sin(c.h),Math.cos(c.h))*10000),Math.round(v*100),Math.round(clamp(steer,-1,1)*1000),f);REC.next+=RP_DT}
+}
+function recLap(t){
+  if(REC.ls===lapStart&&REC.a.length>=12){recTick();LASTREP={map:MAPID,ms:t,car:CARID,a:REC.a.slice()}}
+  REC={ls:null,a:[],next:0};
+}
+const rpEnc=a=>{const u=new Uint8Array(new Int16Array(a).buffer);let s='';for(let i=0;i<u.length;i+=8192)s+=String.fromCharCode.apply(null,u.subarray(i,i+8192));return btoa(s)};
+const rpDec=b=>{const s=atob(b),u=new Uint8Array(s.length);for(let i=0;i<s.length;i++)u[i]=s.charCodeAt(i);return new Int16Array(u.buffer)};
+/* 이 기록이 맵 1등일 때만 올려요 (서버 부담 줄이기) */
+async function replayUpload(name,ms,mp){
+  const R0=LASTREP;if(!R0||R0.map!==mp||R0.ms!==ms||RICH===false)return;
+  try{
+    const r=await fetch(SB+'?select=lap_ms&mode=eq.lap&map=eq.'+mp+'&order=lap_ms.asc&limit=1',{headers:HDR});if(!r.ok)return;
+    const top=await r.json();if(!top.length||top[0].lap_ms<ms)return;
+    const q=await fetch(RPC,{method:'POST',headers:HDR,body:JSON.stringify({p_map:mp,p_name:name,p_lap_ms:ms,p_car:R0.car,p_data:RP_DT+'|'+rpEnc(R0.a)})});
+    if(q.ok&&(await q.json())===true)$('msg').textContent=fmt(ms)+' · 맵 1등! 리플레이도 저장했어요 🎬';
+  }catch(e){}
+}
+/* 모드 선택 화면: 리플레이 창 */
+let MRP={m:'seoul',n:0,row:null};
+async function mrpLoad(){
+  const n=++MRP.n,info=$('mrpInfo'),row=$('mrpMaps');MRP.row=null;$('mrpPlay').disabled=true;
+  if(!row.children.length)LB_MAPS.forEach(id=>{const b=document.createElement('button');b.type='button';b.setAttribute('role','tab');b.dataset.map=id;b.textContent=MAPLABEL[id];b.onclick=()=>{MRP.m=id;mrpLoad()};row.append(b)});
+  [...row.children].forEach(b=>{const on=b.dataset.map===MRP.m;b.classList.toggle('on',on);b.setAttribute('aria-selected',on)});
+  const say=(t)=>{info.textContent='';const p=document.createElement('span');p.textContent=t;info.append(p)};say('불러오는 중...');
+  try{
+    const r=await fetch(RPT+'?select=name,lap_ms,car&map=eq.'+MRP.m,{headers:HDR});if(n!==MRP.n)return;
+    if(!r.ok)return say(r.status===404?'리플레이 서버가 아직 준비 중이에요.':'불러오지 못했어요. 새로고침해 주세요.');
+    const rows=await r.json();if(n!==MRP.n)return;
+    if(!rows.length)return say('아직 리플레이가 없어요. 이 맵에서 1등을 하면 주행이 저장돼요!');
+    const x=rows[0];MRP.row=x;info.textContent='';
+    const mk=(c,t)=>{const e=document.createElement('span');e.className=c;e.textContent=t;info.append(e)};
+    mk('','👑 '+MAPLABEL[MRP.m]+' 1등');mk('who',x.name);mk('tm',fmt(x.lap_ms));mk('car',(CARS[x.car]?CARS[x.car].name:'')+' 로 달렸어요');
+    $('mrpPlay').disabled=false;
+  }catch(e){if(n===MRP.n)say('불러오지 못했어요. 새로고침해 주세요.')}
+}
+$('mrpBtn').onclick=()=>{$('mrp').hidden=false;mrpLoad()};
+$('mrpX').onclick=()=>{$('mrp').hidden=true};
+$('mrp').onclick=e=>{if(e.target.id==='mrp')$('mrp').hidden=true};
+addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('mrp').hidden)$('mrp').hidden=true});
+$('mrpPlay').onclick=async()=>{
+  const x=MRP.row,m=MRP.m;if(!x)return;const b=$('mrpPlay');b.disabled=true;b.textContent='불러오는 중...';
+  try{
+    const r=await fetch(RPT+'?select=data&map=eq.'+m,{headers:HDR});const rows=r.ok?await r.json():[];
+    const d=rows[0]&&String(rows[0].data||''),k=d.indexOf('|');if(k<0)throw 0;
+    const dt=clamp(+d.slice(0,k)||RP_DT,20,1000),a=rpDec(d.slice(k+1));if(a.length<12)throw 0;
+    rpStart(m,x,dt,a);
+  }catch(e){toast('리플레이를 불러오지 못했어요.')}
+  b.textContent='▶ 재생';b.disabled=!MRP.row;
+};
+let rpPrev=null;
+function rpStart(m,x,dt,a){
+  rpPrev={mode:MODE,car:CARID};
+  $('mrp').hidden=true;$('modes').classList.remove('on');
+  MODE='replay';document.body.dataset.mode='replay';
+  if(CARS[x.car])setCar(x.car);setMap(m);
+  started=true;HOLD=true;DEAD=false;reset();stopAudio();initAudio();
+  RP={a,dt:dt/1000,n:Math.floor(a.length/6),t:0,ms:x.lap_ms,done:false};
+  $('rphT').textContent=x.name+' · '+fmt(x.lap_ms)+' · '+MAPLABEL[m];$('rph').classList.add('on');
+  rpTick(0);
+}
+function rpTick(dt){
+  const P=RP;P.t+=dt;
+  if(P.t*1000>=P.ms&&!P.done){P.done=true;$('stgT').textContent='FINISH';$('stgS').textContent=fmt(P.ms);$('stg').classList.add('on');P.end=setTimeout(rpStop,3200)}
+  const u=Math.min(P.t/P.dt,P.n-1.001),i=Math.max(0,Math.floor(u)),f=u-i,A=i*6,B=Math.min(i+1,P.n-1)*6,a=P.a;
+  let dh=a[B+2]/1e4-a[A+2]/1e4;dh=Math.atan2(Math.sin(dh),Math.cos(dh));
+  const h=a[A+2]/1e4+dh*f,v=(a[A+3]+(a[B+3]-a[A+3])*f)/100,fl=f<.5?a[A+5]:a[B+5];
+  let x=(a[A]+(a[B]-a[A])*f)/10,z=(a[A+1]+(a[B+1]-a[A+1])*f)/10;
+  if(Math.hypot(a[B]-a[A],a[B+1]-a[A+1])>300){x=a[B]/10;z=a[B+1]/10}   /* 추락 후 다시 출발처럼 순간 이동 */
+  const mx=x-c.x,mz=z-c.z,mv=Math.hypot(mx,mz),dir=mv>.01?Math.atan2(mz,mx):h;
+  c.x=x;c.z=z;c.h=h;c.vx=Math.cos(dir)*v;c.vz=Math.sin(dir)*v;
+  steer=(a[A+4]+(a[B+4]-a[A+4])*f)/1000;
+  keys.brake=fl&1?1:0;keys.gas=fl&2?1:0;keys.hand=fl&4?1:0;NIT.on=!!(fl&8);NIT.t=NIT.on?NIT_T*.5:0;NIT.ready=!NIT.on;
+  ci=nearest(c.x,c.z,ci,OPENP?40:N/2|0);prog=ci;lapStart=performance.now()-Math.min(P.t*1000,P.ms);
+}
+function rpStop(){
+  if(!RP)return;clearTimeout(RP.end);RP=null;$('rph').classList.remove('on');$('stg').classList.remove('on');
+  for(const k in keys)keys[k]=0;NIT.on=false;
+  MODE=rpPrev?rpPrev.mode:'lap';if(rpPrev&&CARS[rpPrev.car])setCar(rpPrev.car);
+  showModes();
+}
 $('send').onclick=doSend;
 
 /* ---------- 모드 선택 → 이름 입력 → 홈 ---------- */
@@ -3655,6 +3774,7 @@ $('phReset').onclick=e=>{e.preventDefault();reset()};
 
 /* ---------- 운전 중 나가기 버튼: 차 선택(홈) 화면으로 ---------- */
 function goBack(){
+  if(RP){rpStop();return}
   if(!started)return;
   if(MODE==='duel'){if(!confirm('대결을 그만두고 방에서 나갈까요?'))return;showModes();return}
   if(MODE==='hard'&&!DEAD&&!confirm('하드 도전을 그만둘까요? 지금까지 진행한 스테이지는 사라져요.'))return;
