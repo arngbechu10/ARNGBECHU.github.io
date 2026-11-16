@@ -1308,7 +1308,7 @@ const TG_TOP=160,TG_DROP=.16;
 const TG_RAILS=[[0,.14],[.19,.23],[.27,.32],[.37,.42],[.50,.62],[.67,.80],[.93,1]];   /* 골짜기 쪽 가드레일 있는 구간(코스 비율) */
 const TG_CLIFF=[[.04,.12],[.20,.30],[.38,.48],[.55,.66],[.72,.86]];                     /* 산 쪽 바위 절벽 */
 const TG_LAMPS=[[0,.25],[.45,.6],[.85,1]];
-const TG_DROPS=[[.155,.185],[.435,.495],[.82,.92]];   /* 바리케이드 없이 낭떠러지(떨어지면 20m 뒤에서 다시 출발) */
+const TG_DROPS=[[.155,.185],[.235,.265],[.325,.365],[.435,.495],[.625,.665],[.82,.92]];   /* 바리케이드 없이 낭떠러지(떨어지면 20m 뒤에서 다시 출발) */
 const TG_ROCKS=[[.105,-3,1.4],[.109,2.6,.9],[.255,3,1.6],[.345,-4,1.3],[.351,1.2,.8],[.565,0,1.5],[.605,4,1.2],[.735,-2.6,1.5],[.741,4.4,1],[.785,2,1.3]];  /* 도로 위 돌 [비율, 옆(+오른쪽), 크기] */
 let TG_SD=[],TG_K=[],DROPS=null;
 /* 코스마다 한 번: 커브·골짜기 쪽·낭떠러지 구간 계산 (지형보다 먼저) */
@@ -1319,12 +1319,29 @@ function tgPrep(){
   TG_DROPS.forEach(([a,b])=>{for(let i=Math.round(a*(N-1));i<=Math.round(b*(N-1));i++)DROPS[i]=SD[i]});
 }
 /* 낭떠러지 옆 지형을 깊게 파요 */
+/* 산 쪽 바위 비탈: 도로 옆에서 솟았다가 뒤쪽 산 지형으로 자연스럽게 이어져요 (구간 끝은 낮아지며 사라짐) */
+function tgSlope(a,b,sd,tex){
+  const L=[0,.5,1.7,3.4,5.8,9,13,18.2],S=[0,.58,.85,.97,1,.9,.68,0],W=L.length,sw=a*.37,pos=[],uv=[],col=[],ix=[];
+  const nt=MAPS.touge.night,rock=[.62,.6,.58],moss=[.32,.42,.28];
+  for(let i=a;i<=b;i++){
+    const tp=sm01((i-a)/30)*sm01((b-i)/30),Hm=(8.5+4*Math.sin(i*.045+sw)+2.5*Math.sin(i*.13+sw*2))*tp;let vv=0,py=null;
+    for(let k=0;k<W;k++){
+      const n=Math.sin(i*1.7+k*3.1)*.5+Math.sin(i*.61+k*1.3+sw)*.5,off=WALL+.7+L[k]+(k>0&&k<W-1?n*.7:0),[x,z]=tkAt(i,sd*off),th=terrH?terrH(x,z):TY[i];
+      let y=k===W-1?th:TY[i]-.3+Hm*S[k]*(1+n*.15);if(k>=W-3)y=Math.max(y,th);if(k===0)y=TY[i]-.3;
+      if(py!==null)vv+=Math.hypot(y-py,L[k]-L[k-1]);py=y;
+      pos.push(x,y,z);uv.push(TS[i]/9,vv/9);
+      const m=sm01((k-4.2)/2.2),sh=.78+.22*Math.abs(Math.sin(i*.37+k*2.3));for(let q=0;q<3;q++)col.push((rock[q]*(1-m)+moss[q]*m)*sh*(nt[q]*1.9))}
+  }
+  for(let r=0;r<b-a;r++)for(let k=0;k<W-1;k++){const p=r*W+k,q=p+W;ix.push(p,q,p+1,p+1,q,q+1)}
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setAttribute('color',new THREE.Float32BufferAttribute(col,3));g.setIndex(ix);
+  MG.add(new THREE.Mesh(g,new THREE.MeshBasicMaterial({map:tex,vertexColors:true,side:THREE.DoubleSide})));
+}
 function tgCarve(x,z,h){
-  let bd=1e18,bj=-1,ad=1e18;
-  for(let i=0;i<N;i+=3){const dx=x-TP[i][0],dz=z-TP[i][1],d=dx*dx+dz*dz;if(d<ad)ad=d;if(DROPS[i]&&d<bd){bd=d;bj=i}}
+  let bd=1e18,bj=-1,ad=1e18,od=1e18;
+  for(let i=0;i<N;i+=3){const dx=x-TP[i][0],dz=z-TP[i][1],d=dx*dx+dz*dz;if(d<ad)ad=d;if(DROPS[i]&&d<bd){bd=d;bj=i}if(!DROPS[i]&&d<od)od=d}
   if(bj<0||bd>2500||bd>ad+60)return h;
   const lat=((x-TP[bj][0])*TN[bj][0]+(z-TP[bj][1])*TN[bj][1])*DROPS[bj];if(lat<HALF+1.5)return h;
-  return h-Math.min(42,(lat-HALF-1.5)*3.4)*(1-sm01((lat-(HALF+24))/16));
+  return h-Math.min(42,(lat-HALF-1.5)*3.4)*(1-sm01((lat-(HALF+24))/16))*sm01((Math.sqrt(od)-HALF-4)/16);
 }                                              /* 주황 가로등 */
 /* 끝이 열린 곡선(처음과 끝이 이어지지 않음) */
 function openSpline(ctrl){
@@ -1375,7 +1392,7 @@ function buildTouge(){
     x.strokeStyle='#23211f';x.lineWidth=2;for(let k=0;k<26;k++){x.beginPath();let X=Math.random()*w,Y=Math.random()*h;x.moveTo(X,Y);for(let s=0;s<4;s++){X+=(Math.random()-.5)*30;Y+=Math.random()*20;x.lineTo(X,Y)}x.stroke()}});
   rockT.wrapS=rockT.wrapT=THREE.RepeatWrapping;
   const rockM=new THREE.MeshBasicMaterial({map:rockT,color:0x646a7a,side:THREE.DoubleSide});
-  runs(i=>inR(TG_CLIFF,i),(a,b,sd)=>{wallStrip(-sd*(WALL+.7),7,rockM,9,a,b,-.3);wallStrip(-sd*(WALL+2.6),9,rockM,11,a,b,5)});
+  runs(i=>inR(TG_CLIFF,i),(a,b,sd)=>tgSlope(a,b,-sd,rockT));
   runs(i=>!inR(TG_CLIFF,i),(a,b,sd)=>wallStrip(-sd*(WALL+.3),.45,curbM,4,a,b));
   /* 낭떠러지: 도로 끝에서 아래로 바위 벽 + 경고판 */
   runs(i=>DROPS[i]!==0,(a,b,sd)=>{wallStrip(sd*(HALF+1.45),30,rockM,9,a,b,-30.1)});
@@ -1391,7 +1408,7 @@ function buildTouge(){
     for(let k=0;k<5;k++){const [a,b]=tkAt(i,lat+(Math.random()-.5)*5,(Math.random()-.5)*6);tkAdd(rockG(.15+Math.random()*.25),rD,a,TY[i]+.1,b,0)}
     if(f-lastSign>.03){sign(f,wRock);lastSign=f}});
   /* 주황 가로등(산 쪽) + 젖은 도로에 비친 빛 */
-  const lp=[],glowRoad=[];for(let i=4;i<N-4;i+=22){if(!inR(TG_LAMPS,i))continue;const sd=-SD[i],[x,z]=tkAt(i,sd*(WALL+1.4));lp.push([x,z,TY[i],i,sd])}
+  const lp=[],glowRoad=[];for(let i=4;i<N-4;i+=22){if(!inR(TG_LAMPS,i))continue;const sd=-SD[i],[x,z]=tkAt(i,sd*(WALL+.45));lp.push([x,z,TY[i],i,sd])}
   const pole=new THREE.InstancedMesh(new THREE.CylinderGeometry(.11,.15,9,6),tkM(0x24262c),lp.length),arm=new THREE.InstancedMesh(new THREE.BoxGeometry(2.4,.12,.12),tkM(0x24262c),lp.length),d=new THREE.Object3D(),hp=[];
   lp.forEach(([x,z,y,i,sd],k)=>{d.position.set(x,y+4.5,z);d.rotation.set(0,0,0);d.updateMatrix();pole.setMatrixAt(k,d.matrix);
     const n=TN[i],hx=x-n[0]*sd*1.1,hz=z-n[1]*sd*1.1;d.position.set(hx,y+8.9,hz);d.rotation.set(0,-Math.atan2(n[1],n[0]),0);d.updateMatrix();arm.setMatrixAt(k,d.matrix);
