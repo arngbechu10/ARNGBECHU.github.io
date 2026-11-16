@@ -11,7 +11,8 @@
 | `index.readable.html` | base64를 `DATAURI`로 바꾼 읽기 전용 사본 (줄 번호 원본과 같음). `python3 tools/strip_data_uris.py`로 다시 만들 수 있어요. |
 | `supabase_setup.sql` | 순위표를 맵·모드별로 나누는 SQL. **2026-11-14 사용자가 실행 완료**(Success). |
 | `supabase_replay.sql` | 1등 리플레이 표 `replays` + 함수 `submit_replay` (2026-11-16 **사용자 실행 완료**, Success) |
-| `supabase_security.sql` | **2026-11-14 사용자가 실행 완료**(Success). 2026-11-16 `scores_kind_ok`에 pyongyang 추가한 부분도 **실행 완료**(Success). 그 뒤 touge 추가한 것도 **실행 완료**(Success, 2026-11-16). 순위표 보안 SQL(이름 1~20자·욕설·꺾쇠 금지, 기록 20초~1시간, 맵·모드 값 제한(NOT VALID라 옛 기록은 그대로), 같은 이름 20초에 1번·전체 1분 40번 트리거, update/delete 권한 회수). 새 맵 id를 추가하면 `scores_kind_ok`의 맵 목록도 고쳐야 함! |
+| `supabase_security.sql` | **2026-11-14 사용자가 실행 완료**(Success). 2026-11-16 `scores_kind_ok`에 pyongyang 추가한 부분도 **실행 완료**(Success). 그 뒤 touge 추가한 것도 **실행 완료**(Success, 2026-11-16). 2026-11-16 밤 `mode='bike' and map in ('coast')` 줄 추가 — **다시 실행 필요(사용자 확인 전)**. 순위표 보안 SQL(이름 1~20자·욕설·꺾쇠 금지, 기록 20초~1시간, 맵·모드 값 제한(NOT VALID라 옛 기록은 그대로), 같은 이름 20초에 1번·전체 1분 40번 트리거, update/delete 권한 회수). 새 맵 id를 추가하면 `scores_kind_ok`의 맵 목록도 고쳐야 함! |
+| `assets/models/h2r.glb` | Kawasaki Ninja H2R 3D 모델(437KB, draco). **아직 안 씀 — 나중에 오토바이 1대1 상대 모델로 쓸 것** (README 참고) |
 | `assets/` | 게임에 들어간 원본 에셋: 차량 이미지(앞모습·콕핏·핸들, 720S 뒷모습), 엔진·시동 소리(wav), 사용자가 보낸 원본 엔진 녹음(mp3), 맵 하늘·바다 이미지 |
 | `build/` | 채팅에서 쓰던 **빌드 기록 (참고용)**. 중간 파일(t_nitro.html 등)이 없어서 그대로 다시 돌리진 못해요. 앞으로는 `index.html`을 직접 고치면 됩니다. |
 | `tests/` | Playwright 테스트 스크립트 (참고용, 경로는 채팅 환경 기준이라 수정 필요) |
@@ -31,6 +32,7 @@
 | 632–705 | **맵 시스템**: `SKIES`, `MAPS` 설정(697~), 도로 띠 `strip()`, 바리케이드 `wallStrip()`, 나무, 산 지형, 서울 다리 |
 | 706–948 | Tokyo Neon City 맵 (도구 `tkAdd/tkFlush/tkAt/tkBoard/tkTex`) |
 | 950–1171 | New York Downtown 맵 |
+| (Touge 뒤) | **Coastal Cliff Highway** 맵 (`Coastal Cliff Highway` 주석 블록, `buildCoast()`) |
 | 1173–1271 | **Pyongyang 맵** (`PY_CTRL`, `buildPyongyang()` 1203, `pyFrame`) |
 | ~1273– | Midnight Touge 맵 (Pyongyang 뒤, `buildTouge()`)
 | 이후 | 하드 5·6 (Alps, Red Canyon, 제한 시간) |
@@ -47,7 +49,7 @@
 | 3409– | 나가기 버튼 `goBack()` |
 
 ## 지금까지 만든 기능
-- **모드 선택 화면**(시작하자마자, 카드 큰 글씨: 1 : 1 / LAP / PRACTICE ZONE(두 줄, `.mc i.two`) / HARD): 1대1 대결, 개인 랩타임, **연습장**, 하드 랩타임 → 이름 입력(연습장은 건너뜀) → 홈. 홈 왼쪽 위에 모드·이름·"모드 변경". 모드 선택 화면 배경은 맵과 상관없이 항상 Seoul(`--msky`). 카드 아래 **"🏆 리더보드 보기"** 버튼(`#mlbBtn`) → 창 `#mlb`: LAP(맵 탭 6개)·HARD 골라서 순위 보기(`mlbLoad()`, `MLB` 상태, 1단계 화면에서만 보임). 그 아래 작은 글씨 "제작자 : 양희주"(`#mcredit`, 사용자 요청). 리더보드 옆 **"🎬 1등 리플레이"**(`#mrpBtn`) → 창 `#mrp`(맵 탭, `mrpLoad()`)에서 그 맵 1등 이름·기록·차 보고 ▶ 재생. 운전 중 오른쪽 위 **"← 나가기"** 버튼(`#back`, Esc 키도) → 홈(차 선택)으로(`goBack()`): 하드는 확인 후 1스테이지로 초기화, 1대1은 확인 후 방 나가기(모드 선택). 1대1 카드의 NEW 표시는 지움.
+- **모드 선택 화면**(시작하자마자, 카드 큰 글씨: 1 : 1 / LAP / PRACTICE ZONE(두 줄, `.mc i.two`) / HARD): 1대1 대결, 개인 랩타임, **연습장**, 하드 랩타임 → 이름 입력(연습장은 건너뜀) → 홈. 홈 왼쪽 위에 모드·이름·"모드 변경". 모드 선택 화면 배경은 맵과 상관없이 항상 Seoul(`--msky`). 카드 아래 **"🏆 리더보드 보기"** 버튼(`#mlbBtn`) → 창 `#mlb`: LAP(맵 탭 6개)·HARD 골라서 순위 보기(`mlbLoad()`, `MLB` 상태, 1단계 화면에서만 보임). 그 아래 작은 글씨 "제작자 : 양희주"(`#mcredit`, 사용자 요청). 리더보드 옆 **"🎬 1등 리플레이"**(`#mrpBtn`) → 창 `#mrp`(맵 탭, `mrpLoad()`)에서 그 맵 1등 이름·기록·차 보고 ▶ 재생. 운전 중 오른쪽 위 **"← 나가기"** 버튼(`#back`, Esc 키도) → 홈(차 선택)으로(`goBack()`): 하드는 확인 후 1스테이지로 초기화, 1대1은 확인 후 방 나가기(모드 선택). 1대1 카드의 NEW 표시는 지움. **LAP·1:1을 누르면 먼저 자동차/오토바이 고르기**(오토바이 모드 참고).
 - **차량 6대**: Nissan Skyline GT-R R34(기본, 오른쪽 핸들), Porsche 911 GT3 RS, Dodge Challenger SRT, Ferrari F40, McLaren 720S, **Toyota Supra RZ (MK4)**(오른쪽 핸들, 속도계 왼쪽 gx 31.4). 차마다 콕핏 이미지·핸들 위치·엔진 소리 다름(물리는 모두 같음). 왼쪽 핸들 차는 속도계가 오른쪽(gx 71).
   - 차량 선택창 차 이름 아래에 **실제 차 정보**(마력·무게·0→100·최고 속도·구동 방식 + 한 줄 특징, `CSPEC`/`showSpec()`)와 "실제 차 정보예요. 게임 속 성능은 모두 같아요" 안내.
   - **Supra MK4**(`supra`): 사용자가 보낸 한 장짜리 사진(앞·뒤·실내·핸들)을 잘라 만듦 — 홈 사진 `assets/cars/hero_supra.webp`, 뒷모습 `rear_supra.webp`(rembg), 콕핏 `cabin_supra.webp`(기존 `build/assets-scripts/cabin.py` 방식, 핸들 wx 71.91/wy 86.16/ww 20.38), 핸들 `wheelS_supra.webp`(rembg 후 테두리·살·패드 모양으로 마스크). 엔진음: 사용자 녹음 `assets/sounds/original/supra.mp3`(35초)에서 30.3~35.5초 아이들/저회전 구간을 4.75초 루프 `eng_supra.wav`(기본 음 193Hz, 911과 비슷), 시동은 녹음 처음 0.15~2.6초 레브 `lau_supra.wav`. **2026-11-16 수정**: 브레이크(저회전) 때 소리가 안 들린다는 요청 → 원래 루프가 저음(150Hz 아래)만 많아 폰·태블릿 스피커에서 사라졌음. `eng_supra.wav`를 고역 +14dB(300Hz~)·초저역 컷·약한 포화로 다시 만들고(원본 루프는 git 기록), 차별 소리 설정 `CARS.supra.snd={r0:.42,r1:.68,off:.8}`(재생 속도 r0+r1·rpm, 가속 안 밟을 때 크기 0.8배; 다른 차는 .3+.75·rpm, .55). 실제 차 정보: 2JZ-GTE 3.0 직렬6 트윈터보 280마력, 1,510kg, 0→100 4.9초, 250km/h 제한, 후륜. 3D 모델 `assets/models/supra.glb`(Sketchfab .blend → 같은 변환, 290KB), 차체 `Paint` 흰색, 유리 재질은 `M3D.supra.glass`로 어둡게.
@@ -74,6 +76,15 @@
   - 테스트 주의: 두 번째 페이지는 뒤 탭이라 타이머가 늦게 돌아 결과 화면(1.4초 뒤)이 늦게 뜰 수 있음 → 읽기 전에 기다리거나 `bringToFront()`.
   - 테스트: Supabase 대신 BroadcastChannel로 흉내 내는 가짜 라이브러리를 Playwright에서 `**/supabase-js@*/**` 요청에 넣고, 한 브라우저 컨텍스트에 페이지 2개(가·나)를 열어 확인.
 - **연습장** (`MODE='practice'`, 맵 id `practice`, 코드는 `연습장` 주석 블록): 520m×520m 평지(`PA=260`), 타이어 벽(`practiceBounds()`), 구역 `PZ`: 드리프트 원(콘 둘레), 8자 코스, 슬라럼(콘 16개), 430m 직선 가속(100m 표지판, BRAKE). 콘은 부딪히면 쓰러짐(`CONES`, R/처음 위치 버튼으로 원위치). HUD `#ph`: 드리프트 각도·시간·최고, 최고 속도. 랩·타이머·순위표 없음, 니트로는 끝나고 5초 뒤 다시 참. 코스 점 `TP`는 바깥 테두리 사각형(미니맵용), `half:600`이라 도로 밖 감속·밀어내기 없음. 바닥은 잘게 나눈 판 + 잔디는 2.5m 아래(깊이 겹침 방지), 바닥 표시는 polygonOffset.
+- **오토바이 모드** (2026-11-16, `MODE='bike'`, `VEH='bike'`, 아직 "준비 중"이라 **관리자 비밀번호**로만 열림):
+  - 흐름: 모드 선택에서 LAP·1:1을 누르면 **자동차/오토바이 고르기**(`#mStepV`, `vehPick()`) → 자동차는 예전대로 이름 입력(`goName(m)`). 오토바이(LAP): 잠겨 있으면 비밀번호 칸(`#mvPw`) → SHA-256 해시 `BK_HASH`와 비교(평문은 코드에 없음, 비밀번호는 사용자가 알고 있음) → 맞으면 `localStorage drift-bk`에 저장해서 그 기기에선 다음부터 바로 열림(`bkOpen()`). 1:1에서 오토바이는 "오토바이 대결은 준비 중이에요"(아직 못 들어감). ⚠️ 클라이언트 비밀번호라 코드를 뜯어보면 우회 가능한 "가벼운 잠금".
+  - 홈: `body.bike`/`data-mode=bike`이면 차 타일·맵 목록 대신 오토바이 타일(`.bikes`, `BIKES`, `setBike()`)과 맵 카드(`.bmap`), 오른쪽 조작 설정은 그대로(터치 버튼 편집 포함). 조작 설명 글자는 `em[data-car/data-bike]`로 바뀜. 실제 정보 `CSPEC.h2r`.
+  - **Kawasaki Ninja H2R** 하나: 홈 사진 `assets/cars/hero_h2r.webp`(사용자 사진 rembg), 1인칭 화면 `assets/cars/cabin_h2r.webp`(사용자 1인칭 사진에서 손으로 그린 다각형 마스크로 핸들·장갑·계기판·거울만 잘라냄, 오른쪽 손잡이는 니트로 그림에 가려 있어서 왼쪽을 좌우 반전해 붙임, 앞 유리 반투명, 거울은 흐리게, 계기판 화면은 검게 칠하고 게임이 `#bdash`에 속도·기어·RPM을 그림). 화면 `#bk`(가로 100vw, 비율 1672:521, 위가 화면 40% 아래로 오게 bottom 계산). 엔진음: 사용자 녹음 `assets/sounds/original/h2r.mp3`(30초)에서 24.1~27.1초 일정한 구간 2.95초 루프 `eng_h2r.wav`, 시동 1.0~3.4초 `lau_h2r.wav`, 소리 설정 `BIKES.h2r.snd`. 기어 6단 `BEDGE`.
+  - 물리 `bikeMotion(dt)`(step 안에서 `VEH==='bike'`면 차 대신 이걸 씀): 핸들 → 기울기 `LEAN`(속도 따라 최대 56°, 반응 5.8/s) → 진행 방향 회전 = g·tan(기울기)/속도(실제 오토바이 식). **드리프트(Space)**: 진행 방향은 기울기대로(×1.12 살짝 더 안쪽), **차체만** `DOFF`(22~39°)만큼 안쪽으로 돌아 미끄러짐 → 벽에 덜 박고 조종 가능. 기울이면 가속 최대 30%↓, 드리프트 중 가속 75%. 카메라는 기울기의 0.62배로 같이 기울고(`cam.rotation.z=-LEAN*.62`) 머리가 안쪽으로 이동. 후진 없음.
+  - **니트로는 드리프트로만 충전**: 드리프트 각도 7° 넘고 40km/h 넘으면 `NITG`가 참(30° 드리프트 약 3.5초에 가득) → 가득 차면 N/Shift로 4초 부스트 후 0. 한 바퀴 지나도 안 참. 화면 가운데 `#bdrift`에 "DRIFT 각도 · 니트로 +%" 표시.
+  - 순위표: `mode='bike', map='coast'` 따로(홈 순위표 제목 "오토바이 리더보드", 모드 선택 화면 리더보드 창에 잠금 풀린 기기에서만 `BIKE` 탭 `#mlbBike`). 리플레이는 아직 자동차 개인 랩타임만.
+  - 봇 기록(시뮬레이션): 드리프트 없이 155초, 드리프트 섞어서 146~156초, 벽 충돌 0.
+- **Coastal Cliff Highway** (맵 id `coast`, 오토바이 전용, 코드 `Coastal Cliff Highway` 블록, Touge 블록 뒤): 사용자가 보낸 트랙 구상도 모양의 섬 한 바퀴 5km 서킷. 길은 꼭짓점+곡선 반지름 `CO_W`를 `filletPts()`로 원호로 이어서 만듦(반지름 18~60m, 급커브 14개 = 드리프트 구간). 높이 `CO_ELEV`(22m 해안 고속도로 → 92m 능선). 구간: 출발 해안 고속도로(초록 표지판 Coastal Road/Ocean View) → 절벽 옆 S자(안쪽 거대한 바위 절벽 `CO_HILLS`, 바깥 바다) → 헤어핀 → **해안 터널** `CO_TUN`(36.2~42%, OCEAN TUNNEL 입구, 주황 불빛) → 능선 → 빠른 고속도로 → 왼쪽 헤어핀 → **바다 위 아치 다리** `CO_BRIDGE`(91.7~97.3%, 이어진 아치 리브+기둥+교각) → 결승. 지형은 `buildTerrain` 재사용(새 훅: `tbase`=바다 밑+언덕, `tmod`=`coMod` 터널 위 산/다리 밑 바다, `tcut`=`coCut` 터널 입구 구멍, `tcell`, `te0`/`tw` 길 옆 평지 폭(좁게 → 바로 바다로 떨어지는 절벽), `grass`/`rock` 색, `sea`(낮은 곳 젖은 바위색·바다 속 나무 안 심음), `treeN`). 바다는 큰 판+물결 텍스처(`coastFrame`에서 흐름). 등대(곶 위), 항구 마을(흰 벽·주황 지붕), 급커브 빨강 화살표 판, 노란 두 줄 중앙선, 가드레일. 하늘은 사용자 사진(2번째·3번째 칸) 이은 맑은 낮 파노라마 `assets/maps/sky_coast.webp`, 썸네일 `thumb_coast.webp`.
 - **1등 리플레이** (코드 `1등 리플레이` 주석 블록, `autoSend` 바로 뒤; SQL `supabase_replay.sql`): 개인 랩타임에서 한 바퀴(출발선 통과~결승선)를 0.1초(`RP_DT`)마다 `recTick()`으로 기록(한 칸 int16×6 = x·10, z·10, 방향·1e4, 속도·100, 핸들·1000, 페달 플래그 1브레이크 2가속 4핸드 8니트로). 바퀴 끝 `recLap(t)` → `LASTREP`. 새 최고 기록을 올린 뒤(`doSend`) 그 맵 1등일 때만 `replayUpload()`가 RPC `submit_replay`(데이터 `"100|"+base64`, 3분에 약 30KB)를 불러요. 서버 함수가 10분 안에 올라온 같은 이름·시간의 진짜 1등 기록인지 확인하고 `replays` 표(맵마다 1줄)에 덮어써요(표는 읽기만 공개). 재생: `rpStart()` → `MODE='replay'`(`body[data-mode=replay]`로 순위표·터치 버튼 숨김), 1등의 차(`setCar`)·맵으로 바꾸고 `HOLD`인 채 `rpTick()`이 위치를 보간(300m 넘게 튀면 순간이동), 화면 위 `#rph` REPLAY 표시, 끝나면 FINISH 3.2초 → `rpStop()`이 원래 모드·차로 돌려놓고 모드 선택으로. 나가기/Esc도 `rpStop`. 기능 넣기 전 1등 기록은 리플레이가 없음(새 1등부터 저장). 리플레이 지우기는 관리자가 `delete from replays where map='...'`. **새 맵 id를 추가하면 `submit_replay`의 맵 목록도 고쳐야 함.**
 - **리더보드**: 개인 랩타임은 새 최고 기록을 자동으로 올리고 맵별로 표시. 순위표 칸 위에 맵 탭(`LB_MAPS`: Seoul·Mountain·Christmas·Tokyo·New York·North Korea·Midnight Touge, `loadBoard(m)`/`LBMAP`)으로 다른 맵 순위도 볼 수 있음(하드에선 탭 숨김). 하드는 클리어한 스테이지 수(많은 순) → 누적 시간(짧은 순). 홈의 "리더보드" 버튼으로도 열림.
 - 기타: 니트로(한 바퀴 1번), 드리프트(핸드브레이크) 누를 때만 타이어 소리(`buildSkid`/`skidMix`: 사용자가 보낸 실제 드리프트 녹음 `assets/sounds/original/drifting_sound.mp3`의 1.0~5.35초 끽 소리를 4초 루프 `assets/sounds/skid_loop.wav`로 만들어 `SKIDSND`에 넣음. 미끄러짐에 따라 크기·재생 속도 조절), 핸드브레이크 중 회전량 ×1.7, 핸드브레이크 감속 `exp(-.3dt)` + **드리프트 속도 유지**(가속을 밟고 있으면 옆미끄럼으로 잃는 속도의 35%를 앞으로 되돌림; 30° 드리프트 4초 유지 시 90→82km/h, 예전엔 90→65), **니트로 준비 상태 강조**(`#nit:not(.spent):not(.burn)` 진한 파랑·빛, 터치 니트로 버튼도), **길 안내 표지판**(`buildGuide()`, 모든 맵(연습장 제외) 코너 35~55m 앞 오른쪽에 노란 다이아몬드: 방향 화살표 / 반경 22m 미만은 U자 헤어핀, 결승 300m·100m 앞 FINISH, 70m 안엔 하나만), 터치 버튼 모양/위치/크기/투명도 편집, 미니맵.
@@ -94,6 +105,7 @@
 - claude.ai 아티팩트에서는 외부 접속이 막혀 순위표가 안 됨 → 친구들과는 GitHub Pages 버전 사용.
 
 ## 앞으로 할 일 / 약속한 것
+0. **오토바이 1대1 대결**(지금은 준비 중 표시). 상대 오토바이는 `assets/models/h2r.glb` 3D 모델 쓰기. 오토바이 맵·오토바이 추가, 준비되면 비밀번호 잠금 풀기(`bkOpen` 대신 항상 열림).
 1. 하드모드 스테이지 맵 추가(사용자가 아이디어를 낼 예정). 화물선 맵의 장애물 간격·필요 속도·바다 폭은 `SH`/`shipPlan()` 숫자로 조절.
 2. (하드 6스테이지 완성) 사용자가 실제로 해 보고 제한 시간·얼음 미끄러움·낙석 거리 조절 요청 가능: `MAPS.alps.limit`/`MAPS.canyon.limit`, `onIce` 그립 0.55, 낙석 발동 거리 55m.
 3. 사용자가 실제로 들어보고 엔진/시동/폭발 소리 피드백을 줄 수 있음(전부 확인 못 한 상태).
