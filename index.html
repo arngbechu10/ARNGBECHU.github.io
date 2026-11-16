@@ -66,11 +66,20 @@ body.bike #bk{display:block}body.bike .cab{display:none}
 #bdGear{font-style:normal;font-size:2.6vw;font-weight:800;border:2px solid #4b5b70;border-radius:6px;padding:0 .6vw;line-height:1.25}
 #bdrift{position:fixed;left:50%;top:30%;transform:translate(-50%,-50%);z-index:30;display:none;flex-direction:column;align-items:center;pointer-events:none;text-shadow:0 2px 10px #000}
 #bdrift.on{display:flex}#bdrift b{font-size:clamp(18px,3.6vh,30px);font-weight:900;font-style:italic;letter-spacing:.1em;color:#7fd8ff}#bdrift span{font-size:clamp(14px,2.6vh,20px);font-weight:800;color:#fff}
+#modes .vq{margin:2px 0 0;font-size:15px;font-weight:700;color:#cdd7e6;letter-spacing:.02em}
 #modes .vcards{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:6px 0 4px}
-#modes .vc{display:flex;flex-direction:column;align-items:center;gap:6px;padding:18px 10px;border-radius:12px;border:2px solid #2c3342;background:#0e1117;color:#eef;cursor:pointer;font:inherit}
-#modes .vc:hover{border-color:#f2c230}#modes .vc i{font-style:normal;font-size:40px;line-height:1}#modes .vc b{font-size:18px}#modes .vc span{font-size:12px;color:#8d96a3}
-#modes .vc.lock span{color:#ff9a8a}
-@media (orientation:landscape) and (max-height:500px){#bk{bottom:min(0px,calc(64vh - 31.16vw))}#start .bmap img{width:96px}#modes{overflow-y:auto}#modes .vc{padding:8px 6px;gap:3px}#modes .vc i{font-size:24px}#modes .vc b{font-size:15px}#modes .vcards{margin:0}#mvPw{display:flex;flex-direction:column;gap:6px}#mvPw[hidden]{display:none}#mvPw input{padding:7px 10px;font-size:15px}}
+#modes .vc{position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:12px 14px 14px;min-height:190px;border-radius:12px;border:2px solid #2c3342;background:radial-gradient(120% 80% at 70% 20%,#26324a 0,#0e1117 65%);color:#eef;cursor:pointer;font:inherit;text-align:left;transition:transform .12s,border-color .12s,box-shadow .12s}
+#modes .vc:hover{transform:translateY(-3px);border-color:#f2c230;box-shadow:0 8px 26px #f2c23033}
+#modes .vc.bike:hover{border-color:#ff5a4a;box-shadow:0 8px 26px #ff5a4a33}
+#modes .vc .vimg{display:block;width:100%;height:96px;object-fit:contain;filter:drop-shadow(0 8px 10px #000a);margin-bottom:4px;transition:transform .2s}
+#modes .vc:hover .vimg{transform:scale(1.05) translateX(4px)}
+#modes .vc i{font-style:italic;font-weight:900;font-size:34px;line-height:1;letter-spacing:.02em;color:#f2c230;transform:skewX(-6deg)}
+#modes .vc.bike i{color:#ff5a4a}
+#modes .vc b{font-size:16px;margin-top:2px}#modes .vc span{font-size:12px;color:#8d96a3}
+#modes .vc.lock .vimg{filter:grayscale(.85) brightness(.55) drop-shadow(0 8px 10px #000a)}#modes .vc.lock span{color:#ff9a8a}
+#modes .vbadge{position:absolute;top:10px;right:10px;background:#ff5a4a;color:#111;font:900 9.5px/1 inherit;font-style:normal;letter-spacing:.08em;padding:4px 7px;border-radius:99px}
+#modes .vc:not(.lock) .vbadge{background:#29c26a}
+@media (orientation:landscape) and (max-height:500px){#bk{bottom:min(0px,calc(64vh - 31.16vw))}#start .bmap img{width:96px}#modes{overflow-y:auto}#modes .vc{padding:8px 10px;gap:1px;min-height:0}#modes .vc .vimg{height:48px;margin-bottom:2px}#modes .vc i{font-size:22px}#modes .vc b{font-size:13px}#modes .vc span{font-size:10.5px}#modes .vq{font-size:12px}#modes .vcards{margin:0}#mvPw{display:flex;flex-direction:column;gap:6px}#mvPw[hidden]{display:none}#mvPw input{padding:7px 10px;font-size:15px}}
 #start .cars button{flex:1;min-width:0;padding:6px 4px 5px;background:#0b0d14;border:2px solid var(--line);border-radius:10px;color:#8d96a3;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;transition:border-color .12s,color .12s,transform .12s}
 #start .cars button:hover{transform:translateY(-2px)}
 #start .cars img,#start .cars svg{display:block;width:100%;height:clamp(28px,5.6vh,48px);object-fit:contain;opacity:.75;transition:opacity .15s}
@@ -586,7 +595,7 @@ body[data-mode=hard] .lbtabs{display:none}
   <div class="bg"></div>
   <h1><small>ARNGBECHU RACING</small>모드 선택</h1>
   <div class="mcards" id="mStep1">
-    <button class="mc" data-mode="duel"><i>1 : 1</i><b>1대1 대결</b><p>방을 만들고 비밀번호를 정해서 친구와 같은 코스를 달려요.</p><ul><li>방 + 비밀번호</li><li>친구와 함께</li></ul></button>
+    <button class="mc" data-mode="duel"><i>1vs1</i><b>1vs1 대결</b><p>방을 만들고 비밀번호를 정해서 친구와 같은 코스를 달려요.</p><ul><li>방 + 비밀번호</li><li>친구와 함께</li></ul></button>
     <button class="mc" data-mode="lap"><i>LAP</i><b>개인 랩타임</b><p>혼자 한 바퀴 기록에 도전해요. 맵마다 순위표가 따로 있어요.</p><ul><li>맵 7개</li><li>맵별 순위표</li></ul></button>
     <button class="mc prac" data-mode="practice"><i class="two">PRACTICE<br>ZONE</i><b>연습장</b><p>넓은 공간에서 마음껏 달리고 드리프트를 연습해요. 기록은 남지 않아요.</p><ul><li>드리프트 원</li><li>8자 코스</li><li>슬라럼</li><li>직선 가속</li></ul></button>
     <button class="mc hard" data-mode="hard"><i>HARD</i><b>하드 랩타임</b><p>벽에 너무 많이 부딪히면 차가 폭발해요. 스테이지마다 허용 횟수가 10번부터 줄어들어요.</p><ul><li>충돌 10→9→8…</li><li>스테이지 진행</li><li>순위표</li></ul></button>
@@ -608,7 +617,7 @@ body[data-mode=hard] .lbtabs{display:none}
   </div></div>
   <div class="mname" id="mStepV" hidden>
     <span class="mchip" id="mvMode"></span>
-    <div class="vcards"><button type="button" class="vc" data-veh="car"><i>🚗</i><b>자동차</b><span>차 6대 · 맵 7개</span></button><button type="button" class="vc lock" data-veh="bike"><i>🏍️</i><b>오토바이</b><span id="vbSub">준비 중 🔒</span></button></div>
+    <p class="vq">무엇으로 달릴까요? 🏁</p><div class="vcards"><button type="button" class="vc car" data-veh="car"><img class="vimg" alt=""><i>CAR</i><b>🏎️ 자동차</b><span>슈퍼카 6대 · 맵 7개 · 드리프트</span></button><button type="button" class="vc bike lock" data-veh="bike"><img class="vimg" alt=""><em class="vbadge" id="vbBadge">COMING SOON</em><i>BIKE</i><b>🏍️ 오토바이</b><span id="vbSub">관리자만 🔒</span></button></div>
     <form id="mvPw" hidden autocomplete="off"><label for="mvPwIn">준비 중이에요. 관리자 비밀번호</label><input id="mvPwIn" type="password" maxlength="40" autocomplete="off"><p class="hint" id="mvHint"></p><div class="mrow"><button type="button" class="mbtn ghost" id="mvPwX">취소</button><button type="submit" class="mbtn play">열기</button></div></form>
     <div class="mrow" id="mvRow"><button type="button" class="mbtn ghost" id="mvBack">뒤로</button></div>
   </div>
@@ -2419,7 +2428,7 @@ function bikeMotion(dt){
   w*=1+.08*DK;
   vh+=w*dt;
   /* 드리프트: 차체만 코너 안쪽으로 돌아가 미끄러지는 각도(DOFF). 떼면 천천히 바로 서요 */
-  const tgt=DDIR*(.2+.14*Math.max(0,steer*DDIR))*clamp((v-9)/10,0,1)*DK;
+  const tgt=DDIR*(.3+.2*Math.max(0,steer*DDIR))*clamp((v-9)/10,0,1)*DK;
   DOFF+=(tgt-DOFF)*Math.min(1,dt*(drift?4:9));
   {let dh=vh+DOFF-c.h;dh=Math.atan2(Math.sin(dh),Math.cos(dh));c.h+=Math.abs(dh)>.12?clamp(dh*Math.min(1,dt*9),-.06,.06):dh}   /* 벽에 부딪혀 방향이 확 바뀌어도 화면은 부드럽게 따라가요 */
   c.vx=Math.cos(vh)*v;c.vz=Math.sin(vh)*v;c.x+=c.vx*dt;c.z+=c.vz*dt;
@@ -3053,7 +3062,7 @@ function rpStop(){
 $('send').onclick=doSend;
 
 /* ---------- 모드 선택 → 이름 입력 → 홈 ---------- */
-const MODENAME={lap:'개인 랩타임',hard:'하드 랩타임',duel:'1대1 대결',practice:'연습장',bike:'오토바이 랩타임'};
+const MODENAME={lap:'개인 랩타임',hard:'하드 랩타임',duel:'1vs1 대결',practice:'연습장',bike:'오토바이 랩타임'};
 const MC=document.querySelectorAll('#modes .mc');
 let hardIdx=0,hits=0,stageTimes=[],lastHit=0,failT=0;
 function stopAudio(){if(AC){try{AC.close()}catch(e){}}AC=null;eng=null;sg=null;eg=null;nzg=null}
@@ -3092,11 +3101,14 @@ let VPM='lap';try{localStorage.removeItem('drift-bk')}catch(e){}
 const bkOpen=()=>{try{return sessionStorage.getItem('drift-bk')===BK_HASH.slice(0,16)}catch(e){return false}};   /* 잠금 풀림은 이 탭에서만 (새로고침·다시 접속하면 또 비밀번호) */
 function vehPick(m){
   VPM=m;$('mvMode').textContent=MODENAME[m];$('mStep1').hidden=true;$('mStep2').hidden=true;$('mStepV').hidden=false;$('mvPw').hidden=true;$('mvRow').hidden=false;
-  $('vbSub').textContent=m==='duel'?'오토바이 대결은 준비 중이에요':bkOpen()?'열림 · Coastal Cliff Highway':'준비 중 🔒';
+  const vi=document.querySelectorAll('#modes .vimg');vi[0].src=CARS.gtr.hero;vi[1].src=BIKES.h2r.hero;
+  const open=m!=='duel'&&bkOpen(),bc=document.querySelector('#modes .vc.bike');bc.classList.toggle('lock',!open);
+  $('vbBadge').textContent=open?'UNLOCKED':'COMING SOON';
+  $('vbSub').textContent=m==='duel'?'1vs1 오토바이 대결은 준비 중이에요 🔧':open?'열림 · Coastal Cliff Highway 🌊':'관리자만 🔒';
 }
 document.querySelectorAll('#modes .vc').forEach(b=>b.onclick=()=>{
   if(b.dataset.veh==='car'){goName(VPM);return}
-  if(VPM==='duel'){toast('오토바이 대결은 준비 중이에요');return}
+  if(VPM==='duel'){toast('1vs1 오토바이 대결은 준비 중이에요 🔧');return}
   if(bkOpen()){goName('bike');return}
   $('mvPw').hidden=false;$('mvRow').hidden=true;$('mvHint').textContent='';$('mvPwIn').value='';setTimeout(()=>$('mvPwIn').focus(),30);
 });
@@ -3691,7 +3703,7 @@ function duelInfo(){
   const me=$('diMe').parentNode,op=$('diOpp').parentNode;
   $('diMe').textContent=D.ready?'준비 완료 · '+CARS[CARID].name:'차를 고르고 준비를 눌러요';me.classList.toggle('ok',D.ready);
   $('diOppN').textContent='상대 · '+(D.oppName||'친구');
-  $('diOpp').textContent=D.oppId?(D.oppReady?'준비 완료 · ':'차 고르는 중 · ')+(CARS[D.oppCar]||CARS.gtr).name:'나갔어요';op.classList.toggle('ok',D.oppReady);
+  $('diOpp').textContent=D.oppId?(D.oppReady?'준비 완료 · ':'차 고르는 중 · ')+(CARS[D.oppCar]||CARS.gtr).name:'도망갔어요';op.classList.toggle('ok',D.oppReady);
   $('go').querySelector('span').textContent=MODE==='duel'?(D.ready?'준비 취소':'준비'):'플레이';
   document.body.classList.toggle('dready',D.ready);
 }
@@ -3784,17 +3796,17 @@ function showDuelResult(){
   $('drT').textContent=win?'WIN':'LOSE';
   $('drSub').textContent=D.oppLeft&&D.oppFin==null?'상대가 나가서 승리했어요.':win?'상대보다 먼저 들어왔어요!':'아쉽게 졌어요. 다시 도전해 봐요!';
   $('drMe').textContent=fmt(D.myFin);
-  $('drOpp').textContent=D.oppFin!=null?fmt(D.oppFin):D.oppLeft?'나갔어요':'아직 달리는 중…';
+  $('drOpp').textContent=D.oppFin!=null?fmt(D.oppFin):D.oppLeft?'도망갔어요':'아직 달리는 중…';
   $('drMap').textContent=MAPLABEL[D.map]+' · '+D.laps+'바퀴';
   el.classList.add('on');$('dh').classList.remove('on');
 }
-$('drAgain').onclick=()=>{if(!D.oppId){backToLobby('상대가 나갔어요.');return}duelGarage()};
+$('drAgain').onclick=()=>{if(!D.oppId){backToLobby('상대가 도망갔어요.');return}duelGarage()};
 $('drExit').onclick=()=>showModes();
 function updDH(){
   const me=D.done*LAPEND+(D.state==='done'?0:prog),op=O.lap*LAPEND+O.pr,first=D.myFin!=null?(D.oppFin==null||D.myFin<=D.oppFin):D.oppFin!=null?false:me>=op;
   const p=$('dhPos');p.textContent=first?'1st':'2nd';p.classList.toggle('p2',!first);
   $('dhLap').textContent=Math.min(D.done+1,D.laps)+' / '+D.laps;
-  $('dhOpp').textContent=D.oppLeft?'나갔어요':D.oppFin!=null?'완주':'LAP '+Math.min(O.lap+1,D.laps);
+  $('dhOpp').textContent=D.oppLeft?'도망갔어요':D.oppFin!=null?'완주':'LAP '+Math.min(O.lap+1,D.laps);
 }
 /* 상대 위치 받기: 받은 위치를 시간과 함께 모아 두고(스냅샷), 화면에는 0.12초 전 모습을 두 스냅샷 사이 곡선으로 부드럽게 그려요.
    (온라인 레이싱 게임에서 쓰는 '스냅샷 보간' 방식. 예측했다가 고치는 방식보다 떨림이 없어요) */
@@ -3889,9 +3901,9 @@ function drawOppMM(){
 function oppGone(){
   if(!D.oppId)return;
   D.oppId=null;D.oppReady=false;O.seen=false;hideOpp();
-  if(D.state==='count'||D.state==='race'){D.oppLeft=true;toast('상대가 나갔어요. 혼자 끝까지 달릴 수 있어요.');updDH()}
+  if(D.state==='count'||D.state==='race'){D.oppLeft=true;toast('상대가 도망갔어요. 혼자 끝까지 달릴 수 있어요.');updDH()}
   else if(D.state==='done'){D.oppLeft=true;showDuelResult()}
-  else if(D.state==='garage')backToLobby('상대가 나갔어요.');
+  else if(D.state==='garage')backToLobby('상대가 도망갔어요.');
   else if(D.state==='lobby'&&D.role==='host')dStat('dWStat','친구를 기다리는 중…','spin');
 }
 function backToLobby(msg){
