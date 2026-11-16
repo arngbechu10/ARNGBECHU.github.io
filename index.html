@@ -408,7 +408,8 @@ body[data-mode=practice] #tl,body[data-mode=practice] #bt,body[data-mode=practic
 /* 순위표 맵 탭 */
 #mlbBtn{display:inline-flex;align-items:center;gap:8px;padding:12px 26px;border-radius:99px;border:1.5px solid #f2c230;background:#14171ce6;color:#f2c230;font:700 clamp(14px,2.2vh,17px)/1 inherit;letter-spacing:.04em;cursor:pointer;box-shadow:0 0 18px #f2c23033}
 #mlbBtn:hover{background:#f2c230;color:#111}
-#mStep1[hidden]~#mlbBtn{display:none}
+#mStep1[hidden]~#mlbBtn,#mStep1[hidden]~#mcredit{display:none}
+#modes #mcredit{margin:-8px 0 0;font-size:12px;letter-spacing:.08em;color:#8d96a3;opacity:.85}
 #modes>#mlb{position:fixed;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;background:#05060cb8;padding:14px}
 #modes>#mlb[hidden]{display:none}
 #mlb .box{width:min(440px,94vw);max-height:88vh;overflow:auto;background:#14171cf5;border:1px solid #2c3342;border-radius:14px;padding:16px 18px}
@@ -550,6 +551,7 @@ body[data-mode=hard] .lbtabs{display:none}
     <button class="mc hard" data-mode="hard"><i>HARD</i><b>하드 랩타임</b><p>벽에 너무 많이 부딪히면 차가 폭발해요. 스테이지마다 허용 횟수가 10번부터 줄어들어요.</p><ul><li>충돌 10→9→8…</li><li>스테이지 진행</li><li>순위표</li></ul></button>
   </div>
   <button type="button" id="mlbBtn">🏆 리더보드 보기</button>
+  <p id="mcredit">제작자 : 양희주</p>
   <div id="mlb" hidden role="dialog" aria-label="리더보드"><div class="box">
     <div class="hd"><b id="mlbTitle">리더보드</b><button type="button" id="mlbX" aria-label="닫기">✕</button></div>
     <div class="kind" role="tablist"><button type="button" data-k="lap" class="on">LAP · 개인 랩타임</button><button type="button" data-k="hard">HARD · 하드 랩타임</button></div>
