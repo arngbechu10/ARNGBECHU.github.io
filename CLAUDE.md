@@ -10,7 +10,7 @@
 | `index.html` | **실제 게임 전체 (약 6MB, 파일 하나)**. 이미지·소리가 전부 base64로 들어 있어요. 배포는 이 파일 하나면 됩니다. |
 | `index.readable.html` | base64를 `DATAURI`로 바꾼 읽기 전용 사본 (줄 번호 원본과 같음). `python3 tools/strip_data_uris.py`로 다시 만들 수 있어요. |
 | `supabase_setup.sql` | 순위표를 맵·모드별로 나누는 SQL. **2026-11-14 사용자가 실행 완료**(Success). |
-| `supabase_security.sql` | **2026-11-14 사용자가 실행 완료**(Success). 순위표 보안 SQL(이름 1~20자·욕설·꺾쇠 금지, 기록 20초~1시간, 맵·모드 값 제한(NOT VALID라 옛 기록은 그대로), 같은 이름 20초에 1번·전체 1분 40번 트리거, update/delete 권한 회수). 새 맵 id를 추가하면 `scores_kind_ok`의 맵 목록도 고쳐야 함! |
+| `supabase_security.sql` | **2026-11-14 사용자가 실행 완료**(Success). 2026-11-16 `scores_kind_ok`에 pyongyang 추가 — **이 부분 다시 실행 필요(사용자 확인 전)**. 순위표 보안 SQL(이름 1~20자·욕설·꺾쇠 금지, 기록 20초~1시간, 맵·모드 값 제한(NOT VALID라 옛 기록은 그대로), 같은 이름 20초에 1번·전체 1분 40번 트리거, update/delete 권한 회수). 새 맵 id를 추가하면 `scores_kind_ok`의 맵 목록도 고쳐야 함! |
 | `assets/` | 게임에 들어간 원본 에셋: 차량 이미지(앞모습·콕핏·핸들, 720S 뒷모습), 엔진·시동 소리(wav), 사용자가 보낸 원본 엔진 녹음(mp3), 맵 하늘·바다 이미지 |
 | `build/` | 채팅에서 쓰던 **빌드 기록 (참고용)**. 중간 파일(t_nitro.html 등)이 없어서 그대로 다시 돌리진 못해요. 앞으로는 `index.html`을 직접 고치면 됩니다. |
 | `tests/` | Playwright 테스트 스크립트 (참고용, 경로는 채팅 환경 기준이라 수정 필요) |
@@ -25,20 +25,24 @@
 ## 코드 지도 (`index.readable.html` 줄 번호 기준, 대략)
 | 줄 | 내용 |
 |---|---|
-| 7–272 | CSS (164~ 모드 선택·이름 입력, 220~ 하드모드 HUD/폭발/실패/점프 안내) |
-| 274–406 | HTML: 게임 HUD, 리더보드 패널 `#lbp`, 홈 `#start`, 모드 선택 `#modes`, 하드 HUD `#hh`, 점프 안내 `#jh`, 폭발 `#boom`, 스테이지 배너 `#stg`, 실패 창 `#fail`, 조작 편집기 `#ced` |
-| 423–683 | **맵 시스템**: `SKIES`, `MAPS` 설정, 도로 띠 `strip()`, 바리케이드 `wallStrip()`, 나무, 산 지형 `buildTerrain()`, 서울 다리 `planBridge()/buildBridge()` |
-| 684–837 | **화물선 맵**: `SH` 치수, `shipPlan()`(점프 위치·장애물 `OBS`), `buildShip()`, `obsCollide()`, `launch()`, `airStep()`(공중 물리), `onWater()` |
-| 838–905 | `setMap(id)`: 코스 점 N=1400개, 높이 `TY`, 경사 `TSL`, 법선 `TN`, 방향 `TH` 계산 후 맵 생성 |
-| 923–999 | **차량 물리** `step(dt)`: 가속·그립·드리프트, 벽 충돌(`WALL`), 경사, 한 바퀴 판정(`prog>=LAPEND`) |
-| 1000–1052 | 엔진 소리 `initAudio()`, `drive()`(회전수·기어·속도계·소리 크기) |
-| 1053–1123 | 미니맵, 니트로(한 바퀴에 한 번, 4초) |
-| 1124–1146 | 메인 루프 `loop()` (카메라 높이는 지면 `TY` 또는 공중일 때 `cy`) |
-| 1147–1292 | 홈: 방향키 모양 선택, 조작법 탭, 터치 버튼 편집기 |
-| 1293–1324 | **차량 선택** `CARS` (gtr, gt3, chal, f40, mcl + 잠긴 Tesla) |
-| 1325–1389 | **리더보드** Supabase (`loadBoard`, `sendScore`, `doSend`) |
-| 1390–1450 | 모드 선택 → 이름 입력 → 홈, 플레이 시작 버튼 |
-| 1451–1580 | **하드모드** (`HARD_STAGES`, 충돌 카운트, 폭발, 추락, 스테이지 클리어, 실패 창, 점프 안내) |
+| 10–431 | CSS (모드 선택·이름 입력, 하드모드 HUD/폭발/실패/점프 안내, 끝에 폰 가로 화면 블록) |
+| 433–630 | HTML: 게임 HUD, 리더보드 패널 `#lbp`, 홈 `#start`, 모드 선택 `#modes`, 1대1 로비, 하드 HUD `#hh`, 연습장 HUD, 조작 편집기 `#ced` |
+| 632–705 | **맵 시스템**: `SKIES`, `MAPS` 설정(697~), 도로 띠 `strip()`, 바리케이드 `wallStrip()`, 나무, 산 지형, 서울 다리 |
+| 706–948 | Tokyo Neon City 맵 (도구 `tkAdd/tkFlush/tkAt/tkBoard/tkTex`) |
+| 950–1171 | New York Downtown 맵 |
+| 1173–1271 | **Pyongyang 맵** (`PY_CTRL`, `buildPyongyang()` 1203, `pyFrame`) |
+| 1273–1477 | 하드 5·6 (Alps, Red Canyon, 제한 시간) |
+| 1497– | 길 안내 표지판 `buildGuide()` |
+| 1720–1855 | **화물선 맵**: `buildShip()`, `shipPlan()`, 점프·공중 물리 |
+| 1856–1967 | `setMap(id)`: 코스 점 N=1400개, `TY`/`TSL`/`TN`/`TH` 계산 후 도로·맵 생성 |
+| 1968–2040 | **차량 물리** `step(dt)` |
+| 2041–2182 | 엔진 소리 `initAudio()`, `drive()`, 미니맵, 니트로 |
+| 2183–2354 | 메인 루프 `loop()`, 홈 조작 설정·터치 버튼 편집기 |
+| 2355–2408 | **차량 선택** `CARS`, 실제 차 정보 `CSPEC` |
+| 2409–2668 | 하드모드(`HARD_STAGES`), 리더보드(`loadBoard` 2427, `sendScore`), 모드 선택·이름 입력 |
+| 2669–3280 | **1대1 대결** (로비·통신·상대 차, 3D 모델 `m3dLoad` 2811, 출발 부스터 `LC` 3082) |
+| 3281–3408 | **연습장** |
+| 3409– | 나가기 버튼 `goBack()` |
 
 ## 지금까지 만든 기능
 - **모드 선택 화면**(시작하자마자, 카드 큰 글씨: 1 : 1 / LAP / PRACTICE ZONE(두 줄, `.mc i.two`) / HARD): 1대1 대결, 개인 랩타임, **연습장**, 하드 랩타임 → 이름 입력(연습장은 건너뜀) → 홈. 홈 왼쪽 위에 모드·이름·"모드 변경". 운전 중 오른쪽 위 **"← 나가기"** 버튼(`#back`, Esc 키도) → 홈(차 선택)으로(`goBack()`): 하드는 확인 후 1스테이지로 초기화, 1대1은 확인 후 방 나가기(모드 선택). 1대1 카드의 NEW 표시는 지움.
@@ -47,9 +51,10 @@
   - **Supra MK4**(`supra`): 사용자가 보낸 한 장짜리 사진(앞·뒤·실내·핸들)을 잘라 만듦 — 홈 사진 `assets/cars/hero_supra.webp`, 뒷모습 `rear_supra.webp`(rembg), 콕핏 `cabin_supra.webp`(기존 `build/assets-scripts/cabin.py` 방식, 핸들 wx 71.91/wy 86.16/ww 20.38), 핸들 `wheelS_supra.webp`(rembg 후 테두리·살·패드 모양으로 마스크). 엔진음: 사용자 녹음 `assets/sounds/original/supra.mp3`(35초)에서 30.3~35.5초 아이들/저회전 구간을 4.75초 루프 `eng_supra.wav`(기본 음 193Hz, 911과 비슷), 시동은 녹음 처음 0.15~2.6초 레브 `lau_supra.wav`. 실제 차 정보: 2JZ-GTE 3.0 직렬6 트윈터보 280마력, 1,510kg, 0→100 4.9초, 250km/h 제한, 후륜. 3D 모델 `assets/models/supra.glb`(Sketchfab .blend → 같은 변환, 290KB), 차체 `Paint` 흰색, 유리 재질은 `M3D.supra.glass`로 어둡게.
   - Tesla Roadster 타일은 눌러도 선택 안 되고 "이딴건 차가 아닙니다 사용하실 수 없습니다" 토스트(사용자 요청 문구 그대로 유지).
   - 엔진음: 사용자가 보낸 녹음에서 안정 구간을 잘라 루프로 만듦. 시동음은 실제 녹음이 없어 **합성**(스타터→점화→아이들).
-- **맵** (개인 랩타임·1대1에서 선택): Seoul(야경, 바리케이드, 한강다리 같은 다리), Mountain Pass(내리막 산길, 가드레일, 지형·나무), Christmas(눈, 조명 울타리), **Tokyo Neon**(어려움), **New York**(어려움).
+- **맵** (개인 랩타임·1대1에서 선택): Seoul(야경, 바리케이드, 한강다리 같은 다리), Mountain Pass(내리막 산길, 가드레일, 지형·나무), Christmas(눈, 조명 울타리), **Tokyo Neon**(어려움), **New York**(어려움), **Pyongyang**(보통, 동상 광장).
 - **Tokyo Neon City** (맵 id `tokyo`, 코드는 `Tokyo Neon City 맵` 주석 블록 ~ `/* === Tokyo 끝 === */`, `MAPS` 바로 뒤에 있어야 함: 저장된 맵이 tokyo면 시작할 때 바로 만들어지므로): 비 오는 밤 시가지 1.28km(`TOKYO_CTRL`), 도로 반폭 7.5, 90도 코너·헤어핀·S자 시케인(반경 10~12m). 하늘은 사용자가 보낸 사진 3장을 이어 만든 파노라마(`assets/maps/sky_tokyo.webp`, 썸네일 `thumb_tokyo.webp`). 장애물 `TOKYO_OBS`(f=코스 비율, lat=+오른쪽): 工事中 공사 구간 2곳(바리케이드·깜빡이 경고등·인사하는 작업자 간판·화살표 판), 주차된 택시(비상등), 자판기 3대, 도리이 6개(`TORII_F`, 기둥 ±6.1m가 도로 안). 충돌은 회전된 상자 `tobsCollide()`(`TOBS`). 장식: 창문 건물(바깥쪽 높고 안쪽은 1~3층 가게), 네온 간판 아틀라스(`NEON`/`BOARDS`), 젖은 도로 네온 반사, 3D 도쿄 타워(코스 안쪽 70,130), 초록 고속도로 표지판(東京タワー·銀座·渋谷 등), 코너 쉐브론, 벚꽃, 빨간 초롱, 비(`tokyoFrame`). 같은 재질은 `tkAdd`/`tkFlush`로 합쳐서 물체 약 70개. 도로 폭은 나중 1대1을 위해 차 2대가 넉넉히 들어가게 넓혀 둠.
 - **New York Downtown** (맵 id `ny`, 코드는 `New York Downtown 맵` 주석 블록 ~ `/* === New York 끝 === */`, Tokyo 블록 바로 뒤, Tokyo 도구 `tkAdd/tkFlush/tkAt/winTex/TOBS` 재사용): 밤 2.1km(`NY_CTRL`), 반폭 9. 타임스스퀘어 광고판 직선(`nyAtlas`) → 다운타운 코너 → **브루클린 다리**(z=130 직선, 높이 `NY_DECK`=9m, `MAPS.ny.tyFn=nyTY`로 경사로, 강 `NY_WATER` 위) 돌탑 2개(`NY_TOWERS`, 가운데 기둥이 장애물이라 왼쪽/오른쪽 아치로 통과), 케이블·전구 → 워싱턴 스퀘어 개선문(기둥은 도로 밖) → 북적이는 거리. 장애물 `NY_OBS`(at=[x,z] 근처 코스 점, lat=+오른쪽): 이중 주차 노란 택시 3대, 증기 굴뚝 2개(증기 `nyFrame`), ROAD WORK 공사 구간 1곳. 장식: 빌딩(물탱크·첨탑), 초록 고속도로 표지판(I-95 등), 가로등+NEW YORK 깃발, 가로수, 소화전, 보도 위 사람들, 쉐브론. 하늘은 사용자 사진 3장 파노라마 `assets/maps/sky_ny.webp`, 미니맵에 강(`mmNY`). `setMap`은 `D.tyFn`이 있으면 높이를 그걸로, 맵 바꿀 때 `TOBS=[]`, 충돌은 `TOBS.length`면 항상 검사.
+- **Pyongyang** (맵 id `pyongyang`, 개인 랩타임·1대1 전용, 난이도 "보통", 코드는 `Pyongyang 맵` 주석 블록 ~ `Pyongyang 끝`, New York 블록 뒤): 흐린 낮 평양 1.5km(`PY_CTRL`), 반폭 9, 구불구불한 대로 → **동상 광장(`PY_C`)을 한 바퀴 빙 도는 고리** → 개선문(`PY_ARCH`, 도로 위를 가로지름, 기둥은 도로 밖) → S자. 사용자가 보낸 사진으로 하늘 파노라마 `assets/maps/sky_py.webp`(썸네일 `thumb_py.webp`), 동상 두 개 오린 그림 `py_statues.webp`(rembg, `PY_STATUE`, 받침대 위 판이 `pyFrame`에서 카메라 쪽으로 돎), 벽화 `py_mural.webp`. 장식: 인공기 깃발, 붉은 세로 현수막(`PY_BANNERS`), 옥상 구호(`PY_SLOGANS`: 조선은 영원히 승리할 것이다! 등), 아파트, 류경호텔 피라미드, 기둥 회관, 침엽수. 장애물: 교통 안전원 단 2개, 서 있는 무궤도 전차 1대(TOBS). 밝은 낮 맵이라 헤드라이트 빛(`beam`)은 숨기고(`beam.visible=MAPID!=='pyongyang'`), 땅 판은 `gy:-.6`(높이 -0.03이면 도로와 깊이가 겹쳐 도로가 흐릿하게 보였음). 이 맵만 차선(±4.5m 흰 점선)이 더 있음(`if(D.py)`).
 - **하드 랩타임**: 스테이지마다 허용 충돌 횟수가 줄어듦(`hardLimit(i)=HARD_FIRST(10)-i`, 최소 `HARD_MIN`): 1스테이지 10번 → 9 → 8 → 7 → 6 → 5. 충돌 횟수는 스테이지마다 새로 셈, 실패 창의 "벽 충돌 (전체)"는 `hitsTotal`. 넘으면 폭발음+연출 후 "실패". 스테이지를 차례로 클리어: Christmas → Seoul → Mountain Pass → **Cargo Ship** → **Alps** → **Red Canyon**(마지막, 클리어하면 ALL CLEAR 6/6). 홈 스테이지 목록은 3칸×2줄. R(재시작) 키 막음. 새 스테이지는 `HARD_STAGES` 배열에 맵 id만 추가.
 - **하드 5·6 공통** (코드 `하드모드 5·6 스테이지` 블록 ~ `/* === 하드 5·6 끝 === */`, New York 블록 뒤): **제한 시간** `MAPS[id].limit`초(Alps 90, Canyon 65; 사용자 요청으로 줄임), 첫 가속(`lapStart`)부터 셈, HUD `#hhTime`(15초 미만 빨강), 넘으면 `hardTimeout()` → "시간 초과". 시간은 자동 운전 봇(중앙선+장애물 피하기, 곡률로 속도 조절)으로 잰 깨끗한 랩(Alps 95~104초, Canyon 69~76초), 한계까지 몬 봇 최고 기록(Alps 84초, Canyon 55초)보다 6~10초 여유만 줌(매우 어려움). 사용자가 70초·60초를 원했지만 Alps 70초는 불가능해서 이렇게 정함. 하늘은 사용자가 보낸 사진(4번째 사진 윗줄=알프스 밤, 아랫줄=협곡 노을) 3장씩 이은 파노라마 `assets/maps/sky_alps.webp`/`sky_canyon.webp` (캔버스 그림 `procSky`는 예비용). 알프스는 밤: 지형 색에 `MAPS.alps.night`(달빛 파랑) 곱함, 주황 가로등(`lamps`), 터널 입구·바위 어둡게. 스테이지 클리어 배너에 다음 맵 제한 시간 표시(`fmtS`).
 - **Alps** (맵 id `alps`, 하드 5, 충돌 6번): 1.8km, 반폭 6.5, 가드레일. 지그재그 헤어핀 오르막(0~58%, 높이 `ALPS_H`=48m, `alpsTY`) → 꼭대기 **터널**(`ALPS_TUN` 61.5~70%, 벽·천장·주황 등·GOTTHARD TUNNEL 입구; 지형 산은 터널 위에서 입구 8.8m→안쪽 최대 18m로 `tunUp`) → S자 내리막. 자체 지형(눈·바위·초록 색, `buildAlps`), 눈 덮인 전나무, 눈 내림(`SNOW`, 터널 안에선 숨김). **얼음** `ALPS_ICE`([시작,끝,왼,오른], `onIce()`): 그립 최대 0.55, 가속 45%, 브레이크 30%. **낙석** `ALPS_ROCK`: 55m 앞까지 오면 26m 위에서 떨어져 착지 후 장애물(TOBS)이 됨, `alpsReset()`으로 원위치. 이미 떨어진 바위 `ALPS_BOULDER`, ROCKFALL·ICE 경고판, 낙석 구간 안쪽 바위 절벽. 바위 모양 `rockG`는 꼭짓점 위치로 정한 크기라 면이 갈라지지 않음.
@@ -64,7 +69,7 @@
   - 테스트 주의: 두 번째 페이지는 뒤 탭이라 타이머가 늦게 돌아 결과 화면(1.4초 뒤)이 늦게 뜰 수 있음 → 읽기 전에 기다리거나 `bringToFront()`.
   - 테스트: Supabase 대신 BroadcastChannel로 흉내 내는 가짜 라이브러리를 Playwright에서 `**/supabase-js@*/**` 요청에 넣고, 한 브라우저 컨텍스트에 페이지 2개(가·나)를 열어 확인.
 - **연습장** (`MODE='practice'`, 맵 id `practice`, 코드는 `연습장` 주석 블록): 520m×520m 평지(`PA=260`), 타이어 벽(`practiceBounds()`), 구역 `PZ`: 드리프트 원(콘 둘레), 8자 코스, 슬라럼(콘 16개), 430m 직선 가속(100m 표지판, BRAKE). 콘은 부딪히면 쓰러짐(`CONES`, R/처음 위치 버튼으로 원위치). HUD `#ph`: 드리프트 각도·시간·최고, 최고 속도. 랩·타이머·순위표 없음, 니트로는 끝나고 5초 뒤 다시 참. 코스 점 `TP`는 바깥 테두리 사각형(미니맵용), `half:600`이라 도로 밖 감속·밀어내기 없음. 바닥은 잘게 나눈 판 + 잔디는 2.5m 아래(깊이 겹침 방지), 바닥 표시는 polygonOffset.
-- **리더보드**: 개인 랩타임은 새 최고 기록을 자동으로 올리고 맵별로 표시. 순위표 칸 위에 맵 탭(`LB_MAPS`: Seoul·Mountain·Christmas·Tokyo·New York, `loadBoard(m)`/`LBMAP`)으로 다른 맵 순위도 볼 수 있음(하드에선 탭 숨김). 하드는 클리어한 스테이지 수(많은 순) → 누적 시간(짧은 순). 홈의 "리더보드" 버튼으로도 열림.
+- **리더보드**: 개인 랩타임은 새 최고 기록을 자동으로 올리고 맵별로 표시. 순위표 칸 위에 맵 탭(`LB_MAPS`: Seoul·Mountain·Christmas·Tokyo·New York·Pyongyang, `loadBoard(m)`/`LBMAP`)으로 다른 맵 순위도 볼 수 있음(하드에선 탭 숨김). 하드는 클리어한 스테이지 수(많은 순) → 누적 시간(짧은 순). 홈의 "리더보드" 버튼으로도 열림.
 - 기타: 니트로(한 바퀴 1번), 드리프트(핸드브레이크) 누를 때만 타이어 소리(`buildSkid`/`skidMix`: 사용자가 보낸 실제 드리프트 녹음 `assets/sounds/original/drifting_sound.mp3`의 1.0~5.35초 끽 소리를 4초 루프 `assets/sounds/skid_loop.wav`로 만들어 `SKIDSND`에 넣음. 미끄러짐에 따라 크기·재생 속도 조절), 핸드브레이크 중 회전량 ×1.7, 핸드브레이크 감속 `exp(-.3dt)` + **드리프트 속도 유지**(가속을 밟고 있으면 옆미끄럼으로 잃는 속도의 35%를 앞으로 되돌림; 30° 드리프트 4초 유지 시 90→82km/h, 예전엔 90→65), **니트로 준비 상태 강조**(`#nit:not(.spent):not(.burn)` 진한 파랑·빛, 터치 니트로 버튼도), **길 안내 표지판**(`buildGuide()`, 모든 맵(연습장 제외) 코너 35~55m 앞 오른쪽에 노란 다이아몬드: 방향 화살표 / 반경 22m 미만은 U자 헤어핀, 결승 300m·100m 앞 FINISH, 70m 안엔 하나만), 터치 버튼 모양/위치/크기/투명도 편집, 미니맵.
 
 - **폰 가로 화면 전용 레이아웃**: CSS 끝의 `@media (orientation:landscape) and (max-height:500px)` 블록(PC·태블릿은 높이가 커서 영향 없음). 홈은 왼쪽(차·맵·플레이)/오른쪽(조작 설정) 두 칸이 각각 스크롤, 플레이 버튼은 아래에 고정. 운전 화면은 미니맵·HUD 축소, 콕핏 이미지를 135%로 키워(top:-14%, 사용자가 고른 B안: 핸들 위쪽 절반 보임) 천장선은 화면 맨 위·대시보드는 아래로 가서 도로가 넓게 보이고 속도계는 가운데 아래. 모드 선택 카드 3장 한 줄. 테스트는 Playwright `devices['iPhone 13 landscape']`(750×342), `Galaxy S9+ landscape`(658×320).

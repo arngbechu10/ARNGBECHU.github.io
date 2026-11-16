@@ -23,7 +23,7 @@ alter table scores add constraint scores_time_ok check (lap_ms between 20000 and
 -- 3) 맵·모드·스테이지: 게임에 있는 값만
 alter table scores drop constraint if exists scores_kind_ok;
 alter table scores add constraint scores_kind_ok check (
-  (mode = 'lap'  and map in ('seoul','mountain','xmas','tokyo','ny') and stage is null)
+  (mode = 'lap'  and map in ('seoul','mountain','xmas','tokyo','ny','pyongyang') and stage is null)
   or (mode = 'hard' and map = 'hard' and stage between 1 and 6)
 ) not valid;
 

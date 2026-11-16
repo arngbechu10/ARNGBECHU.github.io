@@ -287,7 +287,7 @@ body[data-mode=hard] #lbp .row{display:none}
 .dpick i{font-style:normal;font-size:30px;font-weight:900;color:#f2c230;line-height:1}
 .dpick b{font-size:18px}
 .dpick span{font-size:12.5px;color:#aeb7c6;line-height:1.45}
-.dmaps{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.dmaps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .dmaps button{font:inherit;color:#cdd7e6;cursor:pointer;padding:0;overflow:hidden;background:#0b0d14;border:2px solid #2c3342;border-radius:8px;display:flex;flex-direction:column;text-align:left}
 .dmaps img{width:100%;aspect-ratio:16/9;object-fit:cover;display:block}
 .dmaps b{padding:6px 8px;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -480,6 +480,7 @@ body[data-mode=hard] .lbtabs{display:none}
       <button role="radio" aria-checked="false" data-map="xmas"><img src="DATAURI" alt=""><b>Christmas</b><em>쉬움 · 눈 내리는 밤</em></button>
       <button role="radio" aria-checked="false" data-map="tokyo"><img src="DATAURI" alt=""><b>Tokyo Neon</b><em>어려움 · 네온 시티</em></button>
       <button role="radio" aria-checked="false" data-map="ny"><img src="DATAURI" alt=""><b>New York</b><em>어려움 · 다운타운</em></button>
+      <button role="radio" aria-checked="false" data-map="pyongyang"><img src="DATAURI" alt=""><b>Pyongyang</b><em>보통 · 동상 광장</em></button>
     </div>
     <div class="stages"><div class="stl" id="stList"></div><p>스테이지를 하나씩 클리어해요. 벽에 부딪혀도 되는 횟수가 10번부터 스테이지마다 1번씩 줄어요!</p></div>
     <div class="duelinfo" id="duelInfo"><div><span>나</span><b id="diMe"></b></div><div><span id="diOppN">상대</span><b id="diOpp"></b></div></div>
@@ -628,7 +629,7 @@ const TL=new THREE.TextureLoader();
 const rep=t=>{t.wrapS=t.wrapT=THREE.RepeatWrapping;t.anisotropy=8;return t};
 
 /* ================= 맵 시스템 ================= */
-const SKIES={ny:'DATAURI',tokyo:'DATAURI',ship:'DATAURI',seoul:'DATAURI',mountain:'DATAURI',xmas:'DATAURI'};
+const SKIES={pyongyang:'DATAURI',ny:'DATAURI',tokyo:'DATAURI',ship:'DATAURI',seoul:'DATAURI',mountain:'DATAURI',xmas:'DATAURI'};
 const skyCache={};
 const skyTex=id=>skyCache[id]||(skyCache[id]=rep(TL.load(SKIES[id])));
 const skyMat=new THREE.MeshBasicMaterial({map:skyTex('seoul'),side:THREE.BackSide,transparent:true,fog:false,depthWrite:false});
@@ -1168,6 +1169,106 @@ function nyFrame(dt){
 }
 function mmNY(){const W=NY_WATER,y0=Math.max(0,W.z0*msc+moz),y1=W.z1*msc+moz;mbg.fillStyle='#1d3a7a';if(y1>y0)mbg.fillRect(W.x0*msc+mox,y0,(W.x1-W.x0)*msc,y1-y0)}
 /* === New York 끝 === */
+
+/* ================= Pyongyang 맵 =================
+   흐린 날 평양 시내 1.5km. 넓고 구불구불한 대로 → 동상 광장을 한 바퀴 빙 도는 고리(30~52%) → 개선문 아래 통과 → S자 골목 → 출발.
+   사용자가 보낸 사진: 하늘 파노라마(sky_py), 동상 두 개 오린 그림(PY_STATUE, 받침대 위에서 카메라 쪽으로 돌아요), 모자이크 벽화(PY_MURAL).
+   장애물: 교통 안전원 단 2개(도로 위 둥근 단), 서 있는 무궤도 전차 1대. Tokyo 도구(tkAdd/tkFlush/tkAt/tkBox/tkBoard/tkTex) 재사용. */
+const PY_CTRL=[[0,0],[120,0],[180,-14],[230,8],[280,-10],[330,0],[368,26],[388,64],[410,96],[440,82],[478,82],[512,104],[526,140],[514,178],[480,200],[440,200],[412,182],[384,198],[350,226],[290,234],[220,232],[150,236],[90,226],[40,240],[-10,232],[-46,200],[-40,160],[-62,120],[-48,80],[-56,40],[-34,10]];
+const PY_C=[468,141];                                   /* 동상 광장 가운데 */
+const PY_ARCH=[220,232];                                /* 개선문 */
+const PY_OBS=[{type:'police',at:[150,-4],lat:0},{type:'police',at:[290,234],lat:-1},{type:'bus',at:[100,226],lat:5.6}];
+const KR='"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR","Noto Sans CJK KR",system-ui,sans-serif';
+MAPS.pyongyang={half:9,wall:1.6,rail:'jersey',bg:0x9aa0a8,fog:[0xa9aeb5,170,820],gnd:0x5f655c,gy:-.6,asph:0x6d727a,kerb:['#e8e8e8','#8a8e96'],
+  pts:()=>closedSpline(PY_CTRL),shoulder:0x8a8d90,py:true};
+let PY_STAT=null;
+const PY_STATUE='DATAURI',PY_MURAL='DATAURI';
+const pyImgC={};const pyImg=u=>pyImgC[u]||(pyImgC[u]=TL.load(u));
+function pyNear(x,z){let bi=0,bd=1e18;for(let i=0;i<N;i++){const dx=x-TP[i][0],dz=z-TP[i][1],d=dx*dx+dz*dz;if(d<bd){bd=d;bi=i}}return bi}
+/* 인공기 */
+function pyFlagTex(){return tkTex(240,120,(x,w,h)=>{x.fillStyle='#1e4fa8';x.fillRect(0,0,w,h);x.fillStyle='#fff';x.fillRect(0,20,w,80);x.fillStyle='#d8262e';x.fillRect(0,25,w,70);
+  x.fillStyle='#fff';x.beginPath();x.arc(80,60,26,0,7);x.fill();x.fillStyle='#d8262e';x.beginPath();for(let k=0;k<10;k++){const a=-Math.PI/2+k*Math.PI/5,r=k%2?9:23;x.lineTo(80+Math.cos(a)*r,60+Math.sin(a)*r)}x.fill()})}
+/* 빨간 세로 현수막 */
+function pyBanner(txt){return tkTex(64,256,(x,w,h)=>{x.fillStyle='#c41e24';x.fillRect(0,0,w,h);x.strokeStyle='#ffd34a';x.lineWidth=3;x.strokeRect(4,4,w-8,h-8);
+  const ch=[...txt.replace(/ /g,'')],s=Math.min(40,(h-20)/ch.length);x.fillStyle='#fff';x.font='900 '+s+'px '+KR;x.textAlign='center';x.textBaseline='middle';ch.forEach((c,k)=>x.fillText(c,w/2,10+(h-20-s*ch.length)/2+s*(k+.5)))})}
+/* 옥상 구호판 (빨간 글자) */
+function pySlogan(txt){return tkTex(1024,128,(x,w,h)=>{x.clearRect(0,0,w,h);x.font='900 92px '+KR;x.textAlign='center';x.textBaseline='middle';x.lineWidth=8;x.strokeStyle='#5a0a0a';x.strokeText(txt,w/2,h/2+4);x.fillStyle='#e8262c';x.fillText(txt,w/2,h/2+4)})}
+/* 낮 아파트 창문 */
+function pyWinTex(seed,base){let s=seed;const rnd=()=>(s=(s*16807)%2147483647)/2147483647;
+  const t=tkTex(256,512,(x,w,h)=>{x.fillStyle=base;x.fillRect(0,0,w,h);for(let r=0;r<16;r++){x.fillStyle='rgba(0,0,0,.08)';x.fillRect(0,r*32+29,w,3);
+    for(let k=0;k<8;k++){x.fillStyle=rnd()<.15?'#5e6670':'#3c434c';x.fillRect(6+k*31.5,8+r*32,19,17);x.fillStyle='rgba(255,255,255,.18)';x.fillRect(6+k*31.5,8+r*32,19,3)}}});
+  t.wrapS=t.wrapT=THREE.RepeatWrapping;return t}
+const PY_SLOGANS=['조선은 영원히 승리할 것이다!','위대한 조선인민 만세!','주체의 위업은 무궁하다','조선인민혁명 만세!','천리마 속도로 앞으로!','자력갱생'];
+const PY_BANNERS=['주체의힘은무궁하다','조선만세','인민혁명만세','자력갱생','천리마속도로','단결하라'];
+function buildPyongyang(){
+  TOBS=[];TK.blink=[];TK.rain=null;TKB=new Map();
+  let seed=71;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
+  const far=(x,z,r,skip)=>{for(let j=0;j<N;j+=3){if(skip!=null){let dj=Math.abs(j-skip);dj=Math.min(dj,N-dj);if(dj<45)continue}const dx=x-TP[j][0],dz=z-TP[j][1];if(dx*dx+dz*dz<r*r)return false}return true};
+  const stoneM=new THREE.MeshBasicMaterial({map:stoneT2(),color:0xc9c5bc}),stoneD=tkM(0x8d8a84),paveM=tkM(0x9a9890);
+  /* --- 동상 광장 (고리 안쪽, 돌 바닥) --- */
+  {const [cx,cz]=PY_C,g=new THREE.CircleGeometry(36,48);g.rotateX(-Math.PI/2);
+    {const pm=new THREE.Mesh(g,new THREE.MeshBasicMaterial({color:0x9b9a94,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1}));pm.position.set(cx,.012,cz);MG.add(pm)}
+    /* 받침대 + 계단 */
+    tkBox(26,1.2,15,stoneD,cx,.6,cz);tkBox(22,2.2,12,stoneM,cx,2.3,cz);tkBox(18,3.4,9,stoneM,cx,5.1,cz);
+    /* 동상: 사진에서 오린 그림, 받침대 위에서 카메라 쪽으로 돌아요 */
+    const st=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial({map:pyImg(PY_STATUE),transparent:true,alphaTest:.25,side:THREE.DoubleSide,fog:true}));
+    st.geometry.translate(0,.5,0);st.scale.set(22,22*262/284,1);st.position.set(cx,6.8,cz);MG.add(st);PY_STAT=st;
+    /* 꽃밭 + 인공기 */
+    const flower=tkM(0xc0303a),hedge=tkM(0x2c3a28),pole=tkM(0xd8d8d8),flagM=new THREE.MeshBasicMaterial({map:pyFlagTex(),side:THREE.DoubleSide});
+    for(let k=0;k<8;k++){const a=k/8*Math.PI*2,x=cx+Math.cos(a)*24,z=cz+Math.sin(a)*24;tkAdd(new THREE.BoxGeometry(7,1,2.5),hedge,x,.5,z,-a);tkAdd(new THREE.BoxGeometry(6,.3,1.6),flower,x,1.1,z,-a)}
+    for(let k=0;k<6;k++){const a=k/6*Math.PI*2+.26,x=cx+Math.cos(a)*30,z=cz+Math.sin(a)*30;tkBox(.25,16,.25,pole,x,8,z);
+      const fg=new THREE.PlaneGeometry(6,3);fg.translate(3,0,0);tkAdd(fg,flagM,x,14.4,z,-a+Math.PI/2)}
+  }
+  /* --- 광장 뒤 큰 기념관 (기둥 건물) + 벽화 건물 --- */
+  {const hall=new THREE.MeshBasicMaterial({map:pyWinTex(5,'#c8c4ba'),color:0xffffff}),colM=tkM(0xd8d4ca),[cx,cz]=PY_C;
+    tkAdd(boxWinGeo(26,22,90),hall,cx+105,11,cz,0);tkBox(28,3,94,stoneD,cx+105,23.5,cz);
+    for(let k=-6;k<=6;k++)tkBox(1.4,18,1.4,colM,cx+90.5,9,cz+k*6.5);
+    const fl=new THREE.MeshBasicMaterial({map:pyFlagTex(),side:THREE.DoubleSide});tkBoard(cx+91.6,13,cz,6,14,-1,0,new THREE.MeshBasicMaterial({map:tkTex(64,160,(x,w,h)=>{x.fillStyle='#1e4fa8';x.fillRect(0,0,w,h);x.fillStyle='#fff';x.fillRect(8,0,48,h);x.fillStyle='#d8262e';x.fillRect(12,0,40,h);x.fillStyle='#fff';x.beginPath();x.arc(32,50,14,0,7);x.fill()})}));
+    /* 벽화 건물 (사진 벽화) — 코스 안쪽, 광장 고리 목 부분에서 보여요 */
+    const mx=318,mz=130,wm=new THREE.MeshBasicMaterial({map:pyWinTex(9,'#d6d0c2')});tkAdd(boxWinGeo(16,20,60),wm,mx,10,mz,0);
+    tkBoard(mx+8.1,10,mz,46,14,1,0,new THREE.MeshBasicMaterial({map:pyImg(PY_MURAL)}));
+    tkBoard(mx+8.1,22.5,mz,58,7,1,0,new THREE.MeshBasicMaterial({map:pySlogan(PY_SLOGANS[0]),transparent:true}));
+  }
+  /* --- 개선문 (도로가 아래로 지나가요) --- */
+  {const i=pyNear(...PY_ARCH),[cx,cz]=tkAt(i,0),ry=-TH[i],W2=WALL+3.6,ar=new THREE.MeshBasicMaterial({map:stoneT2(),color:0xb9b6ae}),ard=tkM(0x8f8c86);
+    [-1,1].forEach(sd=>{const [px,pz]=tkAt(i,sd*(W2+3));tkAdd(new THREE.BoxGeometry(10,30,8),ar,px,15,pz,ry);const [qx,qz]=tkAt(i,sd*(W2+3),5.1);
+      tkBoard(qx,20,qz,4,3,-Math.cos(TH[i]),-Math.sin(TH[i]),new THREE.MeshBasicMaterial({map:tkTex(128,96,(x,w,h)=>{x.fillStyle='#b5b2aa';x.fillRect(0,0,w,h);x.fillStyle='#5a5852';x.font='900 40px system-ui';x.textAlign='center';x.fillText(sd<0?'1925':'1945',w/2,62)})}))});
+    tkAdd(new THREE.BoxGeometry(10,12,W2*2+14),ar,cx,36,cz,ry);tkAdd(new THREE.BoxGeometry(12,1.6,W2*2+18),ard,cx,42.8,cz,ry);tkAdd(new THREE.BoxGeometry(9,4,W2*2+10),ar,cx,45.6,cz,ry);
+    for(let k=0;k<13;k++){const a=k/12*Math.PI,[qx,qz]=tkAt(i,Math.cos(a)*(W2-.2));tkAdd(new THREE.BoxGeometry(10.2,1.6,2.6),ard,qx,26+Math.sin(a)*4.5,qz,ry)}
+  }
+  /* --- 류경호텔 (멀리 보이는 피라미드) --- */
+  {const g=new THREE.ConeGeometry(70,260,4,1,true);g.rotateY(Math.PI/4);const m=new THREE.Mesh(g,new THREE.MeshBasicMaterial({map:tkTex(64,256,(x,w,h)=>{const gr=x.createLinearGradient(0,0,0,h);gr.addColorStop(0,'#8fa0b4');gr.addColorStop(1,'#5c6878');x.fillStyle=gr;x.fillRect(0,0,w,h);x.fillStyle='rgba(255,255,255,.12)';for(let r=0;r<64;r++)x.fillRect(0,r*4,w,1)}),color:0xd8dde4,fog:false,transparent:true,opacity:.92}));
+    m.position.set(160,130,-420);MG.add(m);const sp=new THREE.Mesh(new THREE.CylinderGeometry(4,8,40,8),tkM(0x8f9aa8,{fog:false}));sp.position.set(160,270,-420);MG.add(sp)}
+  /* --- 아파트 (옥상 구호판) --- */
+  const wins=[pyWinTex(13,'#d2cdc0'),pyWinTex(29,'#c2c6c8'),pyWinTex(47,'#d9cfc0'),pyWinTex(61,'#b8bcbf')].map(t=>new THREE.MeshBasicMaterial({map:t}));
+  const roofM=tkM(0x6e6f6e);let sloganN=1;
+  for(let i=0;i<N;i+=15)for(const sd of[-1,1]){
+    if(rnd()<.4)continue;const w=14+rnd()*12,d=12+rnd()*10,h=(sd<0?20:14)+Math.pow(rnd(),1.6)*(sd<0?42:26),off=WALL+16+rnd()*14+d/2;
+    const [bx,bz]=tkAt(i,sd*off);if(!far(bx,bz,off-.5)||!far(bx,bz,WALL+8+Math.hypot(w,d)/2,i))continue;
+    if(Math.hypot(bx-PY_C[0],bz-PY_C[1])<70||Math.hypot(bx-318,bz-130)<45)continue;
+    tkAdd(boxWinGeo(w,h,d),wins[(i/15|0)%4],bx,h/2,bz,-TH[i]);tkAdd(new THREE.BoxGeometry(w+.4,1,d+.4),roofM,bx,h+.5,bz,-TH[i]);
+    if(rnd()<.32){const n=TN[i],[sx_,sz_]=tkAt(i,sd*(off-d/2+1));tkBoard(sx_,h+4,sz_,w*1.5,w*1.5/8,-n[0]*sd,-n[1]*sd,new THREE.MeshBasicMaterial({map:pySlogan(PY_SLOGANS[sloganN++%PY_SLOGANS.length]),transparent:true,side:THREE.DoubleSide}))}
+  }
+  /* --- 가로등 + 빨간 현수막, 가로수 --- */
+  {const postM=tkM(0xd8d8d8),bms=PY_BANNERS.map(t=>new THREE.MeshBasicMaterial({map:pyBanner(t),side:THREE.DoubleSide})),trunk=tkM(0x3a3028),leaf=tkM(0x2c3b2a);
+    for(let i=0,k=0;i<N;i+=11,k++){const sd=k%2?1:-1,[x,z]=tkAt(i,sd*(WALL+1.8));if(Math.hypot(x-PY_C[0],z-PY_C[1])<52)continue;
+      tkBox(.22,10,.22,postM,x,5,z);const [lx,lz]=tkAt(i,sd*(WALL+.4));tkAdd(new THREE.BoxGeometry(.15,.15,2.6),postM,(x+lx)/2,10,(z+lz)/2,-TH[i]+Math.PI/2);
+      const n=TN[i];tkAdd(new THREE.PlaneGeometry(1.3,5.2),bms[k%bms.length],x,6,z,Math.atan2(n[0],n[1])+Math.PI/2);
+      if(k%2===0){const [tx,tz]=tkAt(i,-sd*(WALL+3),5);if(far(tx,tz,WALL+2)&&Math.hypot(tx-PY_C[0],tz-PY_C[1])>50){tkBox(.35,3,.35,trunk,tx,1.5,tz);const c=new THREE.ConeGeometry(2.2,7,7);tkAdd(c,leaf,tx,6,tz)}}}
+  }
+  /* --- 장애물 --- */
+  PY_OBS.forEach(o=>{const i=pyNear(...o.at),th=TH[i],[x,z]=tkAt(i,o.lat);
+    if(o.type==='police'){TOBS.push({x,z,c:Math.cos(th),s:Math.sin(th),hl:1.2,hw:1.2});
+      tkAdd(new THREE.CylinderGeometry(1.2,1.3,.5,18),tkM(0xf0f0f0),x,.25,z);tkAdd(new THREE.CylinderGeometry(1.05,1.05,.12,18),tkM(0xd8262e),x,.56,z);
+      tkAdd(new THREE.CylinderGeometry(.22,.26,1.2,8),tkM(0x2c3a5a),x,1.2,z);tkAdd(new THREE.SphereGeometry(.2,8,6),tkM(0xd8b08c),x,1.95,z);tkAdd(new THREE.CylinderGeometry(.24,.24,.12,10),tkM(0xf2f2f2),x,2.14,z)}
+    if(o.type==='bus'){TOBS.push({x,z,c:Math.cos(th),s:Math.sin(th),hl:5.6,hw:1.3});const ry=-th;
+      tkAdd(new THREE.BoxGeometry(11,1.4,2.5),tkM(0xb8352e),x,.9,z,ry);tkAdd(new THREE.BoxGeometry(11,1.5,2.5),tkM(0xe8dfc8),x,2.35,z,ry);tkAdd(new THREE.BoxGeometry(10.4,.9,2.52),tkM(0x2e3a48),x,2.4,z,ry);
+      tkAdd(new THREE.BoxGeometry(11,.3,2.4),tkM(0x8a8e94),x,3.25,z,ry);[-1.5,1.5].forEach(o2=>{const [qx,qz]=tkAt(i,o.lat,o2);tkAdd(new THREE.BoxGeometry(.1,2.2,.1),tkM(0x333),qx,4.4,qz,ry)})}
+  });
+  tkFlush();
+}
+function pyFrame(dt){if(PY_STAT)PY_STAT.rotation.y=Math.atan2(cam.position.x-PY_STAT.position.x,cam.position.z-PY_STAT.position.z)}
+/* === Pyongyang 끝 === */
 
 /* ================= 하드모드 5·6 스테이지: Alps / Red Canyon =================
    공통: 제한 시간(MAPS[id].limit 초, 첫 가속부터 셈. 넘으면 '시간 초과' 실패), 하늘은 그림으로 직접 그림(procSky).
@@ -1781,7 +1882,7 @@ function setMap(id){
   strip(HALF,HALF+1.4,.02,(i,s)=>[TS[i]/4,s],kerbM);
   strip(-HALF-1.4,-HALF,.02,(i,s)=>[TS[i]/4,s],kerbM);
   const dashT=mkTex(8,64,(x)=>{x.fillStyle='#fff';x.fillRect(0,0,8,26)});
-  strip(-.18,.18,.03,(i,s)=>[s,TS[i]/8],new THREE.MeshBasicMaterial({map:dashT,transparent:true,opacity:.75,depthWrite:false,side:THREE.DoubleSide}));
+  {const dM=new THREE.MeshBasicMaterial({map:dashT,transparent:true,opacity:.75,depthWrite:false,side:THREE.DoubleSide});strip(-.18,.18,.03,(i,s)=>[s,TS[i]/8],dM);if(D.py)[-4.5,4.5].forEach(l=>strip(l-.14,l+.14,.03,(i,s)=>[s,TS[i]/8],dM))}
   /* 바리케이드 */
   if(BR)buildBridge();
   if(D.rail){
@@ -1800,6 +1901,7 @@ function setMap(id){
   if(D.lamps)buildLamps(D.lamps);
   if(D.tokyo)buildTokyo();
   if(D.ny)buildNY();
+  if(D.py)buildPyongyang();
   if(D.alps)buildAlps();
   }
   /* 출발선 + 게이트 (연습장은 없음) */
@@ -2085,7 +2187,7 @@ function loop(now){
   drive(dt);
   if(MODE==='duel'){lcTick(dt);duelFrame(dt,now)}
   if(MODE==='practice'&&started)pracFrame(dt);
-  if(MAPID==='tokyo')tokyoFrame(dt);else if(MAPID==='ny')nyFrame(dt);else if(MAPID==='alps')alpsFrame(dt);
+  if(MAPID==='tokyo')tokyoFrame(dt);else if(MAPID==='ny')nyFrame(dt);else if(MAPID==='alps')alpsFrame(dt);else if(MAPID==='pyongyang')pyFrame(dt);
   const fx=Math.cos(c.h),fz=Math.sin(c.h),rx=-fz,rz=fx;
   const sp=Math.hypot(c.vx,c.vz),bump=Math.sin(now*.05)*.004*Math.min(sp/30,1);
   camY+=((AIR?cy:(TY[ci]||0))-camY)*Math.min(1,dt*(AIR?16:10));camP+=((AIR?cvy/Math.max(Math.hypot(c.vx,c.vz),6):(TSL[ci]||0))-camP)*Math.min(1,dt*3);
@@ -2096,7 +2198,7 @@ function loop(now){
   const fov=62+20*nitroK;if(Math.abs(cam.fov-fov)>.02){cam.fov=fov;cam.updateProjectionMatrix()}
   drawFx(dt);
   sky.position.set(cam.position.x,cam.position.y+SKY_Y-1.15,cam.position.z);if(WATERT)WATERT.offset.x+=dt*.012;
-  beam.position.set(c.x+fx*22,camY+.06,c.z+fz*22);beam.rotation.set(-Math.PI/2,-c.h-Math.PI/2,0);
+  beam.visible=MAPID!=='pyongyang';beam.position.set(c.x+fx*22,camY+.06,c.z+fz*22);beam.rotation.set(-Math.PI/2,-c.h-Math.PI/2,0);
   drawMap();
   wheelEl.style.transform='translate(-50%,-50%) rotate('+(steer*130).toFixed(1)+'deg)';
   if(started)R.render(S,cam);
@@ -2303,7 +2405,7 @@ const HDR={apikey:KEY,'Content-Type':'application/json'};
 /* RICH: scores 표에 map / mode / stage 열이 있으면 true, 없으면 false (처음엔 모름) */
 var RICH=null;
 var MODE='lap',HOLD=false,DEAD=false,PLAYER='';
-const MAPLABEL={seoul:'Seoul',mountain:'Mountain Pass',xmas:'Christmas',tokyo:'Tokyo Neon',ny:'New York',ship:'Cargo Ship',alps:'Alps',canyon:'Red Canyon'};
+const MAPLABEL={seoul:'Seoul',mountain:'Mountain Pass',xmas:'Christmas',tokyo:'Tokyo Neon',ny:'New York',pyongyang:'Pyongyang',ship:'Cargo Ship',alps:'Alps',canyon:'Red Canyon'};
 const HARD_STAGES=['xmas','seoul','mountain','ship','alps','canyon']; /* 쉬운 순서. 새 맵은 이 배열 뒤에 이름만 추가하면 다음 스테이지가 돼요 */
 /* 스테이지마다 허용 충돌 횟수가 줄어들어요: 1스테이지 10번 → 2스테이지 9번 → 3스테이지 8번 …
    (맵이 6개가 되면 10·9·8·7·6·5번). 시작 횟수는 HARD_FIRST, 최소는 HARD_MIN. 충돌 횟수는 스테이지마다 새로 세요. */
@@ -2316,7 +2418,7 @@ function boardUrl(){
   return SB+'?select=name,lap_ms&mode=eq.lap&map=eq.'+LBMAP+'&order=lap_ms.asc&limit=200';
 }
 /* 개인 랩타임 순위표는 맵마다 따로. 위쪽 탭으로 다른 맵 순위도 볼 수 있어요 (m을 안 주면 지금 맵) */
-const LB_MAPS=['seoul','mountain','xmas','tokyo','ny'];
+const LB_MAPS=['seoul','mountain','xmas','tokyo','ny','pyongyang'];
 let LBMAP='seoul';
 function lbTabs(){
   const row=$('lbTabs');if(!row.children.length)LB_MAPS.forEach(id=>{const b=document.createElement('button');b.type='button';b.setAttribute('role','tab');b.dataset.map=id;b.textContent=MAPLABEL[id];b.onclick=()=>loadBoard(id);row.append(b)});
@@ -2569,7 +2671,7 @@ $('failMenu').onclick=showModes;
         → 둘 다 차고에서 차 고르고 '준비' → 5,4,3,2,1 GO! → DUEL_LAPS 바퀴 먼저 도는 사람이 승리
    통신: Supabase Realtime 채널(방 비밀번호마다 하나). presence = 누가 방에 있는지, broadcast = 위치·준비·결승 메시지 */
 const DUEL_LAPS=3;                                  /* 대결 바퀴 수 */
-const DUEL_MAPS=['seoul','mountain','xmas','tokyo','ny'];        /* 방 만들 때 고를 수 있는 맵 */
+const DUEL_MAPS=['seoul','mountain','xmas','tokyo','ny','pyongyang'];        /* 방 만들 때 고를 수 있는 맵 */
 const DUEL_LIB='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js';
 const DUEL_URL='https://payqqpkkdpydypinyptz.supabase.co';
 const OPP_COL={gtr:0x2b55c9,gt3:0x8fd14f,chal:0xc9302c,f40:0xe0261d,mcl:0xff7a1a,supra:0xe8e8ea};
@@ -2735,7 +2837,7 @@ function m3dPrep(id,scene){
 /* 조명: 모델(빛을 받는 재질)에만 영향. 맵마다 밝기, 하늘 사진으로 반사 */
 const m3dHemi=new THREE.HemisphereLight(0xdfe8ff,0x2a2630,1),m3dSun=new THREE.DirectionalLight(0xffffff,1);
 m3dSun.position.set(.6,1,.35);S.add(m3dHemi);S.add(m3dSun);
-const M3L={seoul:[.85,.75],xmas:[.95,.7],tokyo:[.8,.65],ny:[.85,.7],mountain:[1.15,1.25]};
+const M3L={seoul:[.85,.75],xmas:[.95,.7],tokyo:[.8,.65],ny:[.85,.7],pyongyang:[1.05,.95],mountain:[1.15,1.25]};
 let m3dPM=null;const m3dEnv={};
 function m3dEnvFor(id){
   if(m3dEnv[id]!==undefined)return m3dEnv[id];
