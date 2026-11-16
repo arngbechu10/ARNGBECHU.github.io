@@ -167,7 +167,7 @@ body[data-pad=square]{--bw:76px;--bh:76px}
 /* ===== 모드 선택 / 이름 입력 ===== */
 #modes{--gold:#f2c230;--red:#ff5a4a;--line:#2c3342;position:fixed;inset:0;z-index:60;display:none;flex-direction:column;align-items:center;justify-content:center;gap:clamp(14px,4vh,34px);padding:clamp(12px,3vh,32px) clamp(14px,4vw,48px);box-sizing:border-box;background:#090a16;color:#eef;overflow:auto;text-align:left}
 #modes.on{display:flex}
-#modes .bg{position:absolute;inset:0;pointer-events:none;background:radial-gradient(70% 55% at 30% 80%,#2f62ff3a,transparent 70%),linear-gradient(90deg,#090a1688 0,#090a1600 40%,#090a16f0 100%),linear-gradient(0deg,#090a16 0,#090a1600 36%),var(--sky) 50% 100%/auto 80% no-repeat,#090a16}
+#modes .bg{position:absolute;inset:0;pointer-events:none;background:radial-gradient(70% 55% at 30% 80%,#2f62ff3a,transparent 70%),linear-gradient(90deg,#090a1688 0,#090a1600 40%,#090a16f0 100%),linear-gradient(0deg,#090a16 0,#090a1600 36%),var(--msky) 50% 100%/auto 80% no-repeat,#090a16}
 #modes>*:not(.bg){position:relative;z-index:1}
 #modes h1{margin:0;font-size:clamp(22px,4.6vh,38px);font-weight:800;letter-spacing:.05em;text-align:center;line-height:1.2}
 #modes h1 small{display:block;margin-bottom:6px;font-size:clamp(10px,1.7vh,12.5px);font-weight:600;letter-spacing:.3em;color:#8d96a3}
@@ -530,7 +530,7 @@ body[data-mode=hard] .lbtabs{display:none}
   <h1><small>ARNGBECHU RACING</small>모드 선택</h1>
   <div class="mcards" id="mStep1">
     <button class="mc" data-mode="duel"><i>1 : 1</i><b>1대1 대결</b><p>방을 만들고 비밀번호를 정해서 친구와 같은 코스를 달려요.</p><ul><li>방 + 비밀번호</li><li>친구와 함께</li></ul></button>
-    <button class="mc" data-mode="lap"><i>LAP</i><b>개인 랩타임</b><p>혼자 한 바퀴 기록에 도전해요. 맵마다 순위표가 따로 있어요.</p><ul><li>맵 3개</li><li>맵별 순위표</li></ul></button>
+    <button class="mc" data-mode="lap"><i>LAP</i><b>개인 랩타임</b><p>혼자 한 바퀴 기록에 도전해요. 맵마다 순위표가 따로 있어요.</p><ul><li>맵 6개</li><li>맵별 순위표</li></ul></button>
     <button class="mc prac" data-mode="practice"><i class="two">PRACTICE<br>ZONE</i><b>연습장</b><p>넓은 공간에서 마음껏 달리고 드리프트를 연습해요. 기록은 남지 않아요.</p><ul><li>드리프트 원</li><li>8자 코스</li><li>슬라럼</li><li>직선 가속</li></ul></button>
     <button class="mc hard" data-mode="hard"><i>HARD</i><b>하드 랩타임</b><p>벽에 너무 많이 부딪히면 차가 폭발해요. 스테이지마다 허용 횟수가 10번부터 줄어들어요.</p><ul><li>충돌 10→9→8…</li><li>스테이지 진행</li><li>순위표</li></ul></button>
   </div>
@@ -1871,7 +1871,7 @@ function setMap(id){
   S.background=new THREE.Color(D.bg);S.fog=new THREE.Fog(D.fog[0],D.fog[1],D.fog[2]);
   gnd.material.map=null;gnd.material.needsUpdate=true;gnd.material.color.setHex(D.gnd);gnd.position.y=D.gy;
   skyMat.map=skyTex(D.sky||id);skyMat.needsUpdate=true;
-  document.documentElement.style.setProperty('--sky','url("'+SKIES[D.sky||id]+'")');
+  document.documentElement.style.setProperty('--sky','url("'+SKIES[D.sky||id]+'")');document.documentElement.style.setProperty('--msky','url("'+SKIES.seoul+'")');
   if(D.practice)buildPractice();else if(D.ship)buildShip();else if(D.canyon)buildCanyon();else{
   /* 도로 */
   if(D.terrain)buildTerrain();
