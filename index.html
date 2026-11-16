@@ -55,7 +55,8 @@ input{flex:1;min-width:0;padding:9px;border-radius:8px;border:1px solid #3a4250;
 #start .bikes{display:none;width:min(100%,190px)}
 #start .bmap{display:none;align-items:center;gap:12px;width:min(100%,460px);padding:8px;box-sizing:border-box;background:#0b0d14;border:2px solid var(--gold);border-radius:10px}
 #start .bmap img{width:132px;aspect-ratio:16/9;object-fit:cover;border-radius:6px}#start .bmap b{display:block;font-size:15px;color:#fff}#start .bmap em{display:block;font-style:normal;font-size:11.5px;color:var(--gold);margin-top:3px;line-height:1.4}
-body[data-mode=bike] #start .bikes,body[data-mode=bike] #start .bmap{display:flex}
+body[data-mode=bike] #start .bikes,body[data-mode=bike] #start .bmap,body.bike #start .bikes{display:flex}
+body.bike #start .cars:not(.bikes){display:none!important}
 body[data-mode=bike] #start .cars:not(.bikes),body[data-mode=bike] #start .maps,body[data-mode=bike] .lbtabs{display:none!important}
 #bk{position:fixed;left:0;width:100vw;aspect-ratio:1672/521;bottom:min(0px,calc(60vh - 31.16vw));pointer-events:none;display:none}
 body.bike #bk{display:block}body.bike .cab{display:none}
@@ -315,6 +316,7 @@ body[data-mode=hard] #lbp .row{display:none}
 .dpick i{font-style:normal;font-size:30px;font-weight:900;color:#f2c230;line-height:1}
 .dpick b{font-size:18px}
 .dpick span{font-size:12.5px;color:#aeb7c6;line-height:1.45}
+.dmaps button[hidden]{display:none!important}
 .dmaps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .dmaps button{font:inherit;color:#cdd7e6;cursor:pointer;padding:0;overflow:hidden;background:#0b0d14;border:2px solid #2c3342;border-radius:8px;display:flex;flex-direction:column;text-align:left}
 .dmaps img{width:100%;aspect-ratio:16/9;object-fit:cover;display:block}
@@ -1588,7 +1590,7 @@ function coMod(x,z,h){
   return h;
 }
 function coCut(x,y,z){for(const f of CO_TUN){const i=Math.round(f*N)%N;if((x-TP[i][0])**2+(z-TP[i][1])**2<18*18&&y>TY[i]+.3)return true}return false}
-MAPS.coast={half:11,wall:4.5,rail:'guard',coast:true,bike:true,sea:true,terrain:true,tcell:8,treeN:900,te0:15,tw:20,tdetail:coDetail,guideScale:2.6,tbase:coBase,tmod:coMod,tcut:coCut,
+MAPS.coast={half:11,laps:1,wall:4.5,rail:'guard',coast:true,bike:true,sea:true,terrain:true,tcell:8,treeN:900,te0:15,tw:20,tdetail:coDetail,guideScale:2.6,tbase:coBase,tmod:coMod,tcut:coCut,
   grass:[[.30,.44,.20],[.40,.52,.26]],rock:[.62,.56,.47],bg:0x9cc8ec,fog:[0xb4d4ee,320,1800],gnd:0x1d5d8c,gy:-1.2,asph:0x5a5f68,kerb:['#6f8a50','#6b864d'],
   pts:()=>closedSpline(filletPts(CO_W,4)),tyFn:coastTY,shoulder:0x7d9a5a};
 let CO_SEA=null;
@@ -2437,6 +2439,7 @@ function bikeMotion(dt){
   DK+=((drift?1:0)-DK)*Math.min(1,dt*(drift?6:14));
   if(drift&&!DDIR)DDIR=Math.sign(steer)||Math.sign(LEAN)||1;if(!drift&&DK<.05)DDIR=0;
   if(keys.gas){v+=15.5*Math.max(0,1-v/84)*dt*(1-.3*Math.min(1,Math.abs(LEAN)/.95))*(1-.25*DK);if(lapStart===null)lapStart=performance.now()}
+  if(LC.b>0){v+=LC.bp*Math.max(0,1-v/70)*dt;LC.b-=dt}if(LC.spin>0){LC.spin-=dt;v=Math.min(v,6+LC.spin*2);hitK=Math.max(hitK,.12)}
   if(NIT.on){v+=21*clamp(v/25,.35,1)*Math.max(0,1-v/110)*dt;NIT.t-=dt;if(NIT.t<=0){NIT.on=false;NIT.t=0}}
   v-=9.8*.55*TSL[ci]*Math.cos(vh-TH[ci])*dt;
   BRK+=((keys.brake?1:0)-BRK)*Math.min(1,dt*(keys.brake?3.2:9));   /* 브레이크는 천천히 세져요(부드럽게) */
@@ -3117,6 +3120,11 @@ function showModes(){
   $('mStep1').hidden=false;$('mStep2').hidden=true;
   document.body.removeAttribute('data-mode');document.body.classList.remove('bike');VEH='car';$('mStepV').hidden=true;
 }
+function applyVeh(v){
+  VEH=v;document.body.classList.toggle('bike',VEH==='bike');if(VEH==='bike')setBike(BIKEID);else setCar(CARID);
+  $('nit').querySelector('span').textContent=VEH==='bike'?'드리프트 충전':'니트로';
+  document.querySelectorAll('em[data-bike]').forEach(e=>e.textContent=e.dataset[VEH==='bike'?'bike':'car']);
+}
 function applyMode(){
   document.body.dataset.mode=MODE;
   $('mbMode').textContent=MODENAME[MODE];$('mbName').textContent=PLAYER;
@@ -3139,18 +3147,18 @@ function goName(m){
 }
 /* 자동차 / 오토바이 고르기 (오토바이는 아직 준비 중: 관리자 비밀번호로만 열려요) */
 const BK_HASH='6545b6349124b5cd3cdcd69ac61276641f9203a031315134631df4c90064de13';
-let VPM='lap';try{localStorage.removeItem('drift-bk')}catch(e){}
-const bkOpen=()=>{try{return sessionStorage.getItem('drift-bk')===BK_HASH.slice(0,16)}catch(e){return false}};   /* 잠금 풀림은 이 탭에서만 (새로고침·다시 접속하면 또 비밀번호) */
+let VPM='lap',DVEH='car';try{localStorage.removeItem('drift-bk')}catch(e){}
+const bkOpen=()=>true;   /* 2026-11-17 오토바이 모드 공개 (예전: 관리자 비밀번호 잠금) */   /* 잠금 풀림은 이 탭에서만 (새로고침·다시 접속하면 또 비밀번호) */
 function vehPick(m){
   VPM=m;$('mvMode').textContent=MODENAME[m];$('mStep1').hidden=true;$('mStep2').hidden=true;$('mStepV').hidden=false;$('mvPw').hidden=true;$('mvRow').hidden=false;
   const vi=document.querySelectorAll('#modes .vimg');vi[0].src=CARS.gtr.hero;vi[1].src=BIKES.h2r.hero;
-  const open=m!=='duel'&&bkOpen(),bc=document.querySelector('#modes .vc.bike');bc.classList.toggle('lock',!open);
-  $('vbBadge').textContent=open?'UNLOCKED':'COMING SOON';
-  $('vbSub').textContent=m==='duel'?'1vs1 오토바이 대결은 준비 중이에요 🔧':open?'열림 · Coastal Cliff Highway 🌊':'관리자만 🔒';
+  const bc=document.querySelector('#modes .vc.bike');bc.classList.remove('lock');
+  $('vbBadge').textContent='NEW';
+  $('vbSub').textContent=m==='duel'?'H2R로 1vs1 · Coastal Cliff 🌊':'Ninja H2R · Coastal Cliff Highway 🌊';
 }
 document.querySelectorAll('#modes .vc').forEach(b=>b.onclick=()=>{
-  if(b.dataset.veh==='car'){goName(VPM);return}
-  if(VPM==='duel'){toast('1vs1 오토바이 대결은 준비 중이에요 🔧');return}
+  if(b.dataset.veh==='car'){DVEH='car';goName(VPM);return}
+  if(VPM==='duel'){DVEH='bike';goName('duel');return}
   if(bkOpen()){goName('bike');return}
   $('mvPw').hidden=false;$('mvRow').hidden=true;$('mvHint').textContent='';$('mvPwIn').value='';setTimeout(()=>$('mvPwIn').focus(),30);
 });
@@ -3358,7 +3366,7 @@ $('failMenu').onclick=showModes;
         → 둘 다 차고에서 차 고르고 '준비' → 5,4,3,2,1 GO! → DUEL_LAPS 바퀴 먼저 도는 사람이 승리
    통신: Supabase Realtime 채널(방 비밀번호마다 하나). presence = 누가 방에 있는지, broadcast = 위치·준비·결승 메시지 */
 const DUEL_LAPS=3;                                  /* 대결 바퀴 수 */
-const DUEL_MAPS=['seoul','mountain','xmas','tokyo','ny','pyongyang','touge'];        /* 방 만들 때 고를 수 있는 맵 */
+const DUEL_MAPS=['seoul','mountain','xmas','tokyo','ny','pyongyang','touge','coast'];        /* 방 만들 때 고를 수 있는 맵 */
 const DUEL_LIB='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js';
 const DUEL_URL='https://payqqpkkdpydypinyptz.supabase.co';
 const OPP_COL={gtr:0x2b55c9,gt3:0x8fd14f,chal:0xc9302c,f40:0xe0261d,mcl:0xff7a1a,supra:0xe8e8ea};
@@ -3485,7 +3493,8 @@ const M3D={
   chal:{paint:/^Carosserie$/,col:0x8e939a},        /* 실버 그레이 */
   f40:{paint:/^F40$/,col:0xc40f1f},                /* 로쏘 코르사 */
   mcl:{paint:null},                                /* 원래 검정 그대로 */
-  supra:{paint:/^Paint$/,col:0xe9e9ec,glass:/glass|window/i}   /* 슈퍼 화이트 */
+  supra:{paint:/^Paint$/,col:0xe9e9ec,glass:/glass|window/i},   /* 슈퍼 화이트 */
+  h2r:{paint:null,bike:true,rotY:Math.PI}   /* 오토바이: 모델 앞이 -x라 반 바퀴 돌림, 바퀴 분리 없음 */
 };
 const M3S={};let m3dLib=null,OPP3D=null;
 function m3dLibLoad(){
@@ -3505,7 +3514,7 @@ function m3dLoad(id){
 }
 function m3dPrep(id,scene){
   const cfg=M3D[id],holder=new THREE.Group(),body=new THREE.Group(),wheels=[];
-  holder.rotation.y=Math.PI/2;holder.add(body);   /* 모델 앞(+z)을 게임의 앞(+x)으로 */
+  holder.rotation.y=cfg.rotY!=null?cfg.rotY:Math.PI/2;holder.add(body);   /* 모델 앞(+z)을 게임의 앞(+x)으로 */
   const parts=[];scene.updateMatrixWorld(true);scene.children.slice().forEach(c=>parts.push(c));
   parts.forEach(c=>{(/^WHEEL_/.test(c.name)?holder:body).add(c)});
   holder.traverse(o=>{
@@ -3519,7 +3528,7 @@ function m3dPrep(id,scene){
       wheels.push({o,front:o.position.z>0,r:clamp(sz.y/2,.2,.36),spin:0})   /* 바퀴 반지름(굴러가는 속도용): 브레이크 부품 때문에 크게 잡히는 걸 막음 */}
   });
   const b=new THREE.Box3().setFromObject(holder),len=b.max.x-b.min.x||4.5;
-  return{holder,body,wheels,len};
+  return{holder,body,wheels,len,bike:!!cfg.bike};
 }
 /* 조명: 모델(빛을 받는 재질)에만 영향. 맵마다 밝기, 하늘 사진으로 반사 */
 const m3dHemi=new THREE.HemisphereLight(0xdfe8ff,0x2a2630,1),m3dSun=new THREE.DirectionalLight(0xffffff,1);
@@ -3545,14 +3554,15 @@ function opp3D(dt,v,braking,nitro){
   const L=M3L[MAPID]||[1,1];m3dHemi.intensity=L[0];m3dSun.intensity=L[1];
   const env=m3dEnvFor(MAPID);if(S.environment!==env)S.environment=env;
   /* 서스펜션: 차체만 기울이고 바퀴는 그대로 (앞=+z 기준: x축 회전=앞뒤, z축 회전=좌우) */
-  M.body.rotation.set(V.pit,0,V.roll);
+  if(M.bike){V.lean=(V.lean||0)+(clamp(Math.atan(clamp(v*V.yawR,-20,20)/9.8),-1,1)*(v>4?1:0)-(V.lean||0))*Math.min(1,dt*6);M.body.rotation.set(-V.lean,0,V.pit*.5)}   /* 오토바이는 코너에서 실제처럼 기울어요(옆 가속도로 계산) */
+  else M.body.rotation.set(V.pit,0,V.roll);
   /* 바퀴: 속도만큼 굴러가고, 앞바퀴는 코너에서 꺾임 */
   V.st=(V.st||0)+(clamp(Math.atan(2.6*V.yawR/Math.max(v,3)),-.5,.5)-(V.st||0))*Math.min(1,dt*8);
   const fwd=(O.vx*Math.cos(O.h)+O.vz*Math.sin(O.h))>=0?1:-1;
   M.wheels.forEach(w=>{w.spin+=fwd*v/w.r*dt;w.o.rotation.order='YXZ';w.o.rotation.set(w.spin,w.front?V.st:0,0)});
   /* 브레이크 등·니트로 불꽃 (차 뒤쪽, OPPM 기준 x가 앞) */
   V.bl+=((braking?1:0)-V.bl)*Math.min(1,dt*14);const rearX=-M.len/2-.05;
-  m3dTail.forEach((s,i)=>{s.visible=true;s.position.set(rearX,.78,(i?1:-1)*.66);const k=(MAPID==='mountain'?.12:.35)+V.bl*.9;s.material.opacity=Math.min(1,k);const sc=.35+V.bl*.45;s.scale.set(sc*1.6,sc,1)});
+  m3dTail.forEach((s,i)=>{s.visible=!M.bike||i===0;s.position.set(rearX,M.bike?.95:.78,M.bike?0:(i?1:-1)*.66);const k=(MAPID==='mountain'?.12:.35)+V.bl*.9;s.material.opacity=Math.min(1,k);const sc=.35+V.bl*.45;s.scale.set(sc*1.6,sc,1)});
   m3dFlame.forEach((s,i)=>{s.visible=!!nitro;if(!nitro)return;s.position.set(rearX-.1,.38,(i?1:-1)*.32);const k=.6+Math.random()*.4;s.scale.set(.7*k,.45*k,1)});
   return true;
 }
@@ -3620,13 +3630,15 @@ function dStat(id,txt,kind){
   const s=document.createElement('span');s.textContent=txt||'';e.append(s);
 }
 function duelLobby(){
+  const bk=DVEH==='bike';$('dMaps').querySelectorAll('button').forEach(b=>{b.hidden=!!MAPS[b.dataset.map].bike!==bk});
+  if(!!MAPS[dSel].bike!==bk){dSel=bk?'coast':'seoul';$('dMaps').querySelectorAll('button').forEach(x=>x.setAttribute('aria-checked',x.dataset.map===dSel))}
   D.state='lobby';$('mStep1').hidden=true;$('mStep2').hidden=true;$('mStep3').hidden=false;
   dView('dPick');setTimeout(()=>$('dGoCreate').focus(),30);
 }
 (function(){
   const row=$('dMaps');
   DUEL_MAPS.forEach(id=>{
-    const src=document.querySelector('.maps button[data-map="'+id+'"] img'),b=document.createElement('button');
+    const src=document.querySelector('.maps button[data-map="'+id+'"] img')||(id==='coast'&&document.querySelector('#start .bmap img')),b=document.createElement('button');
     b.type='button';b.setAttribute('role','radio');b.dataset.map=id;b.setAttribute('aria-checked',id===dSel);
     const im=document.createElement('img');im.alt='';if(src)im.src=src.src;const t=document.createElement('b');t.textContent=MAPLABEL[id];
     b.append(im,t);b.onclick=()=>{dSel=id;row.querySelectorAll('button').forEach(x=>x.setAttribute('aria-checked',x.dataset.map===id))};row.append(b);
@@ -3722,7 +3734,7 @@ function onDuelMsg(m){
   }
   if(m.from!==D.oppId)return;
   switch(m.k){
-    case 'car':if(CARS[m.car]){D.oppCar=m.car;m3dLoad(m.car)}D.oppReady=!!m.ready;setOppColor();duelInfo();if(D.role==='host')maybeGo();break;
+    case 'car':if(CARS[m.car]||BIKES[m.car]){D.oppCar=m.car;m3dLoad(m.car)}D.oppReady=!!m.ready;setOppColor();duelInfo();if(D.role==='host')maybeGo();break;
     case 'go':if(D.role==='guest'&&D.state==='garage')duelCountdown();break;
     case 'p':oppPos(m);break;
     case 'fin':if(!(m.ms>=5000&&m.ms<3600000))break;D.oppFin=m.ms|0;O.lap=D.laps;onOppFin();break;
@@ -3736,16 +3748,17 @@ function duelGarage(){
   stopAudio();started=false;HOLD=false;DEAD=false;hideOpp();O.seen=false;
   ['dh','cd','dres','stg','lc'].forEach(i=>$(i).classList.remove('on','win'));LC.r=LC.b=LC.spin=0;
   document.body.classList.remove('dready');document.body.dataset.mode='duel';
+  applyVeh(MAPS[D.map]&&MAPS[D.map].bike?'bike':'car');
   if(MAPID!==D.map)setMap(D.map);
   $('mbMode').textContent='1대1 · 방 '+D.code+' · '+MAPLABEL[D.map]+' '+D.laps+'바퀴';$('mbName').textContent=PLAYER;$('mbChange').textContent='방 나가기';
   $('modes').classList.remove('on');$('mStep3').hidden=true;$('start').style.display='grid';
-  setOppColor();duelInfo();dSend('car',{car:CARID,ready:false});
+  setOppColor();duelInfo();dSend('car',{car:VEH==='bike'?BIKEID:CARID,ready:false});
 }
 function duelInfo(){
   const me=$('diMe').parentNode,op=$('diOpp').parentNode;
-  $('diMe').textContent=D.ready?'준비 완료 · '+CARS[CARID].name:'차를 고르고 준비를 눌러요';me.classList.toggle('ok',D.ready);
+  $('diMe').textContent=D.ready?'준비 완료 · '+(VEH==='bike'?BIKES[BIKEID]:CARS[CARID]).name:(VEH==='bike'?'오토바이를 고르고':'차를 고르고')+' 준비를 눌러요';me.classList.toggle('ok',D.ready);
   $('diOppN').textContent='상대 · '+(D.oppName||'친구');
-  $('diOpp').textContent=D.oppId?(D.oppReady?'준비 완료 · ':'차 고르는 중 · ')+(CARS[D.oppCar]||CARS.gtr).name:'도망갔어요';op.classList.toggle('ok',D.oppReady);
+  $('diOpp').textContent=D.oppId?(D.oppReady?'준비 완료 · ':'고르는 중 · ')+(CARS[D.oppCar]||BIKES[D.oppCar]||CARS.gtr).name:'도망갔어요';op.classList.toggle('ok',D.oppReady);
   $('go').querySelector('span').textContent=MODE==='duel'?(D.ready?'준비 취소':'준비'):'플레이';
   document.body.classList.toggle('dready',D.ready);
 }
@@ -3753,13 +3766,13 @@ function duelReady(){
   if(D.state!=='garage')return;
   D.ready=!D.ready;
   if(D.ready){stopAudio();initAudio()}
-  dSend('car',{car:CARID,ready:D.ready});duelInfo();
+  dSend('car',{car:VEH==='bike'?BIKEID:CARID,ready:D.ready});duelInfo();
   if(D.role==='host')maybeGo();
 }
 function maybeGo(){if(D.state==='garage'&&D.ready&&D.oppReady&&D.oppId){dSend('go',{});duelCountdown()}}
-document.querySelectorAll('.cars button').forEach(b=>b.addEventListener('click',()=>{if(D.state==='garage'&&!D.ready){dSend('car',{car:CARID,ready:false});duelInfo()}}));
+document.querySelectorAll('.cars button').forEach(b=>b.addEventListener('click',()=>{if(D.state==='garage'&&!D.ready){dSend('car',{car:VEH==='bike'?BIKEID:CARID,ready:false});duelInfo()}}));
 /* 메시지가 빠져도 괜찮도록 차고에서는 2초마다 내 상태를 다시 보내요 */
-setInterval(()=>{if(D.state==='garage'&&D.oppId){dSend('car',{car:CARID,ready:D.ready});if(D.role==='host')maybeGo()}},2000);
+setInterval(()=>{if(D.state==='garage'&&D.oppId){dSend('car',{car:VEH==='bike'?BIKEID:CARID,ready:D.ready});if(D.role==='host')maybeGo()}},2000);
 
 
 /* --- 출발 부스터 (런치 컨트롤) ---

@@ -12,7 +12,7 @@
 | `supabase_setup.sql` | 순위표를 맵·모드별로 나누는 SQL. **2026-11-14 사용자가 실행 완료**(Success). |
 | `supabase_replay.sql` | 1등 리플레이 표 `replays` + 함수 `submit_replay` (2026-11-16 **사용자 실행 완료**, Success) |
 | `supabase_security.sql` | **2026-11-14 사용자가 실행 완료**(Success). 2026-11-16 `scores_kind_ok`에 pyongyang 추가한 부분도 **실행 완료**(Success). 그 뒤 touge 추가한 것도 **실행 완료**(Success, 2026-11-16). 2026-11-16 밤 `mode='bike' and map in ('coast')` 줄 추가한 것도 **실행 완료**(Success). 순위표 보안 SQL(이름 1~20자·욕설·꺾쇠 금지, 기록 20초~1시간, 맵·모드 값 제한(NOT VALID라 옛 기록은 그대로), 같은 이름 20초에 1번·전체 1분 40번 트리거, update/delete 권한 회수). 새 맵 id를 추가하면 `scores_kind_ok`의 맵 목록도 고쳐야 함! |
-| `assets/models/h2r.glb` | Kawasaki Ninja H2R 3D 모델(437KB, draco). **아직 안 씀 — 나중에 오토바이 1대1 상대 모델로 쓸 것** (README 참고) |
+| `assets/models/h2r.glb` | Kawasaki Ninja H2R 3D 모델(437KB, draco). 오토바이 1vs1에서 상대 오토바이로 씀 (README 참고) |
 | `assets/` | 게임에 들어간 원본 에셋: 차량 이미지(앞모습·콕핏·핸들, 720S 뒷모습), 엔진·시동 소리(wav), 사용자가 보낸 원본 엔진 녹음(mp3), 맵 하늘·바다 이미지 |
 | `build/` | 채팅에서 쓰던 **빌드 기록 (참고용)**. 중간 파일(t_nitro.html 등)이 없어서 그대로 다시 돌리진 못해요. 앞으로는 `index.html`을 직접 고치면 됩니다. |
 | `tests/` | Playwright 테스트 스크립트 (참고용, 경로는 채팅 환경 기준이라 수정 필요) |
@@ -76,7 +76,8 @@
   - 테스트 주의: 두 번째 페이지는 뒤 탭이라 타이머가 늦게 돌아 결과 화면(1.4초 뒤)이 늦게 뜰 수 있음 → 읽기 전에 기다리거나 `bringToFront()`.
   - 테스트: Supabase 대신 BroadcastChannel로 흉내 내는 가짜 라이브러리를 Playwright에서 `**/supabase-js@*/**` 요청에 넣고, 한 브라우저 컨텍스트에 페이지 2개(가·나)를 열어 확인.
 - **연습장** (`MODE='practice'`, 맵 id `practice`, 코드는 `연습장` 주석 블록): 520m×520m 평지(`PA=260`), 타이어 벽(`practiceBounds()`), 구역 `PZ`: 드리프트 원(콘 둘레), 8자 코스, 슬라럼(콘 16개), 430m 직선 가속(100m 표지판, BRAKE). 콘은 부딪히면 쓰러짐(`CONES`, R/처음 위치 버튼으로 원위치). HUD `#ph`: 드리프트 각도·시간·최고, 최고 속도. 랩·타이머·순위표 없음, 니트로는 끝나고 5초 뒤 다시 참. 코스 점 `TP`는 바깥 테두리 사각형(미니맵용), `half:600`이라 도로 밖 감속·밀어내기 없음. 바닥은 잘게 나눈 판 + 잔디는 2.5m 아래(깊이 겹침 방지), 바닥 표시는 polygonOffset.
-- **오토바이 모드** (2026-11-16, `MODE='bike'`, `VEH='bike'`, 아직 "준비 중"이라 **관리자 비밀번호**로만 열림):
+- **오토바이 모드** (2026-11-16, `MODE='bike'`, `VEH='bike'`; **2026-11-17 공개**: `bkOpen=()=>true`라 비밀번호 없이 누구나, 선택 카드 배지 "NEW". 아래 비밀번호 설명은 예전 기록):
+  - **오토바이 1vs1**(2026-11-17): 1vs1 → 오토바이 카드(`DVEH='bike'`) → 방 만들기 화면엔 오토바이 맵(`MAPS[id].bike`)만 보임(`duelLobby`가 `#dMaps` 버튼 hidden, CSS `.dmaps button[hidden]`), 자동차 고르면 자동차 맵만. `DUEL_MAPS`에 `coast` 추가, `MAPS.coast.laps=1`(1바퀴 승부). 참가자는 방 맵이 오토바이 맵이면 자동으로 오토바이로 바뀜(`duelGarage`→`applyVeh()`). 차고에선 `body.bike`면 오토바이 타일 보임. `car` 메시지에 `BIKEID`를 보냄(`CARS[m.car]||BIKES[m.car]` 허용). 상대 오토바이는 3D 모델 `assets/models/h2r.glb`(`M3D.h2r={bike:true,rotY:π}`: 모델 앞이 -x라 반 바퀴), 바퀴 분리 없음, **코너에서 실제처럼 기울어짐**(`V.lean=atan(옆가속/9.8)`, `body.rotation.x=-V.lean`; 오른쪽 코너면 오른쪽으로 기우는 것 숫자로 확인), 브레이크 등 1개. 출발 부스터(`LC`)도 `bikeMotion`에 연결.
   - 흐름: 모드 선택에서 LAP·1:1을 누르면 **자동차/오토바이 고르기**(`#mStepV`, `vehPick()`) → 자동차는 예전대로 이름 입력(`goName(m)`). 오토바이(LAP): 잠겨 있으면 비밀번호 칸(`#mvPw`) → SHA-256 해시 `BK_HASH`와 비교(평문은 코드에 없음, 비밀번호는 사용자가 알고 있음) → 맞으면 `sessionStorage drift-bk`에 저장 = **그 탭에서만** 열림, 새로고침·다시 접속하면 또 비밀번호(`bkOpen()`; 예전 localStorage 키는 시작할 때 지움 — 사용자가 "왜 풀었어" 해서 2026-11-17 변경). 1:1에서 오토바이는 "오토바이 대결은 준비 중이에요"(아직 못 들어감). ⚠️ 클라이언트 비밀번호라 코드를 뜯어보면 우회 가능한 "가벼운 잠금".
   - 홈: `body.bike`/`data-mode=bike`이면 차 타일·맵 목록 대신 오토바이 타일(`.bikes`, `BIKES`, `setBike()`)과 맵 카드(`.bmap`), 오른쪽 조작 설정은 그대로(터치 버튼 편집 포함). 조작 설명 글자는 `em[data-car/data-bike]`로 바뀜. 실제 정보 `CSPEC.h2r`.
   - **Kawasaki Ninja H2R** 하나: 홈 사진 `assets/cars/hero_h2r.webp`(사용자 사진 rembg), 1인칭 화면 `assets/cars/cabin_h2r.webp`(사용자 1인칭 사진에서 손으로 그린 다각형 마스크로 핸들·장갑·계기판·거울만 잘라냄, 오른쪽 손잡이는 니트로 그림에 가려 있어서 왼쪽을 좌우 반전해 붙임, 앞 유리 반투명, 거울은 흐리게, 계기판 화면은 검게 칠하고 게임이 `#bdash`에 속도·기어·RPM을 그림). 화면 `#bk`(가로 100vw, 비율 1672:521, 위가 화면 40% 아래로 오게 bottom 계산). 엔진음: 사용자 녹음 `assets/sounds/original/h2r.mp3`(30초)에서 24.1~27.1초 일정한 구간 2.95초 루프 `eng_h2r.wav`, 시동 1.0~3.4초 `lau_h2r.wav`, 소리 설정 `BIKES.h2r.snd`. 기어 6단 `BEDGE`.
@@ -107,7 +108,7 @@
 - claude.ai 아티팩트에서는 외부 접속이 막혀 순위표가 안 됨 → 친구들과는 GitHub Pages 버전 사용.
 
 ## 앞으로 할 일 / 약속한 것
-0. **오토바이 1대1 대결**(지금은 준비 중 표시). 상대 오토바이는 `assets/models/h2r.glb` 3D 모델 쓰기. 오토바이 맵·오토바이 추가, 준비되면 비밀번호 잠금 풀기(`bkOpen` 대신 항상 열림).
+0. (완료) 오토바이 공개·오토바이 1vs1. 다음엔 오토바이 맵·오토바이 추가 가능(새 오토바이는 `BIKES`·`CSPEC`·`M3D`에, 새 맵은 `MAPS.<id>.bike=true` + SQL `scores_kind_ok`의 bike 맵 목록 + `#mlbBike` 탭).
 1. 하드모드 스테이지 맵 추가(사용자가 아이디어를 낼 예정). 화물선 맵의 장애물 간격·필요 속도·바다 폭은 `SH`/`shipPlan()` 숫자로 조절.
 2. (하드 6스테이지 완성) 사용자가 실제로 해 보고 제한 시간·얼음 미끄러움·낙석 거리 조절 요청 가능: `MAPS.alps.limit`/`MAPS.canyon.limit`, `onIce` 그립 0.55, 낙석 발동 거리 55m.
 3. 사용자가 실제로 들어보고 엔진/시동/폭발 소리 피드백을 줄 수 있음(전부 확인 못 한 상태).
