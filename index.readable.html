@@ -297,6 +297,7 @@ body[data-mode=hard] #lbp .row{display:none}
 #boom.fall .sm{background:radial-gradient(circle at 50% 60%,#3a1a10f0 0,#120604f8 70%)}
 #hh small#hhTime{color:#ffd88a;font-weight:700;font-size:12px}#hh small#hhTime:empty{display:none}#hh small#hhTime.low{color:#ff5a4a}
 #boom.water .sm{background:radial-gradient(circle at 50% 40%,#0d3b6ef0 0,#041a33f8 70%)}
+#vcHeat{position:fixed;left:50%;top:clamp(118px,19vh,160px);transform:translateX(-50%);z-index:3;display:none;padding:6px 14px;border-radius:10px;background:#2a0a04d9;border:2px solid #ff7a20;color:#ffd0a0;font-weight:800;font-size:15px}#vcHeat.on{display:block}#vcHeat.bad{border-color:#ff2a2a;color:#ff8a8a;animation:vcb .6s infinite alternate}@keyframes vcb{to{background:#5a0a04e6}}
 #jh{position:fixed;left:50%;top:clamp(70px,12vh,110px);transform:translateX(-50%);z-index:3;display:none;align-items:center;gap:12px;padding:8px 16px;background:#0b0d14d9;border:2px solid #ff5a4a;border-radius:8px;text-shadow:0 1px 3px #000;pointer-events:none;font-variant-numeric:tabular-nums}
 #jh.on{display:flex}
 #jh.ok{border-color:#3ddc84}
@@ -678,6 +679,7 @@ body.bike #nit.burn{border-color:#7cc4ff}
 </div>
 <div id="hh"><b id="hhStage"></b><div id="hhPips"></div><small id="hhLeft"></small><small id="hhTime"></small></div>
 <div id="hit"></div>
+<div id="vcHeat" role="status"></div>
 <div id="jh" role="status"><b>JUMP</b><span id="jhD"></span><em id="jhV"></em></div>
 <div id="boom"><i class="f1"></i><i class="f2"></i><i class="sm"></i></div>
 <div id="rph" role="status"><b>REPLAY</b><span id="rphT"></span></div>
@@ -1974,6 +1976,7 @@ const VC_W=[[0,0,0,60],[300,0,40,58],[380,-140,25,60],[120,-220,30,64],[-120,-17
   [560,-760,21,78],[660,-830,21,78],[600,-930,21,78],[700,-1000,21,78],[640,-1100,21,78],[740,-1170,21,78],[680,-1270,21,78],[780,-1340,21,78],[720,-1440,21,78],[820,-1500,25,78],
   [1030,-1460,40,74],[1110,-1640,30,73],[1300,-1700,35,72],[1380,-1390,28,66],[1230,-1240,26,62],[1400,-1100,30,58],[1260,-960,26,55],[1430,-820,35,52],[1580,-900,40,52],[1730,-760,24,50],
   [1730,-650,0,50],[1730,-620,0,58],[1730,-410,0,54],[1730,-220,0,54],[1730,-130,40,54],[1380,-140,30,52],[1230,-20,25,50],[1160,-20,0,50],[1135,-20,0,59],[945,-20,0,69],[710,-20,0,69]];
+const VC_LAVA_IMG='DATAURI';
 const VC_VOL=[1000,-760];   /* 코스 가운데 큰 화산 */
 const VC_LIPS=[31,38],VC_LANDS=[32,39],VC_BR=[10,19],VC_LAVA_Y=8,VC_HELI=[781,718];   /* 점프대 끝·착지 꼭짓점, 다리 첫·끝 꼭짓점, 용암 높이, 헬기 뒤(문)·앞 x */
 /* 용암 줄기 [코스 비율, 왼쪽 옆, 오른쪽 옆, 길이m, 움직임(1=넓어졌다 좁아짐)] — 옆은 +가 오른쪽 */
@@ -2022,7 +2025,11 @@ function vcMod(x,z,h){
   /* 점프 분화구 */
   for(const j of VCJ)if(bi>j.lip-1&&bi<j.land+1&&d<120)h=Math.min(h,VC_LAVA_Y-12+Math.max(0,d-70)*.8);
   return h}
-MAPS.volcano={half:7.5,open:true,laps:1,vc:true,bike:true,terrain:true,tcell:8,treeN:40,te0:11,tw:30,tbase:vcBase,tmod:vcMod,prep:()=>{vcJumps();vcPrep()},respawn:true,noLB:true,guideScale:1.6,
+/* 땅 색: 검은 현무암 + 용암 가까운 낮은 곳은 주황으로 빛나고, 비탈엔 가는 용암 틈 */
+function vcCol(x,y,z,col,o,lit){const n=.5+.5*Math.sin(x*.21+Math.sin(z*.13)*2)*Math.sin(z*.17-x*.05),base=(.10+.05*n)*lit;
+  const glow=sm01((VC_LAVA_Y+9-y)/9),crack=Math.max(0,1-Math.abs(Math.sin(x*.045+Math.sin(z*.031)*3+y*.02))/.035)*sm01((y-VC_LAVA_Y)/6)*sm01((60-y)/40)*.8;
+  const g=Math.min(1,glow+crack);col[o]=Math.min(1,base*1.15+g*1.05);col[o+1]=Math.min(1,base*.9+g*(.32+.25*glow));col[o+2]=Math.min(1,base*.85+g*.05)}
+MAPS.volcano={tcol:vcCol,half:7.5,open:true,laps:1,vc:true,bike:true,terrain:true,tcell:8,treeN:40,te0:11,tw:30,tbase:vcBase,tmod:vcMod,prep:()=>{vcJumps();vcPrep()},respawn:true,noLB:true,guideScale:1.6,
   night:[.62,.36,.32],grass:[[.17,.15,.15],[.23,.19,.18]],rock:[.30,.25,.24],bg:0x0c0607,fog:[0x1a0a08,80,900],gnd:0x120604,gy:-60,asph:0x3a383c,kerb:['#2a2628','#d8b020'],shoulder:0x2a2324,
   pts:vcPts,tyFn:vcTY,finXZ:[745,-20],respawnI:fi=>fi>=VCB[0]-6&&fi<=VCB[1]+6?(fi>VCL[1]-3?VCL[1]-5:Math.max(0,VCB[0]-8)):Math.max(0,fi-Math.round(20/SP))};
 let VC_LT=null;
@@ -2031,13 +2038,10 @@ function buildVolcano(){
   const glow=[],gl=(x,y,z,c,s)=>glow.push([x,y,z,c,s||2]),gH=(x,z)=>terrH?vcMod(x,z,terrH(x,z)):0;
   /* 용암 바다 (낮은 곳 전부) */
   /* 용암 무늬: 밝은 용암 위에 검붉은 껍질 조각들 (갈라진 틈으로 빛이 나와요) */
-  VC_LT=tkTex(256,256,(x,w,h)=>{x.fillStyle='#ff6a10';x.fillRect(0,0,w,h);
-    for(let k=0;k<60;k++){const a=Math.random()*w,b=Math.random()*h,r=8+Math.random()*30,g=x.createRadialGradient(a,b,0,a,b,r);g.addColorStop(0,'rgba(255,230,120,.95)');g.addColorStop(1,'rgba(255,140,30,0)');x.fillStyle=g;x.fillRect(a-r,b-r,2*r,2*r)}
-    for(let k=0;k<75;k++){const cx=Math.random()*w,cy=Math.random()*h,r=7+Math.random()*16,n=6+(Math.random()*3|0);
-      for(const [ox,oy] of [[0,0],[w,0],[-w,0],[0,h],[0,-h]]){x.beginPath();for(let q=0;q<n;q++){const a=q/n*6.283+Math.random()*.4,rr=r*(.7+Math.random()*.4);const px=cx+ox+Math.cos(a)*rr,py=cy+oy+Math.sin(a)*rr;q?x.lineTo(px,py):x.moveTo(px,py)}x.closePath();
-        x.fillStyle='rgba('+(38+Math.random()*30|0)+','+(10+Math.random()*10|0)+',6,'+(.82+Math.random()*.15)+')';x.fill();x.strokeStyle='rgba(255,120,30,.55)';x.lineWidth=1.2;x.stroke()}}});
-  VC_LT.wrapS=VC_LT.wrapT=THREE.RepeatWrapping;
-  const lavaSea=VC_LT.clone();lavaSea.needsUpdate=true;lavaSea.repeat.set(70,70);VCS.sea=lavaSea;
+  /* 용암 무늬: 사용자가 보낸 용암 사진으로 만든 이음새 없는 무늬 (거울 반복이라 이음새가 안 보여요) */
+  const lavaTex=rep=>{const t=new THREE.TextureLoader().load(VC_LAVA_IMG);t.wrapS=t.wrapT=THREE.MirroredRepeatWrapping;t.repeat.set(rep,rep);t.anisotropy=4;return t};
+  VC_LT=lavaTex(1);VCS.riverT=lavaTex(1);
+  const lavaSea=lavaTex(90);VCS.sea=lavaSea;
   {const g=new THREE.PlaneGeometry(9000,9000);g.rotateX(-Math.PI/2);VCS.seaMat=new THREE.MeshBasicMaterial({map:lavaSea,fog:false});const m=new THREE.Mesh(g,VCS.seaMat);m.position.set(800,VC_LAVA_Y,-800);MG.add(m)}
   /* 길 선: 노란 가장자리 + 흰 점선 */
   {const yl=tkM(0xd8a020,{side:THREE.DoubleSide}),dashT=mkTex(8,64,x=>{x.fillStyle='#fff';x.fillRect(0,0,8,26)}),dM=new THREE.MeshBasicMaterial({map:dashT,transparent:true,opacity:.75,depthWrite:false,side:THREE.DoubleSide});
@@ -2055,10 +2059,9 @@ function buildVolcano(){
       for(let k=0;k<s1-s0;k++){const a=k*2;ix.push(a,a+1,a+2,a+1,a+3,a+2)}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(p,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(ix);MG.add(new THREE.Mesh(g,wood))}
     /* 가장자리 낮은 턱·아래 판 (빛나는 등불은 뺐어요) */
     SEG.forEach(([s0,s1])=>[-1,1].forEach(sd=>{wallStrip(i=>sd*(ROADW[i]+.28),.12,beam,4,s0,s1,.02);wallStrip(i=>sd*(ROADW[i]+.3),.8,beam,4,s0,s1,-.8)}));
-    /* 체크포인트 섬: 용암 위로 솟은 바위 기둥 + 깃발 문 */
+    /* 체크포인트 섬: 용암 위로 솟은 바위 기둥 (초록 문은 2026-11-17 사용자 요청으로 없앰) */
     {const rk=jm(0x2e2626),rk2=jm(0x3a3030);for(let i=VCL[0]+1;i<=VCL[1]-1;i+=3){const [x,z]=tkAt(i,0),hh=TY[i]-VC_LAVA_Y+6,g=new THREE.CylinderGeometry(HALF+4+rnd()*3,HALF+9+rnd()*5,hh,9);tkAdd(g,i%2?rk:rk2,x,VC_LAVA_Y-6+hh/2-.45,z,rnd()*3)}
-      const i=VCL[0]+4,y=TY[i],W=HALF+2.6,cm=new THREE.MeshBasicMaterial({map:tkTex(256,64,(x,w,h)=>{x.fillStyle='#1c7a3c';x.fillRect(0,0,w,h);x.strokeStyle='#fff';x.lineWidth=5;x.strokeRect(4,4,w-8,h-8);x.fillStyle='#fff';x.font='900 30px system-ui';x.textAlign='center';x.fillText('✔ CHECKPOINT',w/2,43)}),side:THREE.DoubleSide});
-      [-1,1].forEach(sd=>{const [x,z]=tkAt(i,sd*W);tkBox(.5,6.5,.5,jm(0x1c7a3c),x,y+3.25,z)});const [cx,cz]=tkAt(i,0);tkBox(.6,1.4,W*2,jm(0x145a2c),cx,y+6.4,cz,-TH[i]);tkBoard(cx-Math.cos(TH[i])*.4,y+6.4,cz-Math.sin(TH[i])*.4,7.5,1.8,-Math.cos(TH[i]),-Math.sin(TH[i]),cm)}
+    }
     /* 밑으로 늘어진 줄·받침 (협곡 바닥까지) */
     for(let i=i0+3;i<=i1-3;i+=7){if(i>VCL[0]-2&&i<VCL[1]+2)continue;const [cx,cz]=tkAt(i,0),fy=Math.max(VC_LAVA_Y,gH(cx,cz)),hgt=TY[i]-1-fy;if(hgt<4)continue;[-1,1].forEach(sd=>{const [x,z]=tkAt(i,sd*(ROADW[i]-.8));tkBox(.45,hgt,.45,beam,x,fy+hgt/2,z)});for(let y=fy+8;y<TY[i]-3;y+=9)tkBox(.25,.25,5.4,beam,cx,y,cz,-TH[i])}
     /* 다리 앞 경고 */
@@ -2083,17 +2086,28 @@ function buildVolcano(){
   const blob=(seed2,tongue)=>{let sd2=seed2;const R=()=>(sd2=(sd2*16807)%2147483647)/2147483647;return tkTex(128,128,(x,w,h)=>{x.fillStyle='#000';x.fillRect(0,0,w,h);x.fillStyle='#fff';x.beginPath();
       const n=40,cx=w/2,cy=h/2;for(let k=0;k<=n;k++){const a=k/n*6.283,r=(.40+.06*Math.sin(a*3+R()*6)+.05*Math.sin(a*7+R()*6)+.03*(R()-.5))*(tongue&&Math.abs(Math.cos(a))<.25?1.15:1);const px=cx+Math.cos(a)*r*w*1.1,py=cy+Math.sin(a)*r*h*1.15;k?x.lineTo(px,py):x.moveTo(px,py)}x.fill();
       for(let k=0;k<10;k++){x.beginPath();x.arc(cx+(R()-.5)*w*.95,cy+(R()-.5)*h*.9,4+R()*10,0,7);x.fill()}})};
-  const halo=tkTex(64,64,(x,w,h)=>{const g=x.createRadialGradient(32,32,4,32,32,32);g.addColorStop(0,'rgba(255,120,30,.55)');g.addColorStop(1,'rgba(255,60,10,0)');x.fillStyle=g;x.fillRect(0,0,w,h)});
-  {VCS.flows=VC_LAVA.map(([f,a,b,len,mv],n)=>{const i=Math.round(f*(N-1)),h=TH[i],m=new THREE.MeshBasicMaterial({map:VC_LT,alphaMap:blob(n*97+13,1),alphaTest:.5,fog:false,polygonOffset:true,polygonOffsetFactor:-2});
+  const halo=tkTex(64,64,(x,w,h)=>{const g=x.createRadialGradient(32,32,4,32,32,32);g.addColorStop(0,'rgba(255,130,30,.85)');g.addColorStop(1,'rgba(255,60,10,0)');x.fillStyle=g;x.fillRect(0,0,w,h)});
+  {VCS.flows=VC_LAVA.map(([f,a,b,len,mv],n)=>{const i=Math.round(f*(N-1)),h=TH[i],tv=Math.sign(TN[i][0]*(VC_VOL[0]-TP[i][0])+TN[i][1]*(VC_VOL[1]-TP[i][1]))||1;
+      if((a<=-HALF+.1&&tv>0)||(b>=HALF-.1&&tv<0))[a,b]=[-b,-a];   /* 도로 밖으로 이어진 쪽이 화산을 보게 (화산에서 흘러온 것처럼) */
+      const m=new THREE.MeshBasicMaterial({map:VC_LT,alphaMap:blob(n*97+13,1),alphaTest:.5,fog:false,polygonOffset:true,polygonOffsetFactor:-2});
       const hm=new THREE.Mesh(new THREE.PlaneGeometry(len*1.7,1).rotateX(-Math.PI/2),new THREE.MeshBasicMaterial({map:halo,transparent:true,depthWrite:false,fog:false,blending:THREE.AdditiveBlending,polygonOffset:true,polygonOffsetFactor:-1}));hm.rotation.y=-h;MG.add(hm);
       const g=new THREE.PlaneGeometry(len*1.25,1.18);g.rotateX(-Math.PI/2);const mesh=new THREE.Mesh(g,m);mesh.rotation.y=-h;MG.add(mesh);
-      /* 도로 밖으로 흘러내리는 부분 */
-      [[a,-1],[b,1]].forEach(([e,sd])=>{if(Math.abs(e)<HALF-.1)return;const [x,z]=tkAt(i,sd*(HALF+14)),g2=new THREE.PlaneGeometry(len*1.1,28);g2.rotateX(-Math.PI/2);const m2=new THREE.Mesh(g2,new THREE.MeshBasicMaterial({map:VC_LT,alphaMap:blob(n*31+7,0),alphaTest:.5,fog:false}));m2.rotation.y=-h;m2.position.set(x,(TY[i]+gH(x,z))/2,z);MG.add(m2)});
       for(let k=0;k<4;k++){const [x,z]=tkAt(i,a+(b-a)*rnd(),(rnd()-.5)*len);gl(x,TY[i]+.6,z,[255,140,40],3)}
       /* 25m 앞 경고 깜빡이 */
       const [wx,wz]=tkAt(i-Math.round(25/SP),(a+b)/2>0?-(WALLA[i]+.8):WALLA[i]+.8);gl(wx,TY[i]+1.4,wz,[255,90,20],2.4);
       return {i,a,b,len,mv,mesh,hm,ph:n*1.7,lo:a,hi:b}});
-    VCS.flows.forEach(F=>vcFlowPose(F,0))}
+    VCS.flows.forEach(F=>vcFlowPose(F,0));
+    /* 화산에서 도로까지 흘러온 용암 강 (다른 도로를 지날 땐 그 밑으로 숨어요) */
+    {const rm=new THREE.MeshBasicMaterial({map:VCS.riverT,fog:false,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-1}),pos=[],uv=[];
+      VCS.flows.forEach((F,n)=>{const i=F.i,tv=Math.sign(TN[i][0]*(VC_VOL[0]-TP[i][0])+TN[i][1]*(VC_VOL[1]-TP[i][1]))||1,e=tv>0?F.b:F.a;if(Math.abs(e)<HALF-.2)return;
+        const [ex,ez]=tkAt(i,tv*(HALF+3)),dx=VC_VOL[0]-ex,dz=VC_VOL[1]-ez,L=Math.hypot(dx,dz),ux=dx/L,uz=dz/L,steps=Math.max(4,Math.floor((L-300)/5)),w0=Math.max(3,(F.b-F.a)*.55),ph=n*2.1;
+        let prev=null,vv=0;
+        for(let k=0;k<=steps;k++){const t=k/steps,wob=Math.sin(t*9+ph)*14*Math.sin(t*3.14)+Math.sin(t*23+ph)*3,px=ex+ux*(L-300)*t-uz*wob,pz=ez+uz*(L-300)*t+ux*wob;
+          const [d,j]=nearD(px,pz),far=Math.min(Math.abs(j-i),N-Math.abs(j-i))>25;if(far&&d<HALF+4){prev=null;continue}
+          const w=w0*(1+t*1.6),y=Math.max(VC_LAVA_Y,terrH?vcMod(px,pz,terrH(px,pz)):0)+.35+(k===0?TY[i]-.3-Math.max(VC_LAVA_Y,terrH?vcMod(px,pz,terrH(px,pz)):0)-.35:0)*0,L2=[px-uz*w,y,pz+ux*w],R2=[px+uz*w,y,pz-ux*w];
+          if(prev){pos.push(...prev[0],...prev[1],...L2,...prev[1],...R2,...L2);uv.push(0,vv,1,vv,0,vv+.25,1,vv,1,vv+.25,0,vv+.25)}vv+=.25;prev=[L2,R2];
+          if(k%9===4)gl(px,y+1,pz,[255,130,40],5)}});
+      const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));MG.add(new THREE.Mesh(g,rm))}}
   /* ---- 코스 가운데 거대한 화산 (현실처럼: 골짜기 진 비탈·용암 강·분화구 빛·연기 기둥·용암 분수) ---- */
   {const [vx,vz]=VC_VOL,H=330,R=345,R0=46,RINGS=48,SEGS=150,by=VC_LAVA_Y-6,pos=[],col=[],ix=[];
     const chans=[];for(let q=0;q<9;q++)chans.push({a:q/9*6.283+rnd()*.5,len:.55+rnd()*.45,w:.022+rnd()*.02,ph:rnd()*6});
@@ -2130,8 +2144,8 @@ function buildVolcano(){
     VCS.volMats=[vm,crat.material,cm,...VCS.plume.map(P=>P.material)];
   }
   /* 화산재 (다리 전까지 카메라 주변에 떨어져요) */
-  {const n=500,p=new Float32Array(n*3);for(let k=0;k<n;k++){p[k*3]=(rnd()-.5)*70;p[k*3+1]=rnd()*22;p[k*3+2]=(rnd()-.5)*70}
-    VCS.ash=new THREE.Points(new THREE.BufferGeometry().setAttribute('position',new THREE.BufferAttribute(p,3)),new THREE.PointsMaterial({size:.26,color:0xa89a92,map:glowTex(255,255,255),transparent:true,opacity:.7,depthWrite:false}));VCS.ash.frustumCulled=false;MG.add(VCS.ash)}
+  {const n=1100,p=new Float32Array(n*3);for(let k=0;k<n;k++){p[k*3]=(rnd()-.5)*70;p[k*3+1]=rnd()*22;p[k*3+2]=(rnd()-.5)*70}
+    VCS.ash=new THREE.Points(new THREE.BufferGeometry().setAttribute('position',new THREE.BufferAttribute(p,3)),new THREE.PointsMaterial({size:.34,color:0xb0a298,map:glowTex(255,255,255),transparent:true,opacity:.7,depthWrite:false}));VCS.ash.frustumCulled=false;MG.add(VCS.ash)}
 
   /* ---- 헬기장 + 큰 수송 헬기 (뒷문 열림, 안으로 들어가면 도착) ---- */
   {const I=x=>{let bd=1e18,bi=0;for(let i=VCI[39];i<N;i++){const d=Math.abs(TP[i][0]-x);if(d<bd){bd=d;bi=i}}return bi},iR=I(VC_HELI[0]),iF=I(VC_HELI[1]),y0=TY[VCI[39]],L=VC_HELI[0]-VC_HELI[1],cx=(VC_HELI[0]+VC_HELI[1])/2,cz=TP[iR][1],ry=-TH[iR];
@@ -2180,7 +2194,13 @@ function buildVolcano(){
 /* 용암 줄기 모양 (넓어졌다 좁아짐) */
 function vcFlowPose(F,t){let a=F.a,b=F.b;if(F.mv){const k=2.4*(.5+.5*Math.sin(t*1.7+F.ph));if(a<=-HALF+.1)b+=k;else if(b>=HALF-.1)a-=k;else{a-=k*.5;b+=k*.5}}F.lo=a;F.hi=b;
   const [x,z]=tkAt(F.i,(a+b)/2);F.mesh.scale.set(1,1,Math.max(.1,b-a));F.mesh.position.set(x,TY[F.i]+.07,z);if(F.hm){F.hm.scale.set(1,1,Math.max(.1,b-a)+5);F.hm.position.set(x,TY[F.i]+.05,z)}}
-function vcReset(){VCS.last=0;VCS.pad={};VCS.fail=false;VCS.cp=0}
+function vcReset(){VCS.last=0;VCS.pad={};VCS.fail=false;VCS.cp=0;VCS.burn=0;VCS.cap=999;if(VCS.flows)VCS.flows.forEach(F=>F.on=false);const h=document.getElementById('vcHeat');if(h)h.classList.remove('on')}
+/* 용암을 밟으면: 속도 30% 깎이고 최고 속도가 25km/h씩 줄어요 → 많이 밟으면 점프대를 못 넘어요 */
+const VC_CAP0=290,VC_CAPD=25;
+function vcBurn(){VCS.burn=(VCS.burn||0)+1;VCS.cap=VC_CAP0-VC_CAPD*VCS.burn;c.vx*=.7;c.vz*=.7;DK=0;hitK=Math.max(hitK,.7);thump(.6);
+  const need=VCJ.length?Math.max(...VCJ.map(j=>j.need)):225,left=Math.max(0,Math.floor((VCS.cap-need)/VC_CAPD));
+  toast(VCS.cap<need?'🔥 용암! 최고 '+VCS.cap+'km/h — 이제 점프대를 못 넘어요 (다시하기 R)':'🔥 용암! 최고 속도 '+VCS.cap+'km/h · '+(left+1)+'번 더 밟으면 점프 불가');
+  const h=$('vcHeat');h.textContent='🔥 용암 '+VCS.burn+'번 · 최고 '+VCS.cap+' km/h';h.classList.add('on');h.classList.toggle('bad',VCS.cap<need)}
 /* 실패 → 처음부터 */
 function vcFail(msg){
   if(VCS.fail||DEAD)return;VCS.fail=true;DEAD=true;for(const k in keys)keys[k]=0;if(eg)eg.gain.value=.1;thump(1);
@@ -2193,7 +2213,8 @@ function vcStep(){
   if(DEAD||FALL)return;const v=Math.hypot(c.vx,c.vz);
   for(const j of VCJ){if(!AIR&&VCS.last<j.lip&&ci>=j.lip&&ci<j.land){const hv=v*Math.cos(j.th);c.h=TH[j.lip];c.vx=Math.cos(c.h)*hv;c.vz=Math.sin(c.h)*hv;AIR=true;cy=TY[j.lip];cvy=v*Math.sin(j.th);DOFF=0;DK=0;LEAN=0;VCS.jump=j;break}
     if(!AIR&&VCS.last<j.pad&&ci>=j.pad&&!VCS.pad[j.pad]){VCS.pad[j.pad]=1;NITG=1;NIT.ready=true;toast('⚡ 니트로 충전! 점프대 앞에서 N을 눌러요')}}
-  if(!AIR&&VCS.flows){for(const F of VCS.flows){const d=Math.abs(ci-F.i)*SP;if(d>F.len/2+1)continue;const u=((c.x-TP[F.i][0])*Math.cos(TH[F.i])+(c.z-TP[F.i][1])*Math.sin(TH[F.i]));if(Math.abs(u)<F.len/2+.4&&side>F.lo-.5&&side<F.hi+.5){vcFail('용암에 닿았어요');break}}}
+  if(!AIR&&VCS.flows){for(const F of VCS.flows){const d=Math.abs(ci-F.i)*SP;if(d>F.len/2+1)continue;const u=((c.x-TP[F.i][0])*Math.cos(TH[F.i])+(c.z-TP[F.i][1])*Math.sin(TH[F.i]));const inL=Math.abs(u)<F.len/2+.4&&side>F.lo-.5&&side<F.hi+.5;if(inL&&!F.on){vcBurn()}F.on=inL}}
+  if(VCS.cap<900){const vv=Math.hypot(c.vx,c.vz),cp=VCS.cap/3.6;if(vv>cp){const k=Math.max(cp/vv,.985);c.vx*=k;c.vz*=k}}
   if(!AIR&&VCS.last<VCL[0]+4&&ci>=VCL[0]+4&&!VCS.cp){VCS.cp=1;toast('✔ 체크포인트! 다리에서 떨어지면 여기서 다시 출발해요')}
   VCS.last=ci;
 }
@@ -2216,9 +2237,9 @@ function vcFrame(dt){
   if(VCS.plume)VCS.plume.forEach(P=>{const a=P.geometry.attributes.position,p=a.array,U=P.userData;for(let k=0;k<p.length;k+=3){p[k+1]+=dt*U.up;p[k]+=dt*U.wind;if(p[k+1]>U.top){p[k+1]=U.y0;p[k]=VC_VOL[0]+(Math.random()-.5)*60;p[k+2]=VC_VOL[1]+(Math.random()-.5)*60}}a.needsUpdate=true});
   /* 다리 전까지 화산재: 어둡고 뿌옇게 (다리에 들어서면 걷혀요) */
   {const k=1-sm01((ci-(VCB[0]-30))/30),F=MAPS.volcano.fog;
-    if(S.fog){S.fog.near=F[1]+(20-F[1])*k;S.fog.far=F[2]+(320-F[2])*k;S.fog.color.setRGB(.10-.045*k,.04-.015*k,.03-.01*k);S.background.copy(S.fog.color)}
-    const dim=1-.5*k;if(VCS.volMats)VCS.volMats.forEach(m=>m.color&&m.color.setScalar(m===VCS.volMats[2]?dim:dim));if(VCS.sea)VCS.seaMat&&VCS.seaMat.color.setScalar(1-.45*k);skyMat.color.setScalar(1-.55*k);
-    if(VCS.ash){VCS.ash.visible=k>.02;VCS.ash.material.opacity=.75*k;const a=VCS.ash.geometry.attributes.position,p=a.array;VCS.ash.position.set(c.x,(cy||TY[ci]||0),c.z);for(let q=0;q<p.length;q+=3){p[q+1]-=dt*(1.1+(q%5)*.2);p[q]+=dt*Math.sin(t+q)*.7;if(p[q+1]<-2){p[q+1]=20+Math.random()*4;p[q]=(Math.random()-.5)*70;p[q+2]=(Math.random()-.5)*70}}a.needsUpdate=true}}
+    if(S.fog){S.fog.near=F[1]+(1-F[1])*k;S.fog.far=F[2]+(75-F[2])*k;S.fog.color.setRGB(.10+.03*k,.04+.035*k,.03+.03*k);S.background.copy(S.fog.color)}
+    const dim=1-.7*k;if(VCS.volMats)VCS.volMats.forEach(m=>m.color&&m.color.setScalar(m===VCS.volMats[2]?dim:dim));if(VCS.sea)VCS.seaMat&&VCS.seaMat.color.setScalar(1-.45*k);skyMat.color.setScalar(1-.8*k);skyMat.opacity=1-.8*k;
+    if(VCS.ash){VCS.ash.visible=k>.02;VCS.ash.material.opacity=.95*k;const a=VCS.ash.geometry.attributes.position,p=a.array;VCS.ash.position.set(c.x,(cy||TY[ci]||0),c.z);for(let q=0;q<p.length;q+=3){p[q+1]-=dt*(1.1+(q%5)*.2);p[q]+=dt*Math.sin(t+q)*.7;if(p[q+1]<-2){p[q+1]=20+Math.random()*4;p[q]=(Math.random()-.5)*70;p[q+2]=(Math.random()-.5)*70}}a.needsUpdate=true}}
 
 }
 /* 테스트 중 맵 잠금 (이 탭에서만 풀림, 오토바이 예전 잠금과 같은 비밀번호) */
@@ -2562,7 +2583,7 @@ function buildTerrain(){
     let nx=(hl-hr)/(2*cell),nz=(hu-hd)/(2*cell),ny=1;const nl=Math.hypot(nx,ny,nz);nx/=nl;ny/=nl;nz/=nl;
     const sp=1-ny,rk=sm01((sp-.10)/.16),lit=clamp(.62+.5*((nx*sun[0]+ny*sun[1]+nz*sun[2])/sl),.55,1.12);
     const gv=.5+.5*Math.sin(x*.045)*Math.sin(z*.05),g=[grass[0][0]+(grass[1][0]-grass[0][0])*gv,grass[0][1]+(grass[1][1]-grass[0][1])*gv,grass[0][2]+(grass[1][2]-grass[0][2])*gv];
-    const foam=TD.sea?Math.max(0,1-Math.abs(y-.4)/1.3)*(.6+.4*Math.sin(x*.9+z*.7)):0,wet=TD.sea?sm01((5-y)/5):0,rn=TD.sea?.78+.3*(.5+.5*Math.sin(x*.37+z*.11)*Math.sin(z*.29-x*.07))+.12*Math.sin(y*1.7):1;for(let c3=0;c3<3;c3++)col[k*3+c3]=clamp((((g[c3]*(1-rk)+rock[c3]*rk*rn)*(1-wet)+shore[c3]*wet)*lit*(1-foam)+.95*foam)*NT[c3]*(TD.tdetail?1.16:1),0,1);
+    const foam=TD.sea?Math.max(0,1-Math.abs(y-.4)/1.3)*(.6+.4*Math.sin(x*.9+z*.7)):0,wet=TD.sea?sm01((5-y)/5):0,rn=TD.sea?.78+.3*(.5+.5*Math.sin(x*.37+z*.11)*Math.sin(z*.29-x*.07))+.12*Math.sin(y*1.7):1;if(TD.tcol){TD.tcol(x,y,z,col,k*3,lit);pos[k*3]=x;pos[k*3+1]=y;pos[k*3+2]=z;continue}for(let c3=0;c3<3;c3++)col[k*3+c3]=clamp((((g[c3]*(1-rk)+rock[c3]*rk*rn)*(1-wet)+shore[c3]*wet)*lit*(1-foam)+.95*foam)*NT[c3]*(TD.tdetail?1.16:1),0,1);
     pos[k*3]=x;pos[k*3+1]=y;pos[k*3+2]=z;
   }
   const TC=TD.tcut,uvA=TD.tdetail?new Float32Array(gx*gz*2).map((_,q)=>pos[(q>>1)*3+(q&1?2:0)]/9):null,cutV=TC?new Uint8Array(gx*gz).map((_,k)=>TC(pos[k*3],pos[k*3+1],pos[k*3+2])?1:0):null;
