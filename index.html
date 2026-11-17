@@ -186,8 +186,9 @@ body[data-pad=square]{--bw:76px;--bh:76px}
 #nit i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#2b7bff,#7cc4ff);box-shadow:0 0 10px #4aa3ff}
 #nit.burn{border-color:#7cc4ff;box-shadow:0 0 16px #4aa3ff88;color:#fff}
 #nit.burn i{background:linear-gradient(90deg,#7cc4ff,#fff);box-shadow:0 0 14px #bfe0ff}
-#nit.spent{color:#6b7488}
-#nit.spent i{background:#3a4250;box-shadow:none}
+#nit.spent{color:#cfe3ff}
+#nit.spent i{background:linear-gradient(90deg,#1f6bff,#5ab4ff);box-shadow:0 0 8px #4aa3ff88}
+#nit span{white-space:nowrap}
 @media (max-width:760px){#nit{width:150px;top:118px}}
 .pad button[data-k=nitro],#ced .eb[data-k=nitro]{border-color:#3aa0ff;color:#9ec9ff;background:#0e1c33}
 .pad button.burn{background:#7cc4ff;color:#06203d;border-color:#fff;opacity:1}
@@ -415,7 +416,7 @@ body[data-mode=duel] #tl>div:nth-child(3){display:none}
   #start .duelinfo div{padding:5px 8px}
   /* 운전 화면: 미니맵·글자 작게, 콕핏을 아래로 내려서 도로가 더 넓게 보이게 */
   #mm{width:116px;height:76px;left:max(8px,env(safe-area-inset-left));top:6px;border-radius:9px}
-  #nit{left:max(8px,env(safe-area-inset-left));top:86px;width:116px;padding:3px 8px;gap:6px;font-size:10.5px;border-radius:8px}
+  #nit{left:max(8px,env(safe-area-inset-left));top:86px;width:150px;padding:3px 8px;gap:6px;font-size:10.5px;border-radius:8px}
   #dh{left:max(8px,env(safe-area-inset-left));top:114px;padding:4px 8px;gap:10px}
   #dh b{font-size:14px}#dh b#dhPos{font-size:22px}#dh small{font-size:9.5px}
   #hh{left:max(8px,env(safe-area-inset-left));top:114px;width:150px;padding:5px 8px}
@@ -520,7 +521,7 @@ body[data-mode=hard] .lbtabs{display:none}
 #nit:not(.spent):not(.burn) i{background:linear-gradient(90deg,#1f6bff,#5ab4ff 60%,#bfe4ff);box-shadow:0 0 14px #4aa3ff}
 #nit:not(.spent):not(.burn) .nb{height:10px;background:#0a1c3a}
 .pad button[data-k=nitro]:not(.spent):not(.burn){background:#1652c8;color:#fff;border-color:#8ccaff;opacity:min(1,calc(var(--po,.6) + .3));box-shadow:0 0 14px #3a8bff99}
-#nit.spent{opacity:.6}
+#nit.spent{opacity:1}
 body.bike #nit{width:250px;padding:9px 12px 10px;font-size:13.5px;font-weight:800;opacity:1;color:#fff;background:#120a02ee;border:2px solid #ff8a1a;box-shadow:0 0 14px #ff7a1a66}
 body.bike #nit .nb{height:14px;border-radius:7px;background:#3a1e08;border:1px solid #ff8a1a88}
 body.bike #nit i{background:linear-gradient(90deg,#ff3d00,#ff9d00 55%,#ffe14d);box-shadow:0 0 14px #ff8a1a}
@@ -3014,7 +3015,7 @@ function nearest(x,z,from,win){
 }
 function reset(){
   c={x:sx,z:sz,h:sh,vx:0,vz:0};steer=0;AIR=false;cvy=0;cy=TY[0]||0;camY=TY[0]||0;camP=0;hitK=0;ci=0;prog=0;lapStart=null;NIT.ready=true;NIT.on=false;NIT.t=0;
-  FALL=false;LEAN=0;DOFF=0;DK=0;DDIR=0;CROLL=0;BRK=0;DHOLD=0;if(VEH==='bike'){NIT.ready=false;NITG=0}
+  FALL=false;LEAN=0;DOFF=0;DK=0;DDIR=0;CROLL=0;BRK=0;DHOLD=0;NITG=0;if(VEH==='bike')NIT.ready=false
   if(MAPID==='practice')pracReset();
   if(MAPID==='volcano')vcReset();
   if(MAPID==='alps')alpsReset();
@@ -3102,6 +3103,9 @@ function step(dt){
   c.vx=vf*fx+vl*rx;c.vz=vf*fz+vl*rz;
   c.x+=c.vx*dt;c.z+=c.vz*dt;
   slip=Math.abs(vl);
+  /* 자동차도 드리프트하면 니트로가 차요 (오토바이와 같은 식): 7° 넘게 미끄러지고 40km/h 넘을 때 */
+  DRIFTA=keys.hand&&speed>3?Math.atan2(Math.abs(vl),Math.abs(vf))*57.3:0;
+  if(!NIT.on&&!NIT.ready&&DRIFTA>7&&speed>11){NITG=Math.min(1,NITG+dt*clamp(DRIFTA/16,.3,1.4)*.26*clamp(speed/25,.5,1.2));if(NITG>=1)NIT.ready=true}
   }
   /* 코스 위치·진행도 */
   const ni=nearest(c.x,c.z,ci,70);let di=ni-ci;if(di>N/2)di-=N;if(di<-N/2)di+=N;
@@ -3134,7 +3138,7 @@ function step(dt){
   if(HW.length&&!AIR&&Math.abs(side)>HW[ci]+.6){startFall();return}
   if(VCJ.length)vcStep();
   if(prog>=LAPEND&&!AIR&&MODE!=='practice'){
-    prog-=LAPEND;if(VEH!=='bike')NIT.ready=true;
+    prog-=LAPEND;if(VEH!=='bike'&&!NIT.on){NIT.ready=true;NITG=1}
     if(lapStart!==null){
       const t=Math.round(performance.now()-lapStart);if(MODE==='lap'||MODE==='bike')recLap(t);lapStart=performance.now();
       $('last').textContent=fmt(t);
@@ -3218,9 +3222,10 @@ function drive(dt){
   $('rpm').style.width=Math.round(rpm*100)+'%';
   $('cur').textContent=fmt(lapStart===null?0:performance.now()-lapStart);
   $('nit').className=NIT.on?'burn':NIT.ready?'':'spent';
-  $('nbar').style.width=(NIT.on?NIT.t/NIT_T*100:VEH==='bike'?NITG*100:NIT.ready?100:0)+'%';
-  if(VEH==='bike'){$('nit').firstChild.textContent=NIT.on?'니트로!':NIT.ready?'니트로 준비! (N)':'드리프트 충전 '+Math.round(NITG*100)+'%';$('bdSpd').firstChild.nodeValue=Math.round(kmh);$('bdGear').textContent=kmh<2?'N':g+1;$('bdRpm').firstChild.style.width=Math.round(rpm*100)+'%';
-    const dr=started&&!HOLD&&keys.hand&&DRIFTA>7&&kmh>35;$('bdrift').classList.toggle('on',dr);if(dr)$('bdA').textContent=Math.round(DRIFTA)+'° · 니트로 +'+Math.round(NITG*100)+'%'}
+  $('nbar').style.width=(NIT.on?NIT.t/NIT_T*100:NIT.ready?100:NITG*100)+'%';
+  $('nit').firstChild.textContent=NIT.on?'니트로!':NIT.ready?'니트로 준비! (N)':'드리프트 충전 '+Math.round(NITG*100)+'%';
+  {const dr=started&&!HOLD&&keys.hand&&DRIFTA>7&&kmh>35;$('bdrift').classList.toggle('on',dr);if(dr)$('bdA').textContent=Math.round(DRIFTA)+'°'+(NIT.ready||NIT.on?' · 니트로 준비':' · 니트로 +'+Math.round(NITG*100)+'%')}
+  if(VEH==='bike'){$('bdSpd').firstChild.nodeValue=Math.round(kmh);$('bdGear').textContent=kmh<2?'N':g+1;$('bdRpm').firstChild.style.width=Math.round(rpm*100)+'%';}
   nitBtn.classList.toggle('burn',NIT.on);nitBtn.classList.toggle('spent',!NIT.ready&&!NIT.on);
 }
 
@@ -3265,7 +3270,7 @@ function drawMap(){
 const NIT_T=4,nitBtn=document.querySelector('.pad button[data-k=nitro]');
 function fireNitro(){
   if(!started||HOLD||!NIT.ready||NIT.on)return;
-  NIT.ready=false;NIT.on=true;NIT.t=NIT_T;if(VEH==='bike')NITG=0;
+  NIT.ready=false;NIT.on=true;NIT.t=NIT_T;NITG=0;
   if(lapStart===null)lapStart=performance.now();
   nitroBlast();
 }
