@@ -135,6 +135,10 @@ body[data-swap="1"] #start .pv{flex-direction:row-reverse}
 #start .tabs button[aria-selected=true]{background:#252b3a;color:#fff}
 #start .keys{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:9px}
 #start .keys[hidden]{display:none}
+#start .kbhint{margin:0 0 8px;font-size:12.5px;color:#f2c230;font-weight:700}#start .kbhint[hidden],#start .kbreset[hidden]{display:none}
+#start button.kb{display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:30px;padding:0 8px;box-sizing:border-box;border:1px solid #4a5468;border-bottom-width:3px;border-radius:6px;background:#1a1f2b;color:#eef;font:700 13px/1 system-ui,sans-serif;cursor:pointer}
+#start button.kb:hover{border-color:#f2c230;color:#f2c230}#start button.kb.add{opacity:.45;border-style:dashed}#start button.kb.wait{background:#f2c230;color:#111;border-color:#f2c230;animation:editPulse 1s infinite}
+#start .kbreset{margin-top:10px;padding:7px 12px;background:#141926;border:1px solid #3a4250;border-radius:8px;color:#aeb7c6;font-size:12.5px;cursor:pointer}#start .kbreset:hover{color:#f2c230;border-color:#f2c230}
 #start .keys li{display:flex;align-items:center;gap:14px}
 #start .kk{display:flex;gap:4px;min-width:136px;flex:none}
 #start kbd{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:28px;padding:0 7px;box-sizing:border-box;border:1px solid #3a4250;border-bottom-width:3px;border-radius:6px;background:#1a1f2b;color:#eef;font:600 13px/1 system-ui,sans-serif}
@@ -188,11 +192,31 @@ body[data-pad=square]{--bw:76px;--bh:76px}
 .pad button[data-k=nitro],#ced .eb[data-k=nitro]{border-color:#3aa0ff;color:#9ec9ff;background:#0e1c33}
 .pad button.burn{background:#7cc4ff;color:#06203d;border-color:#fff;opacity:1}
 .pad button.spent{opacity:calc(var(--po,.6)*.45)}
-#start .edit{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:10px;padding:10px;background:#141926;border:1.5px dashed #59627a;border-radius:10px;color:#eef;font-size:14px;cursor:pointer}
-#start .edit:hover{border-color:#f2c230;color:#f2c230}
+#start .edit{display:flex;align-items:center;gap:12px;width:100%;margin-top:12px;padding:12px 14px;background:linear-gradient(135deg,#ffd75a,#f2a91c);border:0;border-radius:12px;color:#1a1300;cursor:pointer;text-align:left;box-shadow:0 0 0 0 rgba(242,194,48,.7);animation:editPulse 2s infinite}
+#start .edit .ei{font-size:26px;line-height:1}#start .edit .et{display:flex;flex-direction:column;gap:2px;flex:1}#start .edit .et b{font-size:15px;font-weight:900}#start .edit .et small{font-size:11.5px;font-weight:600;opacity:.8}#start .edit .ea{font-size:26px;font-weight:900}
+@media (orientation:landscape) and (max-height:500px){#start .edit{padding:8px 10px;gap:8px}#start .edit .ei{font-size:20px}#start .edit .et b{font-size:12.5px}#start .edit .et small{display:none}#start .edit .ea{font-size:18px}}
+@media (max-width:420px){#start .edit .et small{display:none}}
+@keyframes editPulse{0%{box-shadow:0 0 0 0 rgba(242,194,48,.65)}70%{box-shadow:0 0 0 12px rgba(242,194,48,0)}100%{box-shadow:0 0 0 0 rgba(242,194,48,0)}}
+#start .edit:hover{filter:brightness(1.08);transform:translateY(-1px)}
 #start .edit:focus-visible{outline:2px solid #fff;outline-offset:2px}
 :focus-visible{outline:2px solid #f2c230}
 /* ===== 모드 선택 / 이름 입력 ===== */
+#intro{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;background:radial-gradient(ellipse at 50% 30%,#2a1a0a 0,#0b0d14 60%,#05060a 100%);color:#eef;font-family:system-ui,sans-serif;transition:opacity .5s}
+#intro.out{opacity:0;pointer-events:none}#intro[hidden]{display:none}
+#intro .ibox{width:min(560px,100%);display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;animation:introIn .6s ease-out}
+@keyframes introIn{from{opacity:0;transform:translateY(16px) scale(.97)}to{opacity:1;transform:none}}
+#intro .ilogo{display:flex;flex-direction:column;line-height:.9;font-style:italic;font-weight:900;letter-spacing:1px}
+#intro .ilogo i{font-size:clamp(34px,8vw,64px);color:#fff;text-shadow:0 0 18px rgba(255,140,40,.55)}#intro .ilogo b{font-size:clamp(22px,5vw,40px);color:#f2c230;letter-spacing:10px}
+#intro .isub{margin:0;color:#cdd7e6;font-size:clamp(13px,2.4vw,16px)}
+#intro .itips{list-style:none;margin:4px 0 0;padding:0;display:flex;flex-direction:column;gap:8px;width:100%;text-align:left}
+#intro .itips li{display:flex;gap:12px;align-items:center;padding:10px 14px;background:#141926e6;border:1px solid #2c3342;border-radius:12px}
+#intro .itips span{font-size:26px}#intro .itips b{display:block;font-size:15px;color:#fff}#intro .itips em{display:block;font-style:normal;font-size:12.5px;color:#aeb7c6;margin-top:2px}
+#intro #introGo{margin-top:4px;padding:12px 34px;border:0;border-radius:12px;background:linear-gradient(135deg,#ffd75a,#f2a91c);color:#1a1300;font-size:17px;font-weight:900;cursor:pointer}
+#intro .ibar{width:160px;height:4px;border-radius:2px;background:#2c3342;overflow:hidden}#intro .ibar i{display:block;height:100%;width:100%;background:#f2c230;transform-origin:left;animation:introBar 7s linear forwards}
+@keyframes introBar{from{transform:scaleX(1)}to{transform:scaleX(0)}}
+#intro .irot{display:none}
+@media (orientation:portrait) and (max-width:900px){#intro .irot{display:block;position:absolute;left:50%;bottom:18px;transform:translateX(-50%);padding:8px 14px;border-radius:20px;background:#f2c230;color:#111;font-weight:900;font-size:14px;white-space:nowrap;animation:editPulse 1.4s infinite}}
+@media (orientation:landscape) and (max-height:500px){#intro .ibox{gap:6px}#intro .isub{display:none}#intro .itips{flex-direction:row;gap:6px}#intro .itips li{flex:1;flex-direction:column;text-align:center;gap:4px;padding:8px}#intro .itips span{font-size:20px}#intro .itips b{font-size:12.5px}#intro .itips em{font-size:10.5px}#intro #introGo{padding:8px 26px;font-size:15px}#intro .ilogo i{font-size:30px}#intro .ilogo b{font-size:20px}}
 #modes{--gold:#f2c230;--red:#ff5a4a;--line:#2c3342;position:fixed;inset:0;z-index:60;display:none;flex-direction:column;align-items:center;justify-content:center;gap:clamp(14px,4vh,34px);padding:clamp(12px,3vh,32px) clamp(14px,4vw,48px);box-sizing:border-box;background:#090a16;color:#eef;overflow:auto;text-align:left}
 #modes.on{display:flex}
 #modes .bg{position:absolute;inset:0;pointer-events:none;background:radial-gradient(70% 55% at 30% 80%,#2f62ff3a,transparent 70%),linear-gradient(90deg,#090a1688 0,#090a1600 40%,#090a16f0 100%),linear-gradient(0deg,#090a16 0,#090a1600 36%),var(--msky) 50% 100%/auto 80% no-repeat,#090a16}
@@ -582,7 +606,7 @@ body.bike #nit.burn{border-color:#7cc4ff}
         <button role="radio" aria-checked="false" data-shape="square"><span class="pv"><i><b></b><b></b></i><i><b></b><b></b><b></b></i></span><span>정사각형</span></button>
       </div>
       <button class="sw" id="swap" role="switch" aria-checked="false"><i></i><span>좌우 위치 바꾸기</span></button>
-      <button class="edit" id="editBtn"><span aria-hidden="true">✥</span>버튼 위치·크기 직접 조절</button>
+      <button class="edit" id="editBtn"><span class="ei" aria-hidden="true">🎮</span><span class="et"><b>터치 버튼 옮기기 · 크기 바꾸기</b><small>폰·태블릿 버튼을 내 손에 맞게! 눌러서 바꿔요</small></span><span class="ea" aria-hidden="true">›</span></button>
     </div>
     <div>
       <h2>조작법</h2>
@@ -590,15 +614,9 @@ body.bike #nit.burn{border-color:#7cc4ff}
         <button role="tab" id="tPc" aria-selected="true">컴퓨터</button>
         <button role="tab" id="tMo" aria-selected="false">모바일</button>
       </div>
-      <ul class="keys" id="gPc">
-        <li><span class="kk"><kbd>↑</kbd><kbd>W</kbd></span><em>가속</em></li>
-        <li><span class="kk"><kbd>↓</kbd><kbd>S</kbd></span><em>브레이크</em></li>
-        <li><span class="kk"><kbd>←</kbd><kbd>→</kbd><kbd>A</kbd><kbd>D</kbd></span><em>핸들 좌우</em></li>
-        <li><span class="kk"><kbd>Space</kbd></span><em data-car="핸드브레이크 (드리프트)" data-bike="뒷브레이크 (드리프트 · 니트로 충전)">핸드브레이크 (드리프트)</em></li>
-        <li><span class="kk"><kbd>N</kbd><kbd>Shift</kbd></span><em data-car="니트로 (한 바퀴에 한 번)" data-bike="니트로 (게이지가 꽉 차면)">니트로 (한 바퀴에 한 번)</em></li>
-        <li><span class="kk"><kbd>R</kbd></span><em>처음부터 다시</em></li>
-        <li><span class="kk"><kbd>L</kbd></span><em>순위표 열기</em></li>
-      </ul>
+      <p class="kbhint" id="kbHint">✏️ 키를 눌러서 내가 원하는 키보드 키로 바꿀 수 있어요</p>
+      <ul class="keys" id="gPc"></ul>
+      <button class="kbreset" id="kbReset" type="button">↺ 키 설정 처음대로</button>
       <ul class="keys" id="gMo" hidden>
         <li><span class="kk"><kbd>◀</kbd><kbd>▶</kbd></span><em>핸들 좌우</em></li>
         <li><span class="kk"><kbd>가속</kbd></span><em>누르는 동안 가속</em></li>
@@ -608,6 +626,20 @@ body.bike #nit.burn{border-color:#7cc4ff}
       </ul>
     </div>
   </section>
+</div>
+<div id="intro" role="dialog" aria-label="게임 소개">
+  <div class="ibox">
+    <div class="ilogo"><i>ARNGBECHU</i><b>RACING</b></div>
+    <p class="isub">친구들과 랩타임을 겨루는 1인칭 레이싱 🏁</p>
+    <ul class="itips">
+      <li><span>📱</span><div><b>폰·태블릿은 가로로 돌려서!</b><em>화면을 가로로 눕혀야 제대로 보여요</em></div></li>
+      <li><span>🎮</span><div><b>조작 버튼은 내 마음대로</b><em>홈 오른쪽 노란 버튼에서 버튼 위치·크기를 바꿀 수 있어요</em></div></li>
+      <li><span>⌨️</span><div><b>컴퓨터는 키보드 키도 바꿀 수 있어요</b><em>조작법 → 컴퓨터 탭에서 키를 눌러 바꿔요</em></div></li>
+    </ul>
+    <button type="button" id="introGo">시작하기 ▶</button>
+    <div class="ibar"><i></i></div>
+  </div>
+  <div class="irot">📱↻ 화면을 가로로 돌려 주세요</div>
 </div>
 <div id="modes" class="on" role="dialog" aria-label="모드 선택">
   <button type="button" id="bgmBtn" aria-label="배경 음악 켜기/끄기" aria-pressed="true"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path class="w1" d="M16 8.5a5 5 0 0 1 0 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path class="w2" d="M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path class="x" d="M16 9l5 6M21 9l-5 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
@@ -2935,14 +2967,34 @@ beam.rotation.x=-Math.PI/2;beam.rotation.order='YXZ';S.add(beam);
 
 /* ---------- 입력 ---------- */
 const keys={left:0,right:0,gas:0,brake:0,hand:0};
-const map={ArrowLeft:'left',a:'left',ArrowRight:'right',d:'right',ArrowUp:'gas',w:'gas',ArrowDown:'brake',s:'brake',' ':'hand'};
-const kn=e=>map[e.key.length>1?e.key:e.key.toLowerCase()];
+/* 키보드 키 설정 (컴퓨터): 동작마다 키 2개까지, 홈 조작법에서 눌러서 바꿔요 (localStorage drift-keys) */
+const KB_DEF={gas:['ArrowUp','w'],brake:['ArrowDown','s'],left:['ArrowLeft','a'],right:['ArrowRight','d'],hand:[' '],nitro:['n','Shift'],reset:['r'],board:['l']};
+let KB=JSON.parse(JSON.stringify(KB_DEF));try{const o=JSON.parse(localStorage.getItem('drift-keys')||'null');if(o)for(const k in KB_DEF)if(Array.isArray(o[k]))KB[k]=o[k].filter(x=>typeof x==='string').slice(0,2)}catch(e){}
+let map={};const kbBuild=()=>{map={};for(const a in KB)for(const k of KB[a])map[k]=a};kbBuild();
+const kNorm=k=>k.length>1?k:k.toLowerCase();
+const kn=e=>{const a=map[kNorm(e.key)];return a==='gas'||a==='brake'||a==='left'||a==='right'||a==='hand'?a:null};
+const kLabel=k=>({' ':'Space',ArrowUp:'↑',ArrowDown:'↓',ArrowLeft:'←',ArrowRight:'→',Control:'Ctrl',Escape:'Esc'})[k]||(k.length===1?k.toUpperCase():k);
 addEventListener('keydown',e=>{
   if(e.target.tagName==='INPUT'||!started)return;
   const k=kn(e);if(k){keys[k]=1;e.preventDefault()}
-  const l=e.key.toLowerCase();if((l==='n'||e.key==='Shift')&&!e.repeat){fireNitro();e.preventDefault()}if(l==='r'&&(MODE==='lap'||MODE==='practice'||MODE==='bike'))reset();if(l==='l'&&MODE!=='duel')$('lbp').classList.toggle('on');
+  const act=map[kNorm(e.key)];if(act==='nitro'&&!e.repeat){fireNitro();e.preventDefault()}if(act==='reset'&&(MODE==='lap'||MODE==='practice'||MODE==='bike'))reset();if(act==='board'&&MODE!=='duel')$('lbp').classList.toggle('on');
 });
 addEventListener('keyup',e=>{const k=kn(e);if(k)keys[k]=0});
+/* 홈 조작법(컴퓨터) 목록: 키 칸을 누르고 → 원하는 키를 누르면 바뀌어요. 다른 동작에 쓰던 키면 거기서 빠져요. Esc는 취소 */
+const KB_ROWS=[['gas','가속'],['brake','브레이크'],['left','핸들 왼쪽'],['right','핸들 오른쪽'],['hand','핸드브레이크 (드리프트)','뒷브레이크 (드리프트 · 니트로 충전)'],['nitro','니트로 (한 바퀴에 한 번)','니트로 (게이지가 꽉 차면)'],['reset','처음부터 다시'],['board','순위표 열기']];
+let KBW=null;
+function kbUI(){const ul=$('gPc');ul.textContent='';
+  KB_ROWS.forEach(([a,t,tb])=>{const li=document.createElement('li'),kk=document.createElement('span');kk.className='kk';
+    for(let s2=0;s2<2;s2++){const k=KB[a][s2],b=document.createElement('button');b.type='button';b.className='kb'+(k==null?' add':'')+(KBW&&KBW.a===a&&KBW.s===s2?' wait':'');
+      b.textContent=KBW&&KBW.a===a&&KBW.s===s2?'키 누르기…':k==null?'+':kLabel(k);b.title='눌러서 키 바꾸기';b.onclick=ev=>{ev.stopPropagation();KBW={a,s:s2};kbUI()};kk.append(b)}
+    const em=document.createElement('em');em.textContent=VEH==='bike'&&tb?tb:t;if(tb){em.dataset.car=t;em.dataset.bike=tb}li.append(kk,em);ul.append(li)})}
+addEventListener('keydown',e=>{if(!KBW)return;e.preventDefault();e.stopImmediatePropagation();
+  if(e.key==='Escape'){KBW=null;kbUI();return}
+  const k=kNorm(e.key);for(const a in KB)KB[a]=KB[a].filter(x=>x!==k);const L=KB[KBW.a];L[KBW.s]=k;KB[KBW.a]=L.filter(x=>x!=null);
+  KBW=null;kbBuild();try{localStorage.setItem('drift-keys',JSON.stringify(KB))}catch(err){}kbUI();toast('⌨️ '+kLabel(k)+' 키로 바꿨어요')},true);
+addEventListener('click',()=>{if(KBW){KBW=null;kbUI()}});
+$('kbReset').onclick=()=>{KB=JSON.parse(JSON.stringify(KB_DEF));kbBuild();try{localStorage.removeItem('drift-keys')}catch(e){}KBW=null;kbUI();toast('키 설정을 처음대로 돌렸어요')};
+kbUI();
 document.querySelectorAll('.pad button').forEach(b=>{
   const k=b.dataset.k,set=v=>e=>{e.preventDefault();keys[k]=v;b.classList.toggle('on',!!v);if(k==='nitro'&&v)fireNitro()};
   b.addEventListener('pointerdown',set(1));
@@ -3409,7 +3461,7 @@ addEventListener('keydown',e=>{
 });
 function showGuide(mo){
   $('tPc').setAttribute('aria-selected',!mo);$('tMo').setAttribute('aria-selected',mo);
-  $('gPc').hidden=mo;$('gMo').hidden=!mo;
+  $('gPc').hidden=mo;$('gMo').hidden=!mo;$('kbHint').hidden=mo;$('kbReset').hidden=mo;
 }
 $('tPc').onclick=()=>showGuide(false);$('tMo').onclick=()=>showGuide(true);
 showGuide(matchMedia('(pointer:coarse)').matches);
@@ -4683,6 +4735,10 @@ $('back').onclick=e=>{e.preventDefault();goBack()};
 /* 다시하기: 개인 랩타임(자동차·오토바이)에서 출발선으로 돌아가 처음부터 (R 키와 같아요) */
 $('again').onclick=e=>{e.preventDefault();e.currentTarget.blur();if(started&&!RP&&(MODE==='lap'||MODE==='bike')){for(const k in keys)keys[k]=0;document.querySelectorAll('.pad button').forEach(b=>b.classList.remove('on'));reset()}};
 addEventListener('keydown',e=>{if(e.key==='Escape'&&started&&!$('lbp').classList.contains('on')&&!$('fail').classList.contains('on')&&!$('dres').classList.contains('on')){e.preventDefault();goBack()}});
+
+/* ---------- 들어올 때 소개 화면 (7초 뒤 또는 누르면 사라지고 모드 선택으로) ---------- */
+(()=>{const el=$('intro');let done=false;const close=()=>{if(done)return;done=true;el.classList.add('out');setTimeout(()=>el.hidden=true,520)};
+  $('introGo').onclick=e=>{e.stopPropagation();close()};el.addEventListener('click',close);addEventListener('keydown',e=>{if(!done&&(e.key==='Enter'||e.key===' '||e.key==='Escape')){e.preventDefault();close()}});setTimeout(close,7000)})();
 /* ---------- 시작: 모드 선택 화면부터 ---------- */
 $('start').style.display='none';
 loadBoard();
