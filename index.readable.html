@@ -2436,7 +2436,7 @@ function bikeMotion(dt){
   if(Math.cos(vh-c.h)<0&&v<4){vh=c.h-DOFF;v*=.3}
   const off=Math.abs(side)>HALF+1.2,drift=keys.hand&&v>9;
   /* 드리프트를 누르고 뗄 때 갑자기 바뀌지 않게 DK(0~1)로 부드럽게 섞어요. 미끄러지는 방향(DDIR)은 시작할 때 정하고 끝날 때까지 유지 */
-  DK+=((drift?1:0)-DK)*Math.min(1,dt*(drift?6:14));
+  DK+=((drift?1:0)-DK)*Math.min(1,dt*(drift?6:3.2));   /* 떼면 약 0.6초에 걸쳐 천천히 바로 서요(바로 튕겨 돌아오지 않게) */
   if(drift&&!DDIR)DDIR=Math.sign(steer)||Math.sign(LEAN)||1;if(!drift&&DK<.05)DDIR=0;
   if(keys.gas){v+=15.5*Math.max(0,1-v/84)*dt*(1-.3*Math.min(1,Math.abs(LEAN)/.95))*(1-.25*DK);if(lapStart===null)lapStart=performance.now()}
   if(LC.b>0){v+=LC.bp*Math.max(0,1-v/70)*dt;LC.b-=dt}if(LC.spin>0){LC.spin-=dt;v=Math.min(v,6+LC.spin*2);hitK=Math.max(hitK,.12)}
@@ -2450,13 +2450,17 @@ function bikeMotion(dt){
   const lmax=.14+.84*clamp((v-3)/10,0,1);
   LEAN+=(steer*lmax-LEAN)*Math.min(1,dt*(8+1.5*DK));
   let w=v<6?steer*1.9*Math.min(1,v/2.5):1.35*9.8*Math.tan(LEAN)/Math.max(v,6);   /* 게임용으로 실제보다 35% 더 잘 돌아요 */
-  w*=1+.08*DK;
+  w*=1+.45*DK+.5*BRK*clamp(v/12,0,1);   /* 드리프트·브레이크 중엔 더 잘 꺾여요(쉬운 조작) */
+  if(DDIR)w+=DDIR*DK*(.22+.3*Math.max(0,steer*DDIR));
+  /* 벽 도우미: 벽 가까이에서 벽 쪽으로 가고 있으면 도로 방향으로 살짝 돌려줘요 */
+  {const sg=side>0?1:-1,lat=(c.vx*TN[ci][0]+c.vz*TN[ci][1])*sg,near=clamp((Math.abs(side)-(HALF-2))/((WALL||HALF+4)-(HALF-2)),0,1);
+   if(near>0&&lat>0){let dh=TH[ci]-vh;dh=Math.atan2(Math.sin(dh),Math.cos(dh));if(Math.cos(dh)>0)vh+=dh*Math.min(1,dt*3.2*near)}}
   vh+=w*dt;
   /* 드리프트: 차체만 코너 안쪽으로 돌아가 미끄러지는 각도(DOFF). 떼면 천천히 바로 서요 */
   /* 드리프트 각도는 정해진 최대가 없어요: 꺾는 쪽으로 핸들을 누르고 있을수록 계속 더 돌아가요(카운터를 치면 다시 줄어요). 너무 돌아 뒤로 가지 않게 80°에서만 멈춤 */
   DHOLD=drift?DHOLD+dt*(steer*DDIR>.2?1:steer*DDIR<-.2?-1.5:.25):0;DHOLD=Math.max(0,DHOLD);
   const tgt=DDIR*Math.min(1.4,.3+.2*Math.max(0,steer*DDIR)+.32*DHOLD)*clamp((v-9)/10,0,1)*DK;
-  DOFF+=(tgt-DOFF)*Math.min(1,dt*(drift?4:9));
+  DOFF+=(tgt-DOFF)*Math.min(1,dt*(drift?4:3.5));
   {let dh=vh+DOFF-c.h;dh=Math.atan2(Math.sin(dh),Math.cos(dh));c.h+=Math.abs(dh)>.12?clamp(dh*Math.min(1,dt*9),-.06,.06):dh}   /* 벽에 부딪혀 방향이 확 바뀌어도 화면은 부드럽게 따라가요 */
   c.vx=Math.cos(vh)*v;c.vz=Math.sin(vh)*v;c.x+=c.vx*dt;c.z+=c.vz*dt;
   DRIFTA=Math.abs(DOFF)*57.3;slip=drift?v*Math.sin(Math.abs(DOFF)):0;
