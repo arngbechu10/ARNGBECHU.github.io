@@ -98,6 +98,8 @@
 
 - **폰 가로 화면 전용 레이아웃**: CSS 끝의 `@media (orientation:landscape) and (max-height:500px)` 블록(PC·태블릿은 높이가 커서 영향 없음). 홈은 왼쪽(차·맵·플레이)/오른쪽(조작 설정) 두 칸이 각각 스크롤, 플레이 버튼은 아래에 고정. 운전 화면은 미니맵·HUD 축소, 콕핏 이미지를 135%로 키워(top:-14%, 사용자가 고른 B안: 핸들 위쪽 절반 보임) 천장선은 화면 맨 위·대시보드는 아래로 가서 도로가 넓게 보이고 속도계는 가운데 아래. 모드 선택 카드 3장 한 줄. 테스트는 Playwright `devices['iPhone 13 landscape']`(750×342), `Galaxy S9+ landscape`(658×320).
 
+- **조작 설정 (2026-11-17)**: 홈 오른쪽 "터치 버튼 옮기기 · 크기 바꾸기"(`#editBtn`)를 애들이 못 찾아서 **노랑 그라데이션 큰 버튼 + 🎮 + 설명 + 깜빡이는 빛**(`editPulse`)으로 바꿈(폰 가로 화면에선 설명 숨김). **컴퓨터 키 바꾸기**: 조작법 "컴퓨터" 탭 목록을 `kbUI()`가 만들고(가속·브레이크·핸들 왼쪽/오른쪽·드리프트·니트로·처음부터·순위표, 동작마다 키 2칸), 칸을 누르면 "키 누르기…" → 다음 키가 그 칸에 들어감(다른 동작에 쓰던 키는 거기서 빠짐, Esc·다른 곳 클릭은 취소), `localStorage drift-keys`, "↺ 키 설정 처음대로"(`#kbReset`). 키 표 `KB`(기본 `KB_DEF`) → 역방향 `map`(`kbBuild`), 게임 keydown은 `map[kNorm(e.key)]`로 동작을 찾음(nitro/reset/board 포함). Esc는 나가기라 바꿀 수 없음.
+
 ## 보안 (아이들에게 배포 후 추가)
 - `<head>`에 **CSP** 메타(스크립트: self·jsDelivr·cdnjs·unpkg·blob + 'unsafe-inline'·'wasm-unsafe-eval'(Draco), 통신: Supabase https/wss·jsDelivr·unpkg, object-src none, base-uri none) + `referrer no-referrer`. 새 외부 주소를 쓰면 CSP에 추가해야 함.
 - **SRI**: three.min.js는 jsDelivr `three@0.128.0/build/three.min.js` + integrity(실패하면 바로 다음 인라인 스크립트가 cdnjs로 대체). 동적 스크립트(supabase-js, GLTFLoader, DRACOLoader)는 `loadScript()`가 `SRI` 표의 해시로 받고 실패하면 unpkg로 한 번 더. 해시는 같은 버전 npm 파일로 계산(jsDelivr npm은 바이트 그대로). 버전 바꾸면 해시도 다시 계산.

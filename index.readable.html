@@ -135,6 +135,10 @@ body[data-swap="1"] #start .pv{flex-direction:row-reverse}
 #start .tabs button[aria-selected=true]{background:#252b3a;color:#fff}
 #start .keys{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:9px}
 #start .keys[hidden]{display:none}
+#start .kbhint{margin:0 0 8px;font-size:12.5px;color:#f2c230;font-weight:700}#start .kbhint[hidden],#start .kbreset[hidden]{display:none}
+#start button.kb{display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:30px;padding:0 8px;box-sizing:border-box;border:1px solid #4a5468;border-bottom-width:3px;border-radius:6px;background:#1a1f2b;color:#eef;font:700 13px/1 system-ui,sans-serif;cursor:pointer}
+#start button.kb:hover{border-color:#f2c230;color:#f2c230}#start button.kb.add{opacity:.45;border-style:dashed}#start button.kb.wait{background:#f2c230;color:#111;border-color:#f2c230;animation:editPulse 1s infinite}
+#start .kbreset{margin-top:10px;padding:7px 12px;background:#141926;border:1px solid #3a4250;border-radius:8px;color:#aeb7c6;font-size:12.5px;cursor:pointer}#start .kbreset:hover{color:#f2c230;border-color:#f2c230}
 #start .keys li{display:flex;align-items:center;gap:14px}
 #start .kk{display:flex;gap:4px;min-width:136px;flex:none}
 #start kbd{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:28px;padding:0 7px;box-sizing:border-box;border:1px solid #3a4250;border-bottom-width:3px;border-radius:6px;background:#1a1f2b;color:#eef;font:600 13px/1 system-ui,sans-serif}
@@ -188,8 +192,12 @@ body[data-pad=square]{--bw:76px;--bh:76px}
 .pad button[data-k=nitro],#ced .eb[data-k=nitro]{border-color:#3aa0ff;color:#9ec9ff;background:#0e1c33}
 .pad button.burn{background:#7cc4ff;color:#06203d;border-color:#fff;opacity:1}
 .pad button.spent{opacity:calc(var(--po,.6)*.45)}
-#start .edit{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:10px;padding:10px;background:#141926;border:1.5px dashed #59627a;border-radius:10px;color:#eef;font-size:14px;cursor:pointer}
-#start .edit:hover{border-color:#f2c230;color:#f2c230}
+#start .edit{display:flex;align-items:center;gap:12px;width:100%;margin-top:12px;padding:12px 14px;background:linear-gradient(135deg,#ffd75a,#f2a91c);border:0;border-radius:12px;color:#1a1300;cursor:pointer;text-align:left;box-shadow:0 0 0 0 rgba(242,194,48,.7);animation:editPulse 2s infinite}
+#start .edit .ei{font-size:26px;line-height:1}#start .edit .et{display:flex;flex-direction:column;gap:2px;flex:1}#start .edit .et b{font-size:15px;font-weight:900}#start .edit .et small{font-size:11.5px;font-weight:600;opacity:.8}#start .edit .ea{font-size:26px;font-weight:900}
+@media (orientation:landscape) and (max-height:500px){#start .edit{padding:8px 10px;gap:8px}#start .edit .ei{font-size:20px}#start .edit .et b{font-size:12.5px}#start .edit .et small{display:none}#start .edit .ea{font-size:18px}}
+@media (max-width:420px){#start .edit .et small{display:none}}
+@keyframes editPulse{0%{box-shadow:0 0 0 0 rgba(242,194,48,.65)}70%{box-shadow:0 0 0 12px rgba(242,194,48,0)}100%{box-shadow:0 0 0 0 rgba(242,194,48,0)}}
+#start .edit:hover{filter:brightness(1.08);transform:translateY(-1px)}
 #start .edit:focus-visible{outline:2px solid #fff;outline-offset:2px}
 :focus-visible{outline:2px solid #f2c230}
 /* ===== 모드 선택 / 이름 입력 ===== */
@@ -582,7 +590,7 @@ body.bike #nit.burn{border-color:#7cc4ff}
         <button role="radio" aria-checked="false" data-shape="square"><span class="pv"><i><b></b><b></b></i><i><b></b><b></b><b></b></i></span><span>정사각형</span></button>
       </div>
       <button class="sw" id="swap" role="switch" aria-checked="false"><i></i><span>좌우 위치 바꾸기</span></button>
-      <button class="edit" id="editBtn"><span aria-hidden="true">✥</span>버튼 위치·크기 직접 조절</button>
+      <button class="edit" id="editBtn"><span class="ei" aria-hidden="true">🎮</span><span class="et"><b>터치 버튼 옮기기 · 크기 바꾸기</b><small>폰·태블릿 버튼을 내 손에 맞게! 눌러서 바꿔요</small></span><span class="ea" aria-hidden="true">›</span></button>
     </div>
     <div>
       <h2>조작법</h2>
@@ -590,15 +598,9 @@ body.bike #nit.burn{border-color:#7cc4ff}
         <button role="tab" id="tPc" aria-selected="true">컴퓨터</button>
         <button role="tab" id="tMo" aria-selected="false">모바일</button>
       </div>
-      <ul class="keys" id="gPc">
-        <li><span class="kk"><kbd>↑</kbd><kbd>W</kbd></span><em>가속</em></li>
-        <li><span class="kk"><kbd>↓</kbd><kbd>S</kbd></span><em>브레이크</em></li>
-        <li><span class="kk"><kbd>←</kbd><kbd>→</kbd><kbd>A</kbd><kbd>D</kbd></span><em>핸들 좌우</em></li>
-        <li><span class="kk"><kbd>Space</kbd></span><em data-car="핸드브레이크 (드리프트)" data-bike="뒷브레이크 (드리프트 · 니트로 충전)">핸드브레이크 (드리프트)</em></li>
-        <li><span class="kk"><kbd>N</kbd><kbd>Shift</kbd></span><em data-car="니트로 (한 바퀴에 한 번)" data-bike="니트로 (게이지가 꽉 차면)">니트로 (한 바퀴에 한 번)</em></li>
-        <li><span class="kk"><kbd>R</kbd></span><em>처음부터 다시</em></li>
-        <li><span class="kk"><kbd>L</kbd></span><em>순위표 열기</em></li>
-      </ul>
+      <p class="kbhint" id="kbHint">✏️ 키를 눌러서 내가 원하는 키보드 키로 바꿀 수 있어요</p>
+      <ul class="keys" id="gPc"></ul>
+      <button class="kbreset" id="kbReset" type="button">↺ 키 설정 처음대로</button>
       <ul class="keys" id="gMo" hidden>
         <li><span class="kk"><kbd>◀</kbd><kbd>▶</kbd></span><em>핸들 좌우</em></li>
         <li><span class="kk"><kbd>가속</kbd></span><em>누르는 동안 가속</em></li>
@@ -2935,14 +2937,34 @@ beam.rotation.x=-Math.PI/2;beam.rotation.order='YXZ';S.add(beam);
 
 /* ---------- 입력 ---------- */
 const keys={left:0,right:0,gas:0,brake:0,hand:0};
-const map={ArrowLeft:'left',a:'left',ArrowRight:'right',d:'right',ArrowUp:'gas',w:'gas',ArrowDown:'brake',s:'brake',' ':'hand'};
-const kn=e=>map[e.key.length>1?e.key:e.key.toLowerCase()];
+/* 키보드 키 설정 (컴퓨터): 동작마다 키 2개까지, 홈 조작법에서 눌러서 바꿔요 (localStorage drift-keys) */
+const KB_DEF={gas:['ArrowUp','w'],brake:['ArrowDown','s'],left:['ArrowLeft','a'],right:['ArrowRight','d'],hand:[' '],nitro:['n','Shift'],reset:['r'],board:['l']};
+let KB=JSON.parse(JSON.stringify(KB_DEF));try{const o=JSON.parse(localStorage.getItem('drift-keys')||'null');if(o)for(const k in KB_DEF)if(Array.isArray(o[k]))KB[k]=o[k].filter(x=>typeof x==='string').slice(0,2)}catch(e){}
+let map={};const kbBuild=()=>{map={};for(const a in KB)for(const k of KB[a])map[k]=a};kbBuild();
+const kNorm=k=>k.length>1?k:k.toLowerCase();
+const kn=e=>{const a=map[kNorm(e.key)];return a==='gas'||a==='brake'||a==='left'||a==='right'||a==='hand'?a:null};
+const kLabel=k=>({' ':'Space',ArrowUp:'↑',ArrowDown:'↓',ArrowLeft:'←',ArrowRight:'→',Control:'Ctrl',Escape:'Esc'})[k]||(k.length===1?k.toUpperCase():k);
 addEventListener('keydown',e=>{
   if(e.target.tagName==='INPUT'||!started)return;
   const k=kn(e);if(k){keys[k]=1;e.preventDefault()}
-  const l=e.key.toLowerCase();if((l==='n'||e.key==='Shift')&&!e.repeat){fireNitro();e.preventDefault()}if(l==='r'&&(MODE==='lap'||MODE==='practice'||MODE==='bike'))reset();if(l==='l'&&MODE!=='duel')$('lbp').classList.toggle('on');
+  const act=map[kNorm(e.key)];if(act==='nitro'&&!e.repeat){fireNitro();e.preventDefault()}if(act==='reset'&&(MODE==='lap'||MODE==='practice'||MODE==='bike'))reset();if(act==='board'&&MODE!=='duel')$('lbp').classList.toggle('on');
 });
 addEventListener('keyup',e=>{const k=kn(e);if(k)keys[k]=0});
+/* 홈 조작법(컴퓨터) 목록: 키 칸을 누르고 → 원하는 키를 누르면 바뀌어요. 다른 동작에 쓰던 키면 거기서 빠져요. Esc는 취소 */
+const KB_ROWS=[['gas','가속'],['brake','브레이크'],['left','핸들 왼쪽'],['right','핸들 오른쪽'],['hand','핸드브레이크 (드리프트)','뒷브레이크 (드리프트 · 니트로 충전)'],['nitro','니트로 (한 바퀴에 한 번)','니트로 (게이지가 꽉 차면)'],['reset','처음부터 다시'],['board','순위표 열기']];
+let KBW=null;
+function kbUI(){const ul=$('gPc');ul.textContent='';
+  KB_ROWS.forEach(([a,t,tb])=>{const li=document.createElement('li'),kk=document.createElement('span');kk.className='kk';
+    for(let s2=0;s2<2;s2++){const k=KB[a][s2],b=document.createElement('button');b.type='button';b.className='kb'+(k==null?' add':'')+(KBW&&KBW.a===a&&KBW.s===s2?' wait':'');
+      b.textContent=KBW&&KBW.a===a&&KBW.s===s2?'키 누르기…':k==null?'+':kLabel(k);b.title='눌러서 키 바꾸기';b.onclick=ev=>{ev.stopPropagation();KBW={a,s:s2};kbUI()};kk.append(b)}
+    const em=document.createElement('em');em.textContent=VEH==='bike'&&tb?tb:t;if(tb){em.dataset.car=t;em.dataset.bike=tb}li.append(kk,em);ul.append(li)})}
+addEventListener('keydown',e=>{if(!KBW)return;e.preventDefault();e.stopImmediatePropagation();
+  if(e.key==='Escape'){KBW=null;kbUI();return}
+  const k=kNorm(e.key);for(const a in KB)KB[a]=KB[a].filter(x=>x!==k);const L=KB[KBW.a];L[KBW.s]=k;KB[KBW.a]=L.filter(x=>x!=null);
+  KBW=null;kbBuild();try{localStorage.setItem('drift-keys',JSON.stringify(KB))}catch(err){}kbUI();toast('⌨️ '+kLabel(k)+' 키로 바꿨어요')},true);
+addEventListener('click',()=>{if(KBW){KBW=null;kbUI()}});
+$('kbReset').onclick=()=>{KB=JSON.parse(JSON.stringify(KB_DEF));kbBuild();try{localStorage.removeItem('drift-keys')}catch(e){}KBW=null;kbUI();toast('키 설정을 처음대로 돌렸어요')};
+kbUI();
 document.querySelectorAll('.pad button').forEach(b=>{
   const k=b.dataset.k,set=v=>e=>{e.preventDefault();keys[k]=v;b.classList.toggle('on',!!v);if(k==='nitro'&&v)fireNitro()};
   b.addEventListener('pointerdown',set(1));
@@ -3409,7 +3431,7 @@ addEventListener('keydown',e=>{
 });
 function showGuide(mo){
   $('tPc').setAttribute('aria-selected',!mo);$('tMo').setAttribute('aria-selected',mo);
-  $('gPc').hidden=mo;$('gMo').hidden=!mo;
+  $('gPc').hidden=mo;$('gMo').hidden=!mo;$('kbHint').hidden=mo;$('kbReset').hidden=mo;
 }
 $('tPc').onclick=()=>showGuide(false);$('tMo').onclick=()=>showGuide(true);
 showGuide(matchMedia('(pointer:coarse)').matches);
