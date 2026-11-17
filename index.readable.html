@@ -1723,7 +1723,8 @@ function coastFrame(dt){if(CO_SEA){CO_SEA.offset.x+=dt*.004;CO_SEA.offset.y+=dt*
    → 산악 터널(주황 불빛) → 헤어핀 → 짙은 안개 구간 → 가드레일 없는 절벽(떨어지면 20m 뒤에서 다시)
    → 벚꽃 내리막(떨어진 벚꽃 가지 = 밟으면 흔들림) → 협곡 위 좁은 나무 다리(반폭 5.8m) → 결승.
    가운데 골짜기엔 오층탑·폭포. 길 폭은 구간마다 달라서 ROADW/WALLA 배열(JP 준비 함수)로 그려요. */
-const JP_W=[[0,0,0],[-78,-208,70],[39,-390,60],[-52,-559,60],[-13,-754,28],[234,-832,55],[429,-728,45],[624,-910,50],[845,-806,45],[1040,-988,55],[1274,-910,70],[1534,-1001,24],[1612,-780,40],[1456,-624,22],[1651,-442,40],[1521,-260,30],[1690,-78,45],[1560,117,28],[1326,52,50],[1144,169,60],[650,156,0],[260,130,80],[-26,182,40]];
+const JP_W0=[[0,0,0],[-78,-208,70],[39,-390,60],[-52,-559,60],[-13,-754,28],[234,-832,55],[429,-728,45],[624,-910,50],[845,-806,45],[1040,-988,55],[1274,-910,70],[1534,-1001,24],[1612,-780,40],[1456,-624,22],[1651,-442,40],[1521,-260,30],[1690,-78,45],[1560,117,28],[1326,52,50],[1144,169,60],[650,156,0],[260,130,80],[-26,182,40]];   /* 처음 만든 길(다리 일직선). 구간 비율(JP_TUN 등)은 이 길 기준 → jpR로 지금 길 비율로 바꿔요 */
+const JP_W=[[0,0,0],[-78,-208,70],[39,-390,60],[-52,-559,60],[-13,-754,28],[234,-832,55],[429,-728,45],[624,-910,50],[845,-806,45],[1040,-988,55],[1274,-910,70],[1534,-1001,24],[1612,-780,40],[1456,-624,22],[1651,-442,40],[1521,-260,30],[1690,-78,45],[1560,117,28],[1326,52,50],[1144,169,60],[975,215,45],[815,120,42],[650,205,45],[480,115,42],[260,130,80],[-26,182,40]];   /* 2026-11-17: 다리 구간을 구불구불하게(꼭짓점 4개) */
 const JP_ELEV=[[0,40],[.04,44],[.14,66],[.19,78],[.36,90],[.40,96],[.45,100],[.49,94],[.57,80],[.61,72],[.67,62],[.73,55],[.775,50],[.915,47],[.96,43],[1,40]];
 const JP_TUN=[.403,.441],JP_BRIDGE=[.79,.905],JP_FOG=[.495,.6],JP_DROP=[.612,.668],JP_CONE=[.088,.104],JP_SHRINE=[.19,.36];
 const JP_TORII=[.207,.233,.262,.29,.318,.345];
@@ -1732,14 +1733,22 @@ const JP_PUDDLE=[[.272,2.6,3.6],[.302,-3,3.8],[.53,0,4.6],[.575,3.2,3.6],[.722,-
 const JP_PAGODA=[820,-430];
 const JP_ROCKS=[[.035,3.5,1.2],[.068,-4.5,1],[.118,1.5,1.3],[.152,-3,1.1],[.178,4.6,.9],[.372,-2.5,1.3],[.452,3.8,1.2],[.474,-4,1],[.512,1.8,1.4],[.628,-3.2,1.1],[.652,3,1.2],[.692,-1.5,1.3],[.762,4,1],[.932,-3.8,1.2],[.962,2.5,1.1]];  /* 도로 위 돌 [비율, 옆, 크기] */
 let ROADW=null,KERBW=null,SHW=null,WALLA=null,JPS={};
-const jpI=f=>Math.round(f*N)%N,jpIn=(i,R)=>{const f=i/N;return f>=R[0]&&f<=R[1]};
+/* 옛 길 비율 ↔ 지금 길 비율: 두 길에 공통인 꼭짓점 위치로 구간별 직선 보간 */
+let JPA=null;
+function jpAnchors(){if(JPA&&JPA.tp===TP)return JPA;
+  const P0=closedSpline(filletPts(JP_W0,4)),near=(P,q)=>{let bd=1e18,bi=0;for(let i=0;i<P.length;i++){const d=(P[i][0]-q[0])**2+(P[i][1]-q[1])**2;if(d<bd){bd=d;bi=i}}return bi/P.length};
+  const o=[0],n=[0];JP_W0.forEach((w,k)=>{if(!k)return;const j=JP_W.findIndex(v=>v[0]===w[0]&&v[1]===w[1]);if(j<0)return;o.push(near(P0,w));n.push(near(TP,w))});o.push(1);n.push(1);
+  return JPA={tp:TP,o,n}}
+const jpMap=(f,A,B)=>{let k=0;while(k<A.length-2&&A[k+1]<=f)k++;return B[k]+(B[k+1]-B[k])*(f-A[k])/((A[k+1]-A[k])||1)};
+const jpR=f=>{const A=jpAnchors();return jpMap(f,A.o,A.n)},jpRi=f=>{const A=jpAnchors();return jpMap(f,A.n,A.o)};
+const jpI=f=>Math.round(jpR(f)*N)%N,jpIn=(i,R)=>{const f=i/N;return f>=jpR(R[0])&&f<=jpR(R[1])};
 function jpTY(){
   const E=JP_ELEV,a=[];
-  for(let i=0;i<N;i++){const f=i/N;let k=0;while(k<E.length-2&&E[k+1][0]<=f)k++;const [f0,h0]=E[k],[f1,h1]=E[k+1],u=(f-f0)/((f1-f0)||1);a.push(h0+(h1-h0)*(.5-.5*Math.cos(Math.PI*clamp(u,0,1))))}
+  for(let i=0;i<N;i++){const f=jpRi(i/N);let k=0;while(k<E.length-2&&E[k+1][0]<=f)k++;const [f0,h0]=E[k],[f1,h1]=E[k+1],u=(f-f0)/((f1-f0)||1);a.push(h0+(h1-h0)*(.5-.5*Math.cos(Math.PI*clamp(u,0,1))))}
   return a;
 }
 /* 다리(좁은 구간) 섞기 0~1, 끝 25m는 부드럽게 */
-const jpBr=i=>{const s=i*SP,a=JP_BRIDGE[0]*N*SP,b=JP_BRIDGE[1]*N*SP;return sm01((s-a+25)/25)*sm01((b-s+25)/25)};
+const jpBr=i=>{const s=i*SP,a=jpR(JP_BRIDGE[0])*N*SP,b=jpR(JP_BRIDGE[1])*N*SP;return sm01((s-a+25)/25)*sm01((b-s+25)/25)};
 function jpPrep(){
   ROADW=new Float32Array(N);KERBW=new Float32Array(N);SHW=new Float32Array(N);WALLA=new Float32Array(N);DROPS=new Int8Array(N);
   for(let i=0;i<N;i++){const b=jpBr(i);ROADW[i]=HALF-3.2*b;KERBW[i]=1.4*(1-b);WALLA[i]=(HALF+2.6)*(1-b)+(ROADW[i]+.3)*b;SHW[i]=(WALLA[i]+1.2)*(1-b)+ROADW[i]*b}
@@ -1918,6 +1927,11 @@ function buildJP(){
     const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(p,3));
     const pt=tkTex(32,32,(x,w,h)=>{x.fillStyle='#ffc4dc';x.beginPath();x.ellipse(16,16,13,8,.5,0,7);x.fill();x.fillStyle='#ff9cc3';x.beginPath();x.ellipse(16,16,5,3,.5,0,7);x.fill()});
     JP_PET=new THREE.Points(g,new THREE.PointsMaterial({size:.38,map:pt,transparent:true,alphaTest:.3,depthWrite:false}));JP_PET.frustumCulled=false;MG.add(JP_PET)}
+  /* 협곡 안개: 다리 아래·옆을 떠다니는 흐릿한 안개 덩어리 */
+  {const i0=jpI(JP_BRIDGE[0]),i1=jpI(JP_BRIDGE[1]),p=[];for(let k=0;k<160;k++){const i=i0+Math.floor(rnd()*(i1-i0)),[x,z]=tkAt(i,(rnd()-.5)*120);p.push(x,TY[i]-22+rnd()*26,z)}
+    const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(p,3));
+    const mt=tkTex(64,64,(x,w,h)=>{const gr=x.createRadialGradient(32,32,2,32,32,32);gr.addColorStop(0,'rgba(215,205,235,1)');gr.addColorStop(1,'rgba(215,205,235,0)');x.fillStyle=gr;x.fillRect(0,0,w,h)});
+    JPS.mist=new THREE.Points(g,new THREE.PointsMaterial({size:34,map:mt,transparent:true,opacity:.2,depthWrite:false}));MG.add(JPS.mist)}
   /* 공사 깜빡이 */
   {const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(JPS.blink.flat(),3));JPS.blinkM=new THREE.PointsMaterial({size:2.4,map:glowTex(255,120,30),transparent:true,blending:THREE.AdditiveBlending,depthWrite:false});MG.add(new THREE.Points(g,JPS.blinkM))}
   tkFlush();
@@ -1933,8 +1947,9 @@ function jpFrame(dt){
   if(JPS.water){JPS.water.offset.y-=dt*.35}
   if(JPS.blinkM)JPS.blinkM.opacity=(Math.sin(t*7)>0)?1:.15;
   /* 안개 구간 */
-  {const s=ci*SP,a=JP_FOG[0]*N*SP,b=JP_FOG[1]*N*SP,k=sm01((s-a+70)/70)*sm01((b-s+70)/70),F=JPS.fog0;
-    if(S.fog){S.fog.near=F[1]+(6-F[1])*k;S.fog.far=F[2]+(75-F[2])*k;S.fog.color.setRGB(.10+.28*k,.08+.26*k,.19+.30*k);S.background.copy(S.fog.color)}skyMat.opacity=1-k}
+  {const s=ci*SP,zk=(R,r)=>{const a=jpR(R[0])*N*SP,b=jpR(R[1])*N*SP;return sm01((s-a+r)/r)*sm01((b-s+r)/r)},k1=zk(JP_FOG,70),k2=zk(JP_BRIDGE,60)*.8,k=Math.max(k1,k2),F=JPS.fog0,far=k1>=k2?75:110;
+    if(JPS.mist)JPS.mist.material.opacity=.32*k2/.8;
+    if(S.fog){S.fog.near=F[1]+(6-F[1])*k;S.fog.far=F[2]+(far-F[2])*k;S.fog.color.setRGB(.10+.28*k,.08+.26*k,.19+.30*k);S.background.copy(S.fog.color)}skyMat.opacity=1-k}
   if(RP||FALL||DEAD)return;
   const v=Math.hypot(c.vx,c.vz);
   /* 물웅덩이: 잠깐 미끄러워요 (꺾이는 힘 ↓) */
