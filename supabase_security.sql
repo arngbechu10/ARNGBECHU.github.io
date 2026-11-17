@@ -25,7 +25,7 @@ alter table scores drop constraint if exists scores_kind_ok;
 alter table scores add constraint scores_kind_ok check (
   (mode = 'lap'  and map in ('seoul','mountain','xmas','tokyo','ny','pyongyang','touge') and stage is null)
   or (mode = 'hard' and map = 'hard' and stage between 1 and 6)
-  or (mode = 'bike' and map in ('coast') and stage is null)
+  or (mode = 'bike' and map in ('coast','jtouge') and stage is null)
 ) not valid;
 
 -- 4) 도배 막기: 같은 이름은 20초에 1번, 전체는 1분에 40번까지
