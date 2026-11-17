@@ -434,7 +434,10 @@ body[data-mode=practice] #tl,body[data-mode=practice] #bt,body[data-mode=practic
 /* 운전 중 나가기 버튼 */
 #back{position:fixed;right:14px;top:72px;z-index:6;padding:6px 12px;font-size:13px;cursor:pointer}
 #back:hover{border-color:#f2c230;color:#f2c230}
-@media (orientation:landscape) and (max-height:500px){#back{top:44px;right:max(8px,env(safe-area-inset-right));padding:4px 9px;font-size:11px}#bt{top:78px!important}#lbp{top:112px!important;max-height:calc(100vh - 122px)!important}}
+#again{position:fixed;right:112px;top:72px;z-index:6;padding:6px 12px;font-size:13px;cursor:pointer;display:none}
+#again:hover{border-color:#f2c230;color:#f2c230}
+body[data-mode=lap] #again,body[data-mode=bike] #again{display:block}
+@media (orientation:landscape) and (max-height:500px){#back{top:44px;right:max(8px,env(safe-area-inset-right));padding:4px 9px;font-size:11px}#again{top:44px;right:calc(max(8px,env(safe-area-inset-right)) + 72px);padding:4px 9px;font-size:11px}#bt{top:78px!important}#lbp{top:112px!important;max-height:calc(100vh - 122px)!important}}
 /* 순위표 맵 탭 */
 #mlbBtn{display:inline-flex;align-items:center;gap:8px;padding:12px 26px;border-radius:99px;border:1.5px solid #f2c230;background:#14171ce6;color:#f2c230;font:700 clamp(14px,2.2vh,17px)/1 inherit;letter-spacing:.04em;cursor:pointer;box-shadow:0 0 18px #f2c23033}
 #mlbBtn:hover{background:#f2c230;color:#111}
@@ -524,6 +527,7 @@ body.bike #nit.burn{border-color:#7cc4ff}
 <div class="hud" id="tr"><div id="bar"><i id="rpm"></i></div><div id="snd" style="font-size:12px;margin-top:6px;color:#cdd7e6"></div></div>
 <button id="bt">순위표 (L)</button>
 <button id="back" type="button">← 나가기</button>
+<button id="again" type="button">↻ 다시하기</button>
 <aside id="lbp">
   <h2 id="lbTitle">리더보드</h2>
   <div class="lbtabs" id="lbTabs" role="tablist" aria-label="맵별 순위표"></div>
@@ -4123,6 +4127,8 @@ function goBack(){
   reset();$('start').style.display='grid';
 }
 $('back').onclick=e=>{e.preventDefault();goBack()};
+/* 다시하기: 개인 랩타임(자동차·오토바이)에서 출발선으로 돌아가 처음부터 (R 키와 같아요) */
+$('again').onclick=e=>{e.preventDefault();e.currentTarget.blur();if(started&&!RP&&(MODE==='lap'||MODE==='bike')){for(const k in keys)keys[k]=0;document.querySelectorAll('.pad button').forEach(b=>b.classList.remove('on'));reset()}};
 addEventListener('keydown',e=>{if(e.key==='Escape'&&started&&!$('lbp').classList.contains('on')&&!$('fail').classList.contains('on')&&!$('dres').classList.contains('on')){e.preventDefault();goBack()}});
 /* ---------- 시작: 모드 선택 화면부터 ---------- */
 $('start').style.display='none';
