@@ -434,7 +434,10 @@ body[data-mode=practice] #tl,body[data-mode=practice] #bt,body[data-mode=practic
 /* 운전 중 나가기 버튼 */
 #back{position:fixed;right:14px;top:72px;z-index:6;padding:6px 12px;font-size:13px;cursor:pointer}
 #back:hover{border-color:#f2c230;color:#f2c230}
-@media (orientation:landscape) and (max-height:500px){#back{top:44px;right:max(8px,env(safe-area-inset-right));padding:4px 9px;font-size:11px}#bt{top:78px!important}#lbp{top:112px!important;max-height:calc(100vh - 122px)!important}}
+#again{position:fixed;right:112px;top:72px;z-index:6;padding:6px 12px;font-size:13px;cursor:pointer;display:none}
+#again:hover{border-color:#f2c230;color:#f2c230}
+body[data-mode=lap] #again,body[data-mode=bike] #again{display:block}
+@media (orientation:landscape) and (max-height:500px){#back{top:44px;right:max(8px,env(safe-area-inset-right));padding:4px 9px;font-size:11px}#again{top:44px;right:calc(max(8px,env(safe-area-inset-right)) + 72px);padding:4px 9px;font-size:11px}#bt{top:78px!important}#lbp{top:112px!important;max-height:calc(100vh - 122px)!important}}
 /* 순위표 맵 탭 */
 #mlbBtn{display:inline-flex;align-items:center;gap:8px;padding:12px 26px;border-radius:99px;border:1.5px solid #f2c230;background:#14171ce6;color:#f2c230;font:700 clamp(14px,2.2vh,17px)/1 inherit;letter-spacing:.04em;cursor:pointer;box-shadow:0 0 18px #f2c23033}
 #mlbBtn:hover{background:#f2c230;color:#111}
@@ -524,6 +527,7 @@ body.bike #nit.burn{border-color:#7cc4ff}
 <div class="hud" id="tr"><div id="bar"><i id="rpm"></i></div><div id="snd" style="font-size:12px;margin-top:6px;color:#cdd7e6"></div></div>
 <button id="bt">순위표 (L)</button>
 <button id="back" type="button">← 나가기</button>
+<button id="again" type="button">↻ 다시하기</button>
 <aside id="lbp">
   <h2 id="lbTitle">리더보드</h2>
   <div class="lbtabs" id="lbTabs" role="tablist" aria-label="맵별 순위표"></div>
@@ -2531,7 +2535,7 @@ function step(dt){
   if(prog>=LAPEND&&!AIR&&MODE!=='practice'){
     prog-=LAPEND;if(VEH!=='bike')NIT.ready=true;
     if(lapStart!==null){
-      const t=Math.round(performance.now()-lapStart);if(MODE==='lap')recLap(t);lapStart=performance.now();
+      const t=Math.round(performance.now()-lapStart);if(MODE==='lap'||MODE==='bike')recLap(t);lapStart=performance.now();
       $('last').textContent=fmt(t);
       if(MODE==='hard'){hardLapDone(t)}else if(MODE==='duel'){duelLap(t)}else{const nb=bestLap===null||t<bestLap;if(nb){bestLap=t;$('best').textContent=fmt(t);$('send').disabled=false;
         $('msg').textContent='새 기록이에요!';$('lbp').classList.add('on');autoSend()}if(OPENP)openFinish(t,nb)}
@@ -2698,7 +2702,7 @@ function loop(now){
   requestAnimationFrame(loop);
   const dt=Math.min((now-t0)/1000,.05);t0=now;
   if(started&&!HOLD&&!DEAD)step(dt);
-  if(RP)rpTick(dt);else if(MODE==='lap'&&started&&!HOLD&&lapStart!==null)recTick();
+  if(RP)rpTick(dt);else if((MODE==='lap'||MODE==='bike')&&started&&!HOLD&&lapStart!==null)recTick();
   drive(dt);
   if(MODE==='duel'){lcTick(dt);duelFrame(dt,now)}
   if(MODE==='practice'&&started)pracFrame(dt);
@@ -2993,7 +2997,7 @@ async function doSend(){
   $('send').disabled=true;$('msg').textContent='올리는 중...';
   try{
     const sp={name,lap_ms:ms,map:mp,mode:MODE==='bike'?'bike':'lap'},res=await sendScore(sp);
-    if(res==='ok'){$('msg').textContent=fmt(ms)+' 기록을 올렸어요.';loadBoard();if(MODE==='lap')replayUpload(sp.name,ms,mp)}
+    if(res==='ok'){$('msg').textContent=fmt(ms)+' 기록을 올렸어요.';loadBoard();if(MODE==='lap'||MODE==='bike')replayUpload(sp.name,ms,mp,sp.mode)}
     else $('msg').textContent='새 기록이에요! (이 맵 순위표는 아직 준비 중이에요)';
   }catch(e){$('msg').textContent='올리지 못했어요. 잠시 후 다시 눌러주세요.';$('send').disabled=false}
 }
@@ -3012,16 +3016,16 @@ function recTick(){
   while(el>=REC.next){REC.a.push(Math.round(c.x*10),Math.round(c.z*10),Math.round(Math.atan2(Math.sin(c.h),Math.cos(c.h))*10000),Math.round(v*100),Math.round(clamp(steer,-1,1)*1000),f);REC.next+=RP_DT}
 }
 function recLap(t){
-  if(REC.ls===lapStart&&REC.a.length>=12){recTick();LASTREP={map:MAPID,ms:t,car:CARID,a:REC.a.slice()}}
+  if(REC.ls===lapStart&&REC.a.length>=12){recTick();LASTREP={map:MAPID,ms:t,car:VEH==='bike'?BIKEID:CARID,a:REC.a.slice()}}
   REC={ls:null,a:[],next:0};
 }
 const rpEnc=a=>{const u=new Uint8Array(new Int16Array(a).buffer);let s='';for(let i=0;i<u.length;i+=8192)s+=String.fromCharCode.apply(null,u.subarray(i,i+8192));return btoa(s)};
 const rpDec=b=>{const s=atob(b),u=new Uint8Array(s.length);for(let i=0;i<s.length;i++)u[i]=s.charCodeAt(i);return new Int16Array(u.buffer)};
 /* 이 기록이 맵 1등일 때만 올려요 (서버 부담 줄이기) */
-async function replayUpload(name,ms,mp){
+async function replayUpload(name,ms,mp,md){
   const R0=LASTREP;if(!R0||R0.map!==mp||R0.ms!==ms||RICH===false)return;
   try{
-    const r=await fetch(SB+'?select=lap_ms&mode=eq.lap&map=eq.'+mp+'&order=lap_ms.asc&limit=1',{headers:HDR});if(!r.ok)return;
+    const r=await fetch(SB+'?select=lap_ms&mode=eq.'+(md==='bike'?'bike':'lap')+'&map=eq.'+mp+'&order=lap_ms.asc&limit=1',{headers:HDR});if(!r.ok)return;
     const top=await r.json();if(!top.length||top[0].lap_ms<ms)return;
     const q=await fetch(RPC,{method:'POST',headers:HDR,body:JSON.stringify({p_map:mp,p_name:name,p_lap_ms:ms,p_car:R0.car,p_data:RP_DT+'|'+rpEnc(R0.a)})});
     if(q.ok&&(await q.json())===true)$('msg').textContent=fmt(ms)+' · 맵 1등! 리플레이도 저장했어요 🎬';
@@ -3031,7 +3035,7 @@ async function replayUpload(name,ms,mp){
 let MRP={m:'seoul',n:0,row:null};
 async function mrpLoad(){
   const n=++MRP.n,info=$('mrpInfo'),row=$('mrpMaps');MRP.row=null;$('mrpPlay').disabled=true;
-  if(!row.children.length)LB_MAPS.forEach(id=>{const b=document.createElement('button');b.type='button';b.setAttribute('role','tab');b.dataset.map=id;b.textContent=MAPLABEL[id];b.onclick=()=>{MRP.m=id;mrpLoad()};row.append(b)});
+  if(!row.children.length)[...LB_MAPS,'coast'].forEach(id=>{const b=document.createElement('button');b.type='button';b.setAttribute('role','tab');b.dataset.map=id;b.textContent=id==='coast'?'🏍️ Coast':MAPLABEL[id];b.onclick=()=>{MRP.m=id;mrpLoad()};row.append(b)});
   [...row.children].forEach(b=>{const on=b.dataset.map===MRP.m;b.classList.toggle('on',on);b.setAttribute('aria-selected',on)});
   const say=(t)=>{info.textContent='';const p=document.createElement('span');p.textContent=t;info.append(p)};say('불러오는 중...');
   try{
@@ -3041,7 +3045,7 @@ async function mrpLoad(){
     if(!rows.length)return say('아직 리플레이가 없어요. 이 맵에서 1등을 하면 주행이 저장돼요!');
     const x=rows[0];MRP.row=x;info.textContent='';
     const mk=(c,t)=>{const e=document.createElement('span');e.className=c;e.textContent=t;info.append(e)};
-    mk('','👑 '+MAPLABEL[MRP.m]+' 1등');mk('who',x.name);mk('tm',fmt(x.lap_ms));mk('car',(CARS[x.car]?CARS[x.car].name:'')+' 로 달렸어요');
+    mk('','👑 '+MAPLABEL[MRP.m]+' 1등');mk('who',x.name);mk('tm',fmt(x.lap_ms));mk('car',(CARS[x.car]?CARS[x.car].name:BIKES[x.car]?BIKES[x.car].name:'')+' 로 달렸어요');
     $('mrpPlay').disabled=false;
   }catch(e){if(n===MRP.n)say('불러오지 못했어요. 새로고침해 주세요.')}
 }
@@ -3061,10 +3065,10 @@ $('mrpPlay').onclick=async()=>{
 };
 let rpPrev=null;
 function rpStart(m,x,dt,a){
-  rpPrev={mode:MODE,car:CARID};
+  rpPrev={mode:MODE,car:CARID,veh:VEH};
   $('mrp').hidden=true;$('modes').classList.remove('on');
   MODE='replay';document.body.dataset.mode='replay';
-  if(CARS[x.car])setCar(x.car);setMap(m);
+  if(BIKES[x.car]){BIKEID=x.car;applyVeh('bike')}else{applyVeh('car');if(CARS[x.car])setCar(x.car)}setMap(m);
   started=true;HOLD=true;DEAD=false;reset();stopAudio();initAudio();
   RP={a,dt:dt/1000,n:Math.floor(a.length/6),t:0,ms:x.lap_ms,done:false};
   $('rphT').textContent=x.name+' · '+fmt(x.lap_ms)+' · '+MAPLABEL[m];$('rph').classList.add('on');
@@ -3079,15 +3083,17 @@ function rpTick(dt){
   let x=(a[A]+(a[B]-a[A])*f)/10,z=(a[A+1]+(a[B+1]-a[A+1])*f)/10;
   if(Math.hypot(a[B]-a[A],a[B+1]-a[A+1])>300){x=a[B]/10;z=a[B+1]/10}   /* 추락 후 다시 출발처럼 순간 이동 */
   const mx=x-c.x,mz=z-c.z,mv=Math.hypot(mx,mz),dir=mv>.01?Math.atan2(mz,mx):h;
+  /* 오토바이: 방향이 바뀌는 빠르기로 기울기(LEAN)를 다시 계산해 화면도 실제처럼 기울어요 */
+  if(VEH==='bike'&&dt>0){let dd=dir-(P.pd??dir);dd=Math.atan2(Math.sin(dd),Math.cos(dd));P.pd=dir;const lt=v>3?clamp(Math.atan(v*(dd/dt)/9.8/1.35),-.98,.98):0;LEAN+=(lt-LEAN)*Math.min(1,dt*6)}
   c.x=x;c.z=z;c.h=h;c.vx=Math.cos(dir)*v;c.vz=Math.sin(dir)*v;
   steer=(a[A+4]+(a[B+4]-a[A+4])*f)/1000;
-  keys.brake=fl&1?1:0;keys.gas=fl&2?1:0;keys.hand=fl&4?1:0;NIT.on=!!(fl&8);NIT.t=NIT.on?NIT_T*.5:0;NIT.ready=!NIT.on;
+  keys.brake=fl&1?1:0;keys.gas=fl&2?1:0;keys.hand=fl&4?1:0;NIT.on=!!(fl&8);NIT.t=NIT.on?NIT_T*.5:0;NIT.ready=VEH==='bike'?false:!NIT.on;
   ci=nearest(c.x,c.z,ci,OPENP?40:N/2|0);prog=ci;lapStart=performance.now()-Math.min(P.t*1000,P.ms);
 }
 function rpStop(){
   if(!RP)return;clearTimeout(RP.end);RP=null;$('rph').classList.remove('on');$('stg').classList.remove('on');
   for(const k in keys)keys[k]=0;NIT.on=false;
-  MODE=rpPrev?rpPrev.mode:'lap';if(rpPrev&&CARS[rpPrev.car])setCar(rpPrev.car);
+  MODE=rpPrev?rpPrev.mode:'lap';if(rpPrev){if(CARS[rpPrev.car])CARID=rpPrev.car;applyVeh(rpPrev.mode==='bike'?'bike':rpPrev.veh||'car')}LEAN=0;CROLL=0;
   showModes();
 }
 $('send').onclick=doSend;
@@ -4123,6 +4129,8 @@ function goBack(){
   reset();$('start').style.display='grid';
 }
 $('back').onclick=e=>{e.preventDefault();goBack()};
+/* 다시하기: 개인 랩타임(자동차·오토바이)에서 출발선으로 돌아가 처음부터 (R 키와 같아요) */
+$('again').onclick=e=>{e.preventDefault();e.currentTarget.blur();if(started&&!RP&&(MODE==='lap'||MODE==='bike')){for(const k in keys)keys[k]=0;document.querySelectorAll('.pad button').forEach(b=>b.classList.remove('on'));reset()}};
 addEventListener('keydown',e=>{if(e.key==='Escape'&&started&&!$('lbp').classList.contains('on')&&!$('fail').classList.contains('on')&&!$('dres').classList.contains('on')){e.preventDefault();goBack()}});
 /* ---------- 시작: 모드 선택 화면부터 ---------- */
 $('start').style.display='none';
