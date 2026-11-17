@@ -2433,7 +2433,7 @@ var LEAN=0,NITG=0,DRIFTA=0,DOFF=0,DK=0,DDIR=0,CROLL=0,BRK=0,DHOLD=0;
 function bikeMotion(dt){
   steer+=(((keys.right?1:0)-(keys.left?1:0))-steer)*Math.min(1,dt*7.5);
   let v=Math.hypot(c.vx,c.vz),vh=v>1?Math.atan2(c.vz,c.vx):c.h-DOFF;
-  if(Math.cos(vh-c.h)<0){vh=c.h-DOFF;v*=.3}
+  if(Math.cos(vh-c.h)<0&&v<4){vh=c.h-DOFF;v*=.3}
   const off=Math.abs(side)>HALF+1.2,drift=keys.hand&&v>9;
   /* 드리프트를 누르고 뗄 때 갑자기 바뀌지 않게 DK(0~1)로 부드럽게 섞어요. 미끄러지는 방향(DDIR)은 시작할 때 정하고 끝날 때까지 유지 */
   DK+=((drift?1:0)-DK)*Math.min(1,dt*(drift?6:14));
@@ -2510,7 +2510,7 @@ function step(dt){
     if(vn>0){
       c.vx-=n[0]*sg*vn*1.3;c.vz-=n[1]*sg*vn*1.3;
       const k=Math.max(.5,1-vn*.02);c.vx*=k;c.vz*=k;
-      if(VEH==='bike'){DK=0;DOFF*=.5}else{let dh=TH[ci]-c.h;dh=Math.atan2(Math.sin(dh),Math.cos(dh));c.h+=dh*Math.min(.5,vn*.04)}
+      if(VEH==='bike'){DK=0;DOFF*=.5;const tx=Math.cos(TH[ci]),tz=Math.sin(TH[ci]),vt=c.vx*tx+c.vz*tz,fd=vt>=0||Math.cos(c.h-TH[ci])>.3?1:-1,sp=Math.max(Math.abs(vt),Math.hypot(c.vx,c.vz)*.6,3)*fd;c.vx=tx*sp-n[0]*sg*1.5;c.vz=tz*sp-n[1]*sg*1.5;let dh=Math.atan2(tz*fd,tx*fd)-c.h;dh=Math.atan2(Math.sin(dh),Math.cos(dh));c.h+=clamp(dh*.35,-.08,.08)}else{let dh=TH[ci]-c.h;dh=Math.atan2(Math.sin(dh),Math.cos(dh));c.h+=dh*Math.min(.5,vn*.04)}
       hitK=Math.min(1,Math.max(hitK,vn/14));if(vn>2.5)thump(Math.min(1,vn/14));if(MODE==='hard'&&vn>3.5)wallHit();
     }
   }
