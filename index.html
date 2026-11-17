@@ -3101,6 +3101,9 @@ function step(dt){
   const sf=Math.min(Math.abs(vf)/5,1);
   c.h+=steer*2.4/(1+speed/22)*(keys.hand?1.7:1)*sf*dt*(vf>=0?1:-1);
   c.vx=vf*fx+vl*rx;c.vz=vf*fz+vl*rz;
+  /* 드리프트 중엔 진행 방향도 차 머리 쪽으로 따라 돌아요 (옆으로 밀려 나가지 않고 코너를 돌게) — 2026-11-17 "더 꺾이게" */
+  if(keys.hand&&!iceNow&&vf>3){const sp=Math.hypot(c.vx,c.vz);let d=c.h-Math.atan2(c.vz,c.vx);d=Math.atan2(Math.sin(d),Math.cos(d));
+    const r=Math.sign(d)*Math.min(Math.abs(d)*.5,(.75+(keys.gas?.25:0))*dt*Math.min(1,Math.abs(d)/.6)),a=Math.atan2(c.vz,c.vx)+r;c.vx=Math.cos(a)*sp;c.vz=Math.sin(a)*sp}
   c.x+=c.vx*dt;c.z+=c.vz*dt;
   slip=Math.abs(vl);
   /* 자동차도 드리프트하면 니트로가 차요 (오토바이와 같은 식): 7° 넘게 미끄러지고 40km/h 넘을 때 */
@@ -3745,7 +3748,7 @@ function applyVeh(v){
 function applyMode(){
   document.body.dataset.mode=MODE;
   $('mbMode').textContent=MODENAME[MODE];$('mbName').textContent=PLAYER;
-  VEH=MODE==='bike'?'bike':'car';document.body.classList.toggle('bike',VEH==='bike');if(VEH==='bike')setBike(BIKEID);else setCar(CARID);
+  VEH=MODE==='bike'||(MODE==='practice'&&PVEH==='bike')?'bike':'car';document.body.classList.toggle('bike',VEH==='bike');if(VEH==='bike')setBike(BIKEID);else setCar(CARID);
   $('nit').querySelector('span').textContent=VEH==='bike'?'드리프트 충전':'니트로';
   document.querySelectorAll('em[data-bike]').forEach(e=>e.textContent=e.dataset[VEH==='bike'?'bike':'car']);
   if(MODE==='bike'){let m='coast';try{m=localStorage.getItem('drift-bmap')||'coast'}catch(e){}setMap(MAPS[m]&&MAPS[m].bike&&(m!=='volcano'||vcOpen())?m:'coast');bmapUI()}else if(MODE==='practice'){setMap('practice')}else if(MODE==='hard'){setMap(HARD_STAGES[0])}
@@ -3755,7 +3758,7 @@ function applyMode(){
 /* 오토바이 맵 고르기 (drift-bmap) */
 function bmapUI(){document.querySelectorAll('#start .bmap').forEach(b=>b.setAttribute('aria-checked',b.dataset.map===MAPID))}
 document.querySelectorAll('#start .bmap').forEach(b=>b.onclick=async()=>{const m=b.dataset.map;if(m==='volcano'&&!vcOpen()&&!(await vcUnlock()))return;if(m!==MAPID){setMap(m);try{localStorage.setItem('drift-bmap',m)}catch(e){}loadBoard()}bmapUI()});
-MC.forEach(b=>b.onclick=()=>{const m=b.dataset.mode;if(m==='lap'||m==='duel'){vehPick(m);return}goName(m)});
+MC.forEach(b=>b.onclick=()=>{const m=b.dataset.mode;if(m==='lap'||m==='duel'||m==='practice'){vehPick(m);return}goName(m)});
 function goName(m){
   if(m==='practice'){MODE='practice';applyMode();$('modes').classList.remove('on');$('start').style.display='grid';return}  /* 연습장은 이름 입력 없이 바로 */
   MODE=m;
@@ -3767,16 +3770,17 @@ function goName(m){
 }
 /* 자동차 / 오토바이 고르기 (오토바이는 아직 준비 중: 관리자 비밀번호로만 열려요) */
 const BK_HASH='6545b6349124b5cd3cdcd69ac61276641f9203a031315134631df4c90064de13';
-let VPM='lap',DVEH='car';try{localStorage.removeItem('drift-bk')}catch(e){}
+let VPM='lap',DVEH='car',PVEH='car';   /* PVEH: 연습장에서 탈 것 */try{localStorage.removeItem('drift-bk')}catch(e){}
 const bkOpen=()=>true;   /* 2026-11-17 오토바이 모드 공개 (예전: 관리자 비밀번호 잠금) */   /* 잠금 풀림은 이 탭에서만 (새로고침·다시 접속하면 또 비밀번호) */
 function vehPick(m){
   VPM=m;$('mvMode').textContent=MODENAME[m];$('mStep1').hidden=true;$('mStep2').hidden=true;$('mStepV').hidden=false;$('mvPw').hidden=true;$('mvRow').hidden=false;
   const vi=document.querySelectorAll('#modes .vimg');vi[0].src=CARS.gtr.hero;vi[1].src=BIKES.h2r.hero;
   const bc=document.querySelector('#modes .vc.bike');bc.classList.remove('lock');
   $('vbBadge').textContent='NEW';
-  $('vbSub').textContent=m==='duel'?'H2R로 1vs1 · Coastal Cliff 🌊':'Ninja H2R · Coastal Cliff Highway 🌊';
+  $('vbSub').textContent=m==='practice'?'H2R로 드리프트·슬라럼 연습 🛞':m==='duel'?'H2R로 1vs1 · Coastal Cliff 🌊':'Ninja H2R · Coastal Cliff Highway 🌊';
 }
 document.querySelectorAll('#modes .vc').forEach(b=>b.onclick=()=>{
+  if(VPM==='practice'){PVEH=b.dataset.veh==='bike'?'bike':'car';goName('practice');return}
   if(b.dataset.veh==='car'){DVEH='car';goName(VPM);return}
   if(VPM==='duel'){DVEH='bike';goName('duel');return}
   if(bkOpen()){goName('bike');return}
@@ -4690,14 +4694,14 @@ function pracReset(){
 function practiceBounds(){
   const L=PA-1.4;
   [['x','vx'],['z','vz']].forEach(([p,v])=>{
-    if(Math.abs(c[p])>L){const sg=Math.sign(c[p]);c[p]=sg*L;const vn=c[v]*sg;if(vn>0){c[v]=-sg*vn*.35;c.vx*=.85;c.vz*=.85;hitK=Math.min(1,Math.max(hitK,vn/14));if(vn>2.5)thump(Math.min(1,vn/14))}}
+    if(Math.abs(c[p])>L){const sg=Math.sign(c[p]);c[p]=sg*L;const vn=c[v]*sg;if(vn>0){if(VEH==='bike'){c[v]=-sg*1.5;const sp=Math.hypot(c.vx,c.vz);if(sp>2){let d=Math.atan2(c.vz,c.vx)-c.h;d=Math.atan2(Math.sin(d),Math.cos(d));c.h+=clamp(d,-.08,.08)}}else c[v]=-sg*vn*.35;c.vx*=.85;c.vz*=.85;hitK=Math.min(1,Math.max(hitK,vn/14));if(vn>2.5)thump(Math.min(1,vn/14))}}
   });
 }
 /* 연습장 화면: 드리프트 각도·시간, 최고 속도, 콘 쓰러뜨리기, 니트로 다시 채우기 */
 const PR={drift:0,best:0,top:0,cur:0,nitCd:0};
 function pracFrame(dt){
   const sp=Math.hypot(c.vx,c.vz),kmh=sp*3.6,fx=Math.cos(c.h),fz=Math.sin(c.h);
-  const vf=c.vx*fx+c.vz*fz,vl=-c.vx*fz+c.vz*fx,ang=kmh>20?Math.abs(Math.atan2(vl,Math.abs(vf)))*180/Math.PI:0;
+  const vf=c.vx*fx+c.vz*fz,vl=-c.vx*fz+c.vz*fx,ang=kmh<=20?0:VEH==='bike'?DRIFTA:Math.abs(Math.atan2(vl,Math.abs(vf)))*180/Math.PI;
   PR.cur+=(ang-PR.cur)*Math.min(1,dt*8);
   if(ang>12&&kmh>25){PR.drift+=dt;if(PR.drift>PR.best)PR.best=PR.drift}else if(ang<6)PR.drift=Math.max(0,PR.drift-dt*4);
   if(kmh>PR.top)PR.top=kmh;
