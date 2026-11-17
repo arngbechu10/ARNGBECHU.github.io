@@ -530,6 +530,9 @@ body.bike #nit:not(.spent):not(.burn) i{background:linear-gradient(90deg,#16c45e
 @keyframes nitready{to{box-shadow:0 0 34px #3dff8aee}}
 body.bike #nit.burn{border-color:#7cc4ff}
 @media (orientation:landscape) and (max-height:500px){body.bike #nit{width:150px;padding:4px 8px;font-size:11px}body.bike #nit .nb{height:9px}}
+#vcHeat{left:10px;top:214px;transform:none;width:250px;box-sizing:border-box;padding:5px 10px;font-size:13px;text-align:center;pointer-events:none}
+@media (max-width:760px){#vcHeat{top:174px;width:150px;font-size:11.5px}}
+@media (orientation:landscape) and (max-height:500px){#vcHeat{left:max(8px,env(safe-area-inset-left));top:116px;width:auto;min-width:150px;white-space:nowrap;padding:3px 8px;font-size:10.5px;border-radius:8px}}
 </style>
 </head>
 <body>
