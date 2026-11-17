@@ -23,9 +23,9 @@ create or replace function submit_replay(p_map text, p_name text, p_lap_ms int, 
 returns boolean language plpgsql security definer set search_path = public as $$
 declare cur int; md text;
 begin
-  if p_map not in ('seoul','mountain','xmas','tokyo','ny','pyongyang','touge','coast') then return false; end if;
-  -- 오토바이 맵(coast)은 오토바이 순위표(mode='bike')에서 1등인지 봐요
-  md := case when p_map in ('coast') then 'bike' else 'lap' end;
+  if p_map not in ('seoul','mountain','xmas','tokyo','ny','pyongyang','touge','coast','jtouge') then return false; end if;
+  -- 오토바이 맵(coast, jtouge)은 오토바이 순위표(mode='bike')에서 1등인지 봐요
+  md := case when p_map in ('coast','jtouge') then 'bike' else 'lap' end;
   if p_car is null or p_car !~ '^[a-z0-9]{1,12}$' then return false; end if;
   if p_data is null or length(p_data) < 50 or length(p_data) > 700000 or p_data !~ '^[0-9]{2,4}\|[A-Za-z0-9+/=]+$' then return false; end if;
   -- 방금(10분 안) 올라온 같은 이름·같은 시간의 진짜 기록이 있어야 해요
