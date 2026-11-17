@@ -21,16 +21,18 @@ grant select on replays to anon, authenticated;
 
 create or replace function submit_replay(p_map text, p_name text, p_lap_ms int, p_car text, p_data text)
 returns boolean language plpgsql security definer set search_path = public as $$
-declare cur int;
+declare cur int; md text;
 begin
-  if p_map not in ('seoul','mountain','xmas','tokyo','ny','pyongyang','touge') then return false; end if;
+  if p_map not in ('seoul','mountain','xmas','tokyo','ny','pyongyang','touge','coast') then return false; end if;
+  -- 오토바이 맵(coast)은 오토바이 순위표(mode='bike')에서 1등인지 봐요
+  md := case when p_map in ('coast') then 'bike' else 'lap' end;
   if p_car is null or p_car !~ '^[a-z0-9]{1,12}$' then return false; end if;
   if p_data is null or length(p_data) < 50 or length(p_data) > 700000 or p_data !~ '^[0-9]{2,4}\|[A-Za-z0-9+/=]+$' then return false; end if;
   -- 방금(10분 안) 올라온 같은 이름·같은 시간의 진짜 기록이 있어야 해요
-  if not exists (select 1 from scores where mode = 'lap' and map = p_map and lap_ms = p_lap_ms
+  if not exists (select 1 from scores where mode = md and map = p_map and lap_ms = p_lap_ms
                  and lower(btrim(name)) = lower(btrim(p_name)) and created_at > now() - interval '10 minutes') then return false; end if;
   -- 그 맵에서 더 빠른 기록이 없어야 해요 (= 1등)
-  if exists (select 1 from scores where mode = 'lap' and map = p_map and lap_ms < p_lap_ms) then return false; end if;
+  if exists (select 1 from scores where mode = md and map = p_map and lap_ms < p_lap_ms) then return false; end if;
   select lap_ms into cur from replays where map = p_map;
   if cur is not null and cur < p_lap_ms then return false; end if;
   insert into replays(map, name, lap_ms, car, data) values (p_map, btrim(p_name), p_lap_ms, p_car, p_data)
