@@ -100,6 +100,8 @@
 
 - **조작 설정 (2026-11-17)**: 홈 오른쪽 "터치 버튼 옮기기 · 크기 바꾸기"(`#editBtn`)를 애들이 못 찾아서 **노랑 그라데이션 큰 버튼 + 🎮 + 설명 + 깜빡이는 빛**(`editPulse`)으로 바꿈(폰 가로 화면에선 설명 숨김). **컴퓨터 키 바꾸기**: 조작법 "컴퓨터" 탭 목록을 `kbUI()`가 만들고(가속·브레이크·핸들 왼쪽/오른쪽·드리프트·니트로·처음부터·순위표, 동작마다 키 2칸), 칸을 누르면 "키 누르기…" → 다음 키가 그 칸에 들어감(다른 동작에 쓰던 키는 거기서 빠짐, Esc·다른 곳 클릭은 취소), `localStorage drift-keys`, "↺ 키 설정 처음대로"(`#kbReset`). 키 표 `KB`(기본 `KB_DEF`) → 역방향 `map`(`kbBuild`), 게임 keydown은 `map[kNorm(e.key)]`로 동작을 찾음(nitro/reset/board 포함). Esc는 나가기라 바꿀 수 없음.
 
+- **들어올 때 소개 화면 (2026-11-17)**: `#intro`(z-index 200, 모드 선택 위): ARNGBECHU RACING 로고 + 팁 3개(📱 폰·태블릿은 가로로 / 🎮 홈 노란 버튼에서 터치 버튼 바꾸기 / ⌨️ 컴퓨터는 키보드 키 바꾸기) + "시작하기 ▶" + 7초 막대. 7초 뒤·화면 누르기·Enter/Space/Esc로 사라짐(매번 들어올 때마다). 세로 화면 폰이면 아래에 "📱↻ 화면을 가로로 돌려 주세요" 깜빡임. 폰 가로 화면에선 팁 3개를 가로로 나란히.
+
 ## 보안 (아이들에게 배포 후 추가)
 - `<head>`에 **CSP** 메타(스크립트: self·jsDelivr·cdnjs·unpkg·blob + 'unsafe-inline'·'wasm-unsafe-eval'(Draco), 통신: Supabase https/wss·jsDelivr·unpkg, object-src none, base-uri none) + `referrer no-referrer`. 새 외부 주소를 쓰면 CSP에 추가해야 함.
 - **SRI**: three.min.js는 jsDelivr `three@0.128.0/build/three.min.js` + integrity(실패하면 바로 다음 인라인 스크립트가 cdnjs로 대체). 동적 스크립트(supabase-js, GLTFLoader, DRACOLoader)는 `loadScript()`가 `SRI` 표의 해시로 받고 실패하면 unpkg로 한 번 더. 해시는 같은 버전 npm 파일로 계산(jsDelivr npm은 바이트 그대로). 버전 바꾸면 해시도 다시 계산.

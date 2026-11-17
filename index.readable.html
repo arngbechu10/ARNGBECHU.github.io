@@ -201,6 +201,22 @@ body[data-pad=square]{--bw:76px;--bh:76px}
 #start .edit:focus-visible{outline:2px solid #fff;outline-offset:2px}
 :focus-visible{outline:2px solid #f2c230}
 /* ===== 모드 선택 / 이름 입력 ===== */
+#intro{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;background:radial-gradient(ellipse at 50% 30%,#2a1a0a 0,#0b0d14 60%,#05060a 100%);color:#eef;font-family:system-ui,sans-serif;transition:opacity .5s}
+#intro.out{opacity:0;pointer-events:none}#intro[hidden]{display:none}
+#intro .ibox{width:min(560px,100%);display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;animation:introIn .6s ease-out}
+@keyframes introIn{from{opacity:0;transform:translateY(16px) scale(.97)}to{opacity:1;transform:none}}
+#intro .ilogo{display:flex;flex-direction:column;line-height:.9;font-style:italic;font-weight:900;letter-spacing:1px}
+#intro .ilogo i{font-size:clamp(34px,8vw,64px);color:#fff;text-shadow:0 0 18px rgba(255,140,40,.55)}#intro .ilogo b{font-size:clamp(22px,5vw,40px);color:#f2c230;letter-spacing:10px}
+#intro .isub{margin:0;color:#cdd7e6;font-size:clamp(13px,2.4vw,16px)}
+#intro .itips{list-style:none;margin:4px 0 0;padding:0;display:flex;flex-direction:column;gap:8px;width:100%;text-align:left}
+#intro .itips li{display:flex;gap:12px;align-items:center;padding:10px 14px;background:#141926e6;border:1px solid #2c3342;border-radius:12px}
+#intro .itips span{font-size:26px}#intro .itips b{display:block;font-size:15px;color:#fff}#intro .itips em{display:block;font-style:normal;font-size:12.5px;color:#aeb7c6;margin-top:2px}
+#intro #introGo{margin-top:4px;padding:12px 34px;border:0;border-radius:12px;background:linear-gradient(135deg,#ffd75a,#f2a91c);color:#1a1300;font-size:17px;font-weight:900;cursor:pointer}
+#intro .ibar{width:160px;height:4px;border-radius:2px;background:#2c3342;overflow:hidden}#intro .ibar i{display:block;height:100%;width:100%;background:#f2c230;transform-origin:left;animation:introBar 7s linear forwards}
+@keyframes introBar{from{transform:scaleX(1)}to{transform:scaleX(0)}}
+#intro .irot{display:none}
+@media (orientation:portrait) and (max-width:900px){#intro .irot{display:block;position:absolute;left:50%;bottom:18px;transform:translateX(-50%);padding:8px 14px;border-radius:20px;background:#f2c230;color:#111;font-weight:900;font-size:14px;white-space:nowrap;animation:editPulse 1.4s infinite}}
+@media (orientation:landscape) and (max-height:500px){#intro .ibox{gap:6px}#intro .isub{display:none}#intro .itips{flex-direction:row;gap:6px}#intro .itips li{flex:1;flex-direction:column;text-align:center;gap:4px;padding:8px}#intro .itips span{font-size:20px}#intro .itips b{font-size:12.5px}#intro .itips em{font-size:10.5px}#intro #introGo{padding:8px 26px;font-size:15px}#intro .ilogo i{font-size:30px}#intro .ilogo b{font-size:20px}}
 #modes{--gold:#f2c230;--red:#ff5a4a;--line:#2c3342;position:fixed;inset:0;z-index:60;display:none;flex-direction:column;align-items:center;justify-content:center;gap:clamp(14px,4vh,34px);padding:clamp(12px,3vh,32px) clamp(14px,4vw,48px);box-sizing:border-box;background:#090a16;color:#eef;overflow:auto;text-align:left}
 #modes.on{display:flex}
 #modes .bg{position:absolute;inset:0;pointer-events:none;background:radial-gradient(70% 55% at 30% 80%,#2f62ff3a,transparent 70%),linear-gradient(90deg,#090a1688 0,#090a1600 40%,#090a16f0 100%),linear-gradient(0deg,#090a16 0,#090a1600 36%),var(--msky) 50% 100%/auto 80% no-repeat,#090a16}
@@ -610,6 +626,20 @@ body.bike #nit.burn{border-color:#7cc4ff}
       </ul>
     </div>
   </section>
+</div>
+<div id="intro" role="dialog" aria-label="게임 소개">
+  <div class="ibox">
+    <div class="ilogo"><i>ARNGBECHU</i><b>RACING</b></div>
+    <p class="isub">친구들과 랩타임을 겨루는 1인칭 레이싱 🏁</p>
+    <ul class="itips">
+      <li><span>📱</span><div><b>폰·태블릿은 가로로 돌려서!</b><em>화면을 가로로 눕혀야 제대로 보여요</em></div></li>
+      <li><span>🎮</span><div><b>조작 버튼은 내 마음대로</b><em>홈 오른쪽 노란 버튼에서 버튼 위치·크기를 바꿀 수 있어요</em></div></li>
+      <li><span>⌨️</span><div><b>컴퓨터는 키보드 키도 바꿀 수 있어요</b><em>조작법 → 컴퓨터 탭에서 키를 눌러 바꿔요</em></div></li>
+    </ul>
+    <button type="button" id="introGo">시작하기 ▶</button>
+    <div class="ibar"><i></i></div>
+  </div>
+  <div class="irot">📱↻ 화면을 가로로 돌려 주세요</div>
 </div>
 <div id="modes" class="on" role="dialog" aria-label="모드 선택">
   <button type="button" id="bgmBtn" aria-label="배경 음악 켜기/끄기" aria-pressed="true"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path class="w1" d="M16 8.5a5 5 0 0 1 0 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path class="w2" d="M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path class="x" d="M16 9l5 6M21 9l-5 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
@@ -4705,6 +4735,10 @@ $('back').onclick=e=>{e.preventDefault();goBack()};
 /* 다시하기: 개인 랩타임(자동차·오토바이)에서 출발선으로 돌아가 처음부터 (R 키와 같아요) */
 $('again').onclick=e=>{e.preventDefault();e.currentTarget.blur();if(started&&!RP&&(MODE==='lap'||MODE==='bike')){for(const k in keys)keys[k]=0;document.querySelectorAll('.pad button').forEach(b=>b.classList.remove('on'));reset()}};
 addEventListener('keydown',e=>{if(e.key==='Escape'&&started&&!$('lbp').classList.contains('on')&&!$('fail').classList.contains('on')&&!$('dres').classList.contains('on')){e.preventDefault();goBack()}});
+
+/* ---------- 들어올 때 소개 화면 (7초 뒤 또는 누르면 사라지고 모드 선택으로) ---------- */
+(()=>{const el=$('intro');let done=false;const close=()=>{if(done)return;done=true;el.classList.add('out');setTimeout(()=>el.hidden=true,520)};
+  $('introGo').onclick=e=>{e.stopPropagation();close()};el.addEventListener('click',close);addEventListener('keydown',e=>{if(!done&&(e.key==='Enter'||e.key===' '||e.key==='Escape')){e.preventDefault();close()}});setTimeout(close,7000)})();
 /* ---------- 시작: 모드 선택 화면부터 ---------- */
 $('start').style.display='none';
 loadBoard();
