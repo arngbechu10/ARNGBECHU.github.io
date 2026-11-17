@@ -3586,9 +3586,17 @@ async function loadBoard(m){
 async function sendScore(p){
   p.name=cleanName(p.name);if(!p.name||BAD_NAME.test(p.name)||!(p.lap_ms>=20000&&p.lap_ms<=3600000))return 'pending';   /* 서버도 같은 규칙으로 거절해요 */
   if(RICH!==false){
-    const r=await fetch(SB,{method:'POST',headers:{...HDR,Prefer:'return=minimal'},body:JSON.stringify(p)});
-    if(r.ok){RICH=true;return 'ok'}
-    if(r.status===400||r.status===404)RICH=false;else throw new Error(r.status);
+    /* 서버가 거절해도(도배 막기 '너무 자주', 이름 규칙 등) 열이 없는 게 아니면 RICH를 끄지 않아요.
+       (예전엔 400이면 무조건 RICH=false → 그 뒤로 서울은 옛 방식으로만 올라가고 리플레이가 안 올라갔음) */
+    for(let tryN=0;;tryN++){
+      const r=await fetch(SB,{method:'POST',headers:{...HDR,Prefer:'return=minimal'},body:JSON.stringify(p)});
+      if(r.ok){RICH=true;return 'ok'}
+      let e={};try{e=await r.json()}catch(x){}
+      const msg=String((e&&(e.message||e.hint||e.details))||''),code=String(e&&e.code||'');
+      if((r.status===400||r.status===404)&&(code==='PGRST204'||code==='42703'||/column/i.test(msg))){RICH=false;break}
+      if(/too many scores/i.test(msg)&&tryN<2){$('msg').textContent='잠깐! 다른 기록이 막 올라가서 잠시 뒤 다시 올려요...';await new Promise(z=>setTimeout(z,/name/i.test(msg)?21000:30000));continue}
+      throw new Error(r.status+' '+msg);
+    }
   }
   if(p.mode==='lap'&&p.map==='seoul'){
     const r=await fetch(SB,{method:'POST',headers:{...HDR,Prefer:'return=minimal'},body:JSON.stringify({name:p.name,lap_ms:p.lap_ms})});
