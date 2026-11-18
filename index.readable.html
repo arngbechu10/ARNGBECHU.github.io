@@ -108,6 +108,11 @@ body.bike #bk{display:block}body.bike .cab{display:none}
 #start .btn{font:inherit;height:clamp(48px,8vh,60px);padding:0 12px;border:2px solid transparent;border-radius:6px;cursor:pointer;transform:skewX(-12deg);transition:transform .12s,filter .12s;color:#101218}
 #start .btn span{display:inline-block;transform:skewX(12deg);font-weight:800;font-size:clamp(16px,2.6vh,21px);letter-spacing:.04em}
 #start .play{flex:1.5;background:var(--gold);border-color:var(--gold);box-shadow:0 0 28px #f2c23055}
+#start .ghgo{display:none;flex:1.3;flex-direction:column;align-items:center;justify-content:center;gap:1px;background:linear-gradient(180deg,#1d2a4d,#121a33);border-color:#7cc4ff;color:#e6f3ff;box-shadow:0 0 18px #4aa3ff44;line-height:1.15}
+#start .ghgo small{font-size:11px;font-weight:600;color:#9fc6ec;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#start .ghgo:disabled{opacity:.5;box-shadow:none;cursor:default}
+body[data-mode=lap] #start .ghgo,body[data-mode=bike] #start .ghgo{display:flex}
+@media (orientation:landscape) and (max-height:500px){#start .ghgo span{font-size:12.5px;white-space:nowrap;letter-spacing:-.02em}#start .ghgo small{font-size:9px}}
 #start .ghost{flex:1;background:#10131c;border-color:#59627a;color:#eef}
 #start .btn:hover{transform:skewX(-12deg) translateY(-2px);filter:brightness(1.1)}
 #start .btn:active{transform:skewX(-12deg) scale(.97)}
@@ -463,7 +468,7 @@ body[data-mode=practice] #tl,body[data-mode=practice] #bt,body[data-mode=practic
 #again:hover{border-color:#f2c230;color:#f2c230}
 body[data-mode=lap] #again,body[data-mode=bike] #again{display:block}
 #ghBtn{position:fixed;right:228px;top:72px;z-index:6;padding:6px 12px;font-size:13px;cursor:pointer;display:none}#ghBtn[aria-pressed=false]{opacity:.55;text-decoration:line-through}
-body[data-mode=lap] #ghBtn,body[data-mode=bike] #ghBtn{display:block}
+body.ghrace[data-mode=lap] #ghBtn,body.ghrace[data-mode=bike] #ghBtn{display:block}
 #ghc{display:none}#tl.gh #ghc{display:block}#ghd.ahead{color:#4dff9a}#ghd.behind{color:#ff6a5a}#ghs{white-space:nowrap;max-width:110px;overflow:hidden;text-overflow:ellipsis;display:block}
 @media (orientation:landscape) and (max-height:500px){#ghBtn{top:44px;right:calc(max(8px,env(safe-area-inset-right)) + 150px);padding:4px 9px;font-size:11px}#ghs{max-width:70px}}
 @media (orientation:landscape) and (max-height:500px){#back{top:44px;right:max(8px,env(safe-area-inset-right));padding:4px 9px;font-size:11px}#again{top:44px;right:calc(max(8px,env(safe-area-inset-right)) + 72px);padding:4px 9px;font-size:11px}#bt{top:78px!important}#lbp{top:112px!important;max-height:calc(100vh - 122px)!important}}
@@ -603,6 +608,7 @@ body.bike #nit.burn{border-color:#7cc4ff}
     <div class="duelinfo" id="duelInfo"><div><span>나</span><b id="diMe"></b></div><div><span id="diOppN">상대</span><b id="diOpp"></b></div></div>
     <div class="cta">
       <button class="btn play" id="go"><span>플레이</span></button>
+      <button class="btn ghgo" id="goGhost" type="button" disabled><span>👻 1등과 달리기</span><small id="ggSub">불러오는 중…</small></button>
       <button class="btn ghost" id="lbBtn"><span>리더보드</span></button>
     </div>
   </div>
@@ -3881,8 +3887,9 @@ addEventListener('keydown',e=>{if(e.key==='Escape'&&$('lbp').classList.contains(
 document.querySelectorAll('.maps button').forEach(b=>b.onclick=()=>{if(b.dataset.map!==MAPID){setMap(b.dataset.map);loadBoard()}});
 
 /* ---------- 플레이 시작 ---------- */
-$('go').onclick=()=>{
+$('go').onclick=e=>{
   if(MODE==='duel'){duelReady();return}
+  if(window.GH){GH.race=e===true;GH.on=true;$('ghBtn').setAttribute('aria-pressed','true')}document.body.classList.toggle('ghrace',e===true);   /* 👻 1등과 달리기로 들어왔을 때만 고스트 */
   $('lbp').classList.remove('on','top');
   if(MODE==='hard')hardBegin();
   $('start').style.display='none';started=true;reset();
@@ -4581,8 +4588,7 @@ function duelFrame(dt,now){
    내가 출발(첫 가속)하는 순간 고스트도 출발, 한 바퀴마다 다시. 부딪히지 않아요.
    타이머 옆 "👻 1등" 칸에 같은 지점에서 고스트보다 몇 초 빠른지(초록 −) 느린지(빨강 +) 보여 줘요.
    달리는 화면의 "👻 고스트" 버튼으로 끄고 켬(localStorage drift-ghost). 1vs1 상대 차 그리기(OPPM·oppVisual)를 그대로 써요. */
-var GH={shown:false,on:true,cur:null,hudT:0,tagFor:''},GHC={};
-try{GH.on=localStorage.getItem('drift-ghost')!=='off'}catch(e){}
+var GH={shown:false,on:true,race:false,cur:null,hudT:0,tagFor:'',ui:''},GHC={};
 const ghTag=new THREE.Sprite(new THREE.SpriteMaterial({transparent:true,depthTest:false,depthWrite:false,fog:false}));ghTag.renderOrder=20;ghTag.visible=false;OPPM.add(ghTag);
 function ghTagDraw(t){
   const cv=document.createElement('canvas');cv.width=448;cv.height=64;const x=cv.getContext('2d');
@@ -4619,7 +4625,8 @@ function ghostAlpha(a){   /* a: 투명도(0~1), null이면 원래대로 */
 function ghostOff(){if(!GH||!GH.shown)return;GH.shown=false;hideOpp();ghostAlpha(null);ghTag.visible=false;oppTag.visible=true;$('tl').classList.remove('gh')}
 function ghostFrame(dt,now){
   if(!GH)return;
-  const g=GH.on&&started&&MAPS[MAPID]&&!MAPS[MAPID].noLB?ghostGet(MAPID):null;
+  if(!started){ghostHomeUI();ghostOff();return}
+  const g=GH.race&&GH.on&&MAPS[MAPID]&&!MAPS[MAPID].noLB?ghostGet(MAPID):null;
   if(!g||g.st!=='ok'){ghostOff();return}
   const el=lapStart===null?0:(performance.now()-lapStart)/1000;
   /* HUD: 같은 지점에서 고스트보다 빠른지 느린지 */
@@ -4647,8 +4654,15 @@ function ghostFrame(dt,now){
   ghTag.visible=dd>6;const s=Math.max(.75,dd/22);ghTag.scale.set(5*s,.72*s,1);ghTag.position.y=2.2+.3*s;
   GH.shown=true;
 }
-$('ghBtn').setAttribute('aria-pressed',GH.on);
-$('ghBtn').onclick=e=>{GH.on=!GH.on;try{localStorage.setItem('drift-ghost',GH.on?'on':'off')}catch(x){}e.currentTarget.setAttribute('aria-pressed',GH.on);toast(GH.on?'👻 1등 고스트 켰어요':'고스트 껐어요');e.currentTarget.blur()};
+/* 홈: "👻 1등과 달리기" 버튼 — 고른 맵의 1등 리플레이가 있으면 켜지고 이름·기록을 보여 줘요 */
+function ghostHomeUI(){
+  if($('start').style.display==='none')return;
+  const g=MAPS[MAPID]&&!MAPS[MAPID].noLB?ghostGet(MAPID):null,st=!g?'no':g.st,key=MAPID+st+(g&&g.ms);if(GH.ui===key)return;GH.ui=key;
+  const b=$('goGhost');b.disabled=st!=='ok';
+  $('ggSub').textContent=st==='ok'?g.name+' · '+fmt(g.ms):st==='loading'?'불러오는 중…':'이 맵은 아직 1등 리플레이가 없어요';
+}
+$('goGhost').onclick=()=>{if(!$('goGhost').disabled)$('go').onclick(true)};
+$('ghBtn').onclick=e=>{GH.on=!GH.on;e.currentTarget.setAttribute('aria-pressed',GH.on);toast(GH.on?'👻 1등 고스트 켰어요':'고스트 껐어요');e.currentTarget.blur()};
 /* === 1등 고스트 끝 === */
 
 /* 차끼리 부딪힘: 차를 앞뒤 원 2개로 보고, 겹치면 살짝 튕겨 나가요 (상대도 자기 화면에서 똑같이 계산) */
