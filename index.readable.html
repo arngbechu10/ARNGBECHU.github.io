@@ -3558,7 +3558,7 @@ function setCar(id,anim){
 let toastT=0;
 function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('on'),2600)}
 document.querySelectorAll('.cars button').forEach(b=>b.onclick=()=>{
-  if(b.dataset.bike){setBike(b.dataset.bike);return}
+  if(b.dataset.bike){if(b.dataset.bike!==BIKEID)setBike(b.dataset.bike,true);return}
   const id=b.dataset.car;
   if(!CARS[id]){toast('이딴건 차가 아닙니다 사용하실 수 없습니다');b.classList.remove('shake');void b.offsetWidth;b.classList.add('shake');return}
   if(id!==CARID)setCar(id,true);
@@ -3569,7 +3569,7 @@ const BIKES={h2r:{name:'Kawasaki Ninja H2R',hero:'DATAURI',engine:'DATAURI',laun
 var BIKEID='h2r',VEH='car';try{const b=localStorage.getItem('drift-bike');if(b&&b!=='h2r'&&/^[a-z0-9]{1,12}$/.test(b))BIKEID=b}catch(e){}
 CSPEC.cbr=[['약 120마력','186kg','0→100 약 3.2초','최고 약 255km/h','599cc 직렬 4기통'],'2007년형 · 레이싱 무비스타 컬러 · 고회전 미들급 슈퍼스포츠'];
 CSPEC.h2r=[['326마력','216kg','0→100 약 2.5초','최고 400km/h','998cc 슈퍼차저'],'세계에서 가장 빠른 양산 오토바이 · 트랙 전용'];
-function setBike(id){const B=BIKES[id];if(!B)return;BIKEID=id;carImg.src=B.hero;$('cname').textContent=B.name;showSpec(id);try{localStorage.setItem('drift-bike',id)}catch(e){}
+function setBike(id,anim){const B=BIKES[id];if(!B)return;BIKEID=id;carImg.src=B.hero;if(anim){carImg.style.animation='none';void carImg.offsetWidth;carImg.style.animation=''}$('cname').textContent=B.name;showSpec(id);try{localStorage.setItem('drift-bike',id)}catch(e){}
   if(!BIKES.h2r.cabin)BIKES.h2r.cabin=$('bkimg').src;$('bkimg').src=B.cabin||BIKES.h2r.cabin;$('bk').className=id;
   {const d=B.dash||[42.2,37.2,17.6,21.4],st=$('bdash').style;st.left=d[0]+'%';st.top=d[1]+'%';st.width=d[2]+'%';st.height=d[3]+'%'}
   const em=$('cspec').querySelector('em b');if(em)em.textContent='실제 오토바이 정보예요';
