@@ -225,7 +225,15 @@ body[data-pad=square]{--bw:76px;--bh:76px}
 @media (orientation:landscape) and (max-height:500px){#intro .ibox{gap:6px}#intro .isub{display:none}#intro .itips{flex-direction:row;gap:6px}#intro .itips li{flex:1;flex-direction:column;text-align:center;gap:4px;padding:8px}#intro .itips span{font-size:20px}#intro .itips b{font-size:12.5px}#intro .itips em{font-size:10.5px}#intro #introGo{padding:8px 26px;font-size:15px}#intro .ilogo i{font-size:30px}#intro .ilogo b{font-size:20px}}
 #modes{--gold:#f2c230;--red:#ff5a4a;--line:#2c3342;position:fixed;inset:0;z-index:60;display:none;flex-direction:column;align-items:center;justify-content:center;gap:clamp(14px,4vh,34px);padding:clamp(12px,3vh,32px) clamp(14px,4vw,48px);box-sizing:border-box;background:#090a16;color:#eef;overflow:auto;text-align:left}
 #modes.on{display:flex}
-#modes .bg{position:absolute;inset:0;pointer-events:none;background:radial-gradient(70% 55% at 30% 80%,#2f62ff3a,transparent 70%),linear-gradient(90deg,#090a1688 0,#090a1600 40%,#090a16f0 100%),linear-gradient(0deg,#090a16 0,#090a1600 36%),var(--msky) 50% 100%/auto 80% no-repeat,#090a16}
+#modes .bg{position:absolute;inset:0;pointer-events:none;overflow:hidden;background:#090a16}
+/* 2026-11-18: 모드 선택 배경 = 사용자 사진 3장 슬라이드(27초에 한 바퀴, 장마다 9초, 1.8초 동안 겹쳐 바뀜 + 천천히 확대·이동) */
+#modes .bg .sl{position:absolute;inset:-2%;background:center/cover no-repeat;opacity:0;will-change:opacity,transform;animation:mslide 27s linear infinite backwards}
+#modes .bg .sl:nth-child(1){background-image:url("DATAURI");animation-delay:0s}
+#modes .bg .sl:nth-child(2){background-image:url("DATAURI");animation-delay:9s;--dx:2%}
+#modes .bg .sl:nth-child(3){background-image:url("DATAURI");animation-delay:18s}
+#modes .bg::after{content:'';position:absolute;inset:0;background:radial-gradient(60% 55% at 50% 50%,#090a1666,#090a1600 75%),linear-gradient(0deg,#090a16f2 0,#090a1600 40%),linear-gradient(180deg,#090a16b0 0,#090a1600 22%),#090a1640}
+@keyframes mslide{0%{opacity:0;transform:scale(1.03) translateX(0)}6.7%{opacity:1}33.3%{opacity:1}40%{opacity:0;transform:scale(1.12) translateX(var(--dx,-2%))}100%{opacity:0;transform:scale(1.03)}}
+@media (prefers-reduced-motion:reduce){#modes .bg .sl{transform:none!important;animation-name:mfade}}@keyframes mfade{0%{opacity:0}6.7%,33.3%{opacity:1}40%,100%{opacity:0}}
 #modes>*:not(.bg){position:relative;z-index:1}
 #modes h1{margin:0;font-size:clamp(22px,4.6vh,38px);font-weight:800;letter-spacing:.05em;text-align:center;line-height:1.2}
 #modes h1 small{display:block;margin-bottom:6px;font-size:clamp(10px,1.7vh,12.5px);font-weight:600;letter-spacing:.3em;color:#8d96a3}
@@ -658,7 +666,7 @@ body.bike #nit.burn{border-color:#7cc4ff}
 </div>
 <div id="modes" class="on" role="dialog" aria-label="모드 선택">
   <button type="button" id="bgmBtn" aria-label="배경 음악 켜기/끄기" aria-pressed="true"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path class="w1" d="M16 8.5a5 5 0 0 1 0 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path class="w2" d="M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path class="x" d="M16 9l5 6M21 9l-5 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
-  <div class="bg"></div>
+  <div class="bg"><div class="sl"></div><div class="sl"></div><div class="sl"></div></div>
   <h1><small>ARNGBECHU RACING</small>모드 선택</h1>
   <div class="mcards" id="mStep1">
     <button class="mc" data-mode="duel"><i>1vs1</i><b>1vs1 대결</b><p>방을 만들고 비밀번호를 정해서 친구와 같은 코스를 달려요.</p><ul><li>방 + 비밀번호</li><li>친구와 함께</li></ul></button>
