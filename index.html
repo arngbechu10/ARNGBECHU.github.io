@@ -1077,8 +1077,17 @@ function tobsCollide(){
     c.x+=ax*pen;c.z+=az*pen;
     const vin=-(c.vx*ax+c.vz*az);
     if(vin>0){if(VEH==='bike'){/* 오토바이: 돌·장애물 옆으로 미끄러져 빠져나가요 (정면으로 박아도 끼지 않게) */
-      let tx=-az,tz=ax;if(tx*(Math.cos(c.h)+.7*Math.cos(TH[ci]))+tz*(Math.sin(c.h)+.7*Math.sin(TH[ci]))<0){tx=-tx;tz=-tz}const sp=Math.max(Math.abs(c.vx*tx+c.vz*tz),Math.hypot(c.vx,c.vz)*.55,3);
-      c.vx=tx*sp+ax*1.2;c.vz=tz*sp+az*1.2;DK=0;DOFF*=.5;let dh=Math.atan2(tz,tx)-c.h;dh=Math.atan2(Math.sin(dh),Math.cos(dh));c.h+=clamp(dh*.15,-.03,.03)}
+      /* 2026-11-18: 옆면을 스치면 면을 따라 미끄러지고, 정면(라바콘·돌 앞면)에 박으면 옆으로 던지지 않고 앞을 본 채로
+         가까운 쪽 모서리로 비켜 지나가요(그쪽이 벽이면 반대쪽). 예전엔 옆으로 확 던져져 길을 가로질러 벽에 박거나, 벽과 콘 사이에 끼었음 */
+      let tx=-az,tz=ax;const vt=c.vx*tx+c.vz*tz,rd=Math.abs(tx*Math.cos(TH[ci])+tz*Math.sin(TH[ci]));
+      if(rd>.6){if(vt<0){tx=-tx;tz=-tz}const sp=Math.abs(vt),po=Math.min(.8,vin*.2);c.vx=tx*sp+ax*po;c.vz=tz*sp+az*po;
+        if(sp>3){let dh=Math.atan2(tz,tx)-c.h;dh=Math.atan2(Math.sin(dh),Math.cos(dh));if(Math.cos(dh)>0)c.h+=clamp(dh*.15,-.03,.03)}}
+      else{c.vx+=ax*vin;c.vz+=az*vin;
+        const E=Math.abs(tx*o.c+tz*o.s)*o.hl+Math.abs(-tx*o.s+tz*o.c)*o.hw,rw=ROADW?ROADW[ci]:HALF,
+          lat=(px,pz)=>(px-TP[ci][0])*TN[ci][0]+(pz-TP[ci][1])*TN[ci][1],free=g=>Math.abs(lat(o.x+tx*g*(E+1.4),o.z+tz*g*(E+1.4)))<rw+.3;
+        let g=(c.x-o.x)*tx+(c.z-o.z)*tz>=0?1:-1;if(!free(g)&&free(-g))g=-g;
+        const st=Math.min(.08,.045+vin*.01);c.x+=tx*g*st;c.z+=tz*g*st}
+      DK=0;DOFF*=.5}
       else{c.vx+=ax*vin*1.3;c.vz+=az*vin*1.3}const k=Math.max(.55,1-vin*.025);c.vx*=k;c.vz*=k;hitK=Math.min(1,Math.max(hitK,vin/12));if(vin>2)thump(Math.min(1,vin/14))}
   }
 }
@@ -1933,8 +1942,11 @@ function buildJP(){
   {const i0=jpI(JP_CONE[0]),i1=jpI(JP_CONE[1]),cone=jm(0xff6a1a),wh=jm(0xf4f4f4),sd=-1;JPS.blink=[];
     for(let i=i0;i<=i1;i+=1){const t=(i-i0)/(i1-i0),lat=sd*(t<.15?ROADW[i]-(ROADW[i]-.6)*t/.15:t>.85?ROADW[i]-(ROADW[i]-.6)*(1-t)/.15:.6),[x,z]=tkAt(i,lat);
       tkAdd(new THREE.ConeGeometry(.32,.9,8),cone,x,TY[i]+.45,z,0);tkAdd(new THREE.CylinderGeometry(.2,.24,.16,8),wh,x,TY[i]+.55,z,0)}
-    for(let i=i0+2;i<i1;i+=4){const t=(i-i0)/(i1-i0),inner=t<.15?ROADW[i]-(ROADW[i]-.6)*t/.15:t>.85?ROADW[i]-(ROADW[i]-.6)*(1-t)/.15:.6,w=ROADW[i]-inner+.4;const [x,z]=tkAt(i,sd*(inner+w/2-.2));
-      TOBS.push({x,z,c:Math.cos(TH[i]),s:Math.sin(TH[i]),hl:SP*2.2,hw:w/2})}
+    /* 충돌: 콘 줄을 따라 얇은 상자를 이어 붙여요(비스듬한 시작·끝 부분도 그 방향 그대로 → 오토바이가 줄을 따라 미끄러져요).
+       예전엔 도로 방향 계단 상자라 비스듬한 곳에 정면으로 박혀 멈췄음 (2026-11-18) */
+    {const lat=i=>{const t=(i-i0)/(i1-i0);return sd*(t<.15?ROADW[i]-(ROADW[i]-.6)*t/.15:t>.85?ROADW[i]-(ROADW[i]-.6)*(1-t)/.15:.6)};
+     for(let i=i0;i<i1;i+=2){const j=Math.min(i1,i+2),[ax,az]=tkAt(i,lat(i)),[bx,bz]=tkAt(j,lat(j)),L=Math.hypot(bx-ax,bz-az)||1;
+       TOBS.push({x:(ax+bx)/2,z:(az+bz)/2,c:(bx-ax)/L,s:(bz-az)/L,hl:Math.max(.1,L/2-1.6),hw:.3})}}
     const sgn=new THREE.MeshBasicMaterial({map:tkTex(128,128,(x,w,h)=>{x.fillStyle='#f2c230';x.beginPath();x.moveTo(64,4);x.lineTo(124,64);x.lineTo(64,124);x.lineTo(4,64);x.closePath();x.fill();x.strokeStyle='#111';x.lineWidth=5;x.stroke();x.fillStyle='#111';x.font='900 30px system-ui';x.textAlign='center';x.fillText('工事中',64,74)}),side:THREE.DoubleSide});
     for(const d of[70,40]){const i=(i0-Math.round(d/SP)+N)%N,[x,z]=tkAt(i,-(ROADW[i]+1.2));tkBox(.12,1.6,.12,jm(0x777777),x,TY[i]+.8,z);tkBoard(x,TY[i]+2.4,z,2,2,-Math.cos(TH[i]),-Math.sin(TH[i]),sgn)}
     for(let i=i0+3;i<i1;i+=9){const [x,z]=tkAt(i,sd*.6);JPS.blink.push([x,TY[i]+1.3,z])}}
@@ -3015,7 +3027,7 @@ function nearest(x,z,from,win){
 }
 function reset(){
   c={x:sx,z:sz,h:sh,vx:0,vz:0};steer=0;AIR=false;cvy=0;cy=TY[0]||0;camY=TY[0]||0;camP=0;hitK=0;ci=0;prog=0;lapStart=null;NIT.ready=true;NIT.on=false;NIT.t=0;
-  FALL=false;LEAN=0;DOFF=0;DK=0;DDIR=0;CROLL=0;BRK=0;DHOLD=0;NITG=0;if(VEH==='bike')NIT.ready=false
+  FALL=false;REV=0;LEAN=0;DOFF=0;DK=0;DDIR=0;CROLL=0;BRK=0;DHOLD=0;NITG=0;if(VEH==='bike')NIT.ready=false
   if(MAPID==='practice')pracReset();
   if(MAPID==='volcano')vcReset();
   if(MAPID==='alps')alpsReset();
@@ -3033,9 +3045,15 @@ function thump(v){
    핸들(좌우)로 차체를 기울이고(LEAN, 속도가 빠를수록 최대 56°까지), 기울기만큼 돌아요(회전 = g·tan(기울기)/속도, 실제 오토바이처럼).
    드리프트(Space, 뒷브레이크로 뒤를 미끄러뜨리기): 더 많이 돌고 옆 미끄럼이 커져요. 미끄러지는 각도가 클수록 니트로 게이지(NITG)가 차요.
    게이지가 꽉 차면 니트로(N) 사용 가능. 기울인 채로는 가속이 조금 약해요. */
-var LEAN=0,NITG=0,DRIFTA=0,DOFF=0,DK=0,DDIR=0,CROLL=0,BRK=0,DHOLD=0;
+var REV=0,LEAN=0,NITG=0,DRIFTA=0,DOFF=0,DK=0,DDIR=0,CROLL=0,BRK=0,DHOLD=0;
 function bikeMotion(dt){
   steer+=(((keys.right?1:0)-(keys.left?1:0))-steer)*Math.min(1,dt*7.5);
+  /* 후진 (2026-11-18): 멈춘 상태에서 브레이크를 계속 누르면 천천히 뒤로 가요 (최고 약 14km/h). 가속을 누르면 멈췄다가 앞으로 */
+  if(REV>0||(keys.brake&&!keys.gas&&Math.hypot(c.vx,c.vz)<.5&&BRK>.85)){
+    if(keys.brake&&!keys.gas)REV=Math.min(4,REV+3*dt);else REV=Math.max(0,REV-(keys.gas?10:4)*dt);
+    BRK+=((keys.brake?1:0)-BRK)*Math.min(1,dt*9);LEAN+=(0-LEAN)*Math.min(1,dt*8);DOFF=0;DK=0;DDIR=0;DHOLD=0;DRIFTA=0;slip=0;
+    if(REV>0){c.h-=steer*1.2*Math.min(1,REV/1.5)*dt;c.vx=-Math.cos(c.h)*REV;c.vz=-Math.sin(c.h)*REV;c.x+=c.vx*dt;c.z+=c.vz*dt;return}
+    c.vx=c.vz=0}
   let v=Math.hypot(c.vx,c.vz),vh=v>1?Math.atan2(c.vz,c.vx):c.h-DOFF;
   if(Math.cos(vh-c.h)<0&&v<4){vh=c.h-DOFF;v*=.3}
   const off=Math.abs(side)>HALF+1.2,drift=keys.hand&&v>9;
@@ -3228,7 +3246,7 @@ function drive(dt){
   $('nbar').style.width=(NIT.on?NIT.t/NIT_T*100:NIT.ready?100:NITG*100)+'%';
   $('nit').firstChild.textContent=NIT.on?'니트로!':NIT.ready?'니트로 준비! (N)':'드리프트 충전 '+Math.round(NITG*100)+'%';
   {const dr=started&&!HOLD&&keys.hand&&DRIFTA>7&&kmh>35;$('bdrift').classList.toggle('on',dr);if(dr)$('bdA').textContent=Math.round(DRIFTA)+'°'+(NIT.ready||NIT.on?' · 니트로 준비':' · 니트로 +'+Math.round(NITG*100)+'%')}
-  if(VEH==='bike'){$('bdSpd').firstChild.nodeValue=Math.round(kmh);$('bdGear').textContent=kmh<2?'N':g+1;$('bdRpm').firstChild.style.width=Math.round(rpm*100)+'%';}
+  if(VEH==='bike'){$('bdSpd').firstChild.nodeValue=Math.round(kmh);$('bdGear').textContent=REV>.2?'R':kmh<2?'N':g+1;$('bdRpm').firstChild.style.width=Math.round(rpm*100)+'%';}
   nitBtn.classList.toggle('burn',NIT.on);nitBtn.classList.toggle('spent',!NIT.ready&&!NIT.on);
 }
 
