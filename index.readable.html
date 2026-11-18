@@ -3206,7 +3206,12 @@ async function initAudio(){
     const VC=VEH==='bike'?BIKES[BIKEID]:CARS[CARID],[buf,lb,skb]=await Promise.all([VC.engine||ENG,VC.launch||LAU,SKIDSND].map(u=>AC.decodeAudioData(b64buf(u))));
     const e=AC.createBufferSource();e.buffer=buf;e.loop=true;
     const f=AC.createBiquadFilter();f.type='lowpass';const g=AC.createGain();g.gain.value=0;
-    e.connect(f);f.connect(g);g.connect(AC.destination);e.start();
+    ENGL=null;
+    if(VC.layers){   /* 저·중·고회전 반복 소리를 겹쳐 회전수에 맞게 섞기 */
+      const bufs=await Promise.all(VC.layers.map(l=>AC.decodeAudioData(b64buf(l[0]))));
+      ENGL=bufs.map((b,k)=>{const s=AC.createBufferSource();s.buffer=b;s.loop=true;const gg=AC.createGain();gg.gain.value=k?0:1;s.connect(gg);gg.connect(f);s.start();return{s,g:gg,f:VC.layers[k][1]}});
+      f.connect(g);g.connect(AC.destination);
+    }else{e.connect(f);f.connect(g);g.connect(AC.destination);e.start()}
     const ls=AC.createBufferSource();ls.buffer=lb;const lg=AC.createGain();lg.gain.value=.9;
     ls.connect(lg);lg.connect(AC.destination);ls.start();
     const nb=AC.createBuffer(1,AC.sampleRate*2,AC.sampleRate),nd=nb.getChannelData(0);
@@ -3239,7 +3244,7 @@ function skidMix(k,kmh,dt){
   SKID.g.gain.value=.75*Math.pow(k,.8);
   SKID.s.playbackRate.value=.93+.12*k+clamp((kmh-60)/400,-.05,.1);
 }
-let needle=0,skG=0;
+let needle=0,skG=0,ENGL=null;
 const EDGE=[0,55,100,145,195,265],BEDGE=[0,62,108,152,196,242,330];
 function drive(dt){
   const kmh=Math.hypot(c.vx,c.vz)*3.6;
@@ -3251,7 +3256,11 @@ function drive(dt){
   const nb=NIT.on||LC.b>0;nitroK+=((nb?1:0)-nitroK)*Math.min(1,dt*(nb?6:3));if(nitroK<.002)nitroK=0;
   rpm+=(t-rpm)*Math.min(1,dt*7);
   if(eng&&sg){
-    const SN=(VEH==='bike'?BIKES[BIKEID]:CARS[CARID]).snd;eng.playbackRate.value=(SN?SN.r0+SN.r1*rpm:.3+.75*rpm)+.12*nitroK;ef.frequency.value=900+5000*rpm;
+    const VCs=VEH==='bike'?BIKES[BIKEID]:CARS[CARID],SN=VCs.snd;
+    if(ENGL){const F=(VCs.fr[0]+(VCs.fr[1]-VCs.fr[0])*clamp((rpm-.2)/.8,0,1))*(1+.1*nitroK),lf=Math.log2(F),n=ENGL.length;
+      let k=0;while(k<n-2&&lf>Math.log2(ENGL[k+1].f))k++;const a=Math.log2(ENGL[k].f),b=Math.log2(ENGL[k+1].f),u=clamp((lf-a)/(b-a),0,1);
+      ENGL.forEach((L,i)=>{L.s.playbackRate.value=F/L.f;L.g.gain.value=i===k?Math.cos(u*Math.PI/2):i===k+1?Math.sin(u*Math.PI/2):0})}
+    else eng.playbackRate.value=(SN&&SN.r1!=null?SN.r0+SN.r1*rpm:.3+.75*rpm)+.12*nitroK;ef.frequency.value=900+5000*rpm;
     eg.gain.value=(DEAD?0:1)*(.25+.45*rpm*(keys.gas?1:SN?SN.off:.55))*(1+.3*nitroK)*clamp((AC.currentTime-t0a-1.4)/.8,0,1);
     const sl=LC.spin>0?.85:keys.hand&&kmh>15?clamp((slip-2.5)/10,0,1):0;
     skG+=(sl-skG)*Math.min(1,dt*(sl>skG?10:4));sg.gain.value=DEAD?0:1;skidMix(skG,kmh,dt);
@@ -3565,7 +3574,7 @@ document.querySelectorAll('.cars button').forEach(b=>b.onclick=()=>{
 });
 /* 오토바이 (오토바이 모드: VEH='bike'). 1인칭 화면은 사진에서 잘라 낸 핸들·계기판(#bk), 3D 모델 assets/models/h2r.glb는 나중 1대1용 */
 const BIKES={h2r:{name:'Kawasaki Ninja H2R',hero:'DATAURI',engine:'DATAURI',launch:'DATAURI',snd:{r0:.36,r1:.72,off:.7}},
-  cbr:{name:'Honda CBR600RR',hero:'DATAURI',cabin:'DATAURI',dash:[46.1,33.1,9.9,19.4],engine:'DATAURI',launch:'DATAURI',snd:{r0:.6,r1:2,off:.75}}};   /* CBR: 공회전 녹음이라 회전수 따라 1→2.6배로 재생 */
+  cbr:{name:'Honda CBR600RR',hero:'DATAURI',cabin:'DATAURI',dash:[46.1,33.1,9.9,19.4],engine:'DATAURI',layers:[['DATAURI',95],['DATAURI',175],['DATAURI',280]],fr:[92,300],launch:'DATAURI',snd:{off:.75}}};   /* CBR: 녹음의 저·중·고회전 3구간(높이를 일정하게 편 반복 소리 95·175·280Hz)을 회전수에 맞춰 섞어 거의 원래 속도로 틀어요 */
 var BIKEID='h2r',VEH='car';try{const b=localStorage.getItem('drift-bike');if(b&&b!=='h2r'&&/^[a-z0-9]{1,12}$/.test(b))BIKEID=b}catch(e){}
 CSPEC.cbr=[['약 120마력','186kg','0→100 약 3.2초','최고 약 255km/h','599cc 직렬 4기통'],'2007년형 · 레이싱 무비스타 컬러 · 고회전 미들급 슈퍼스포츠'];
 CSPEC.h2r=[['326마력','216kg','0→100 약 2.5초','최고 400km/h','998cc 슈퍼차저'],'세계에서 가장 빠른 양산 오토바이 · 트랙 전용'];
