@@ -462,6 +462,10 @@ body[data-mode=practice] #tl,body[data-mode=practice] #bt,body[data-mode=practic
 #again{position:fixed;right:112px;top:72px;z-index:6;padding:6px 12px;font-size:13px;cursor:pointer;display:none}
 #again:hover{border-color:#f2c230;color:#f2c230}
 body[data-mode=lap] #again,body[data-mode=bike] #again{display:block}
+#ghBtn{position:fixed;right:228px;top:72px;z-index:6;padding:6px 12px;font-size:13px;cursor:pointer;display:none}#ghBtn[aria-pressed=false]{opacity:.55;text-decoration:line-through}
+body[data-mode=lap] #ghBtn,body[data-mode=bike] #ghBtn{display:block}
+#ghc{display:none}#tl.gh #ghc{display:block}#ghd.ahead{color:#4dff9a}#ghd.behind{color:#ff6a5a}#ghs{white-space:nowrap;max-width:110px;overflow:hidden;text-overflow:ellipsis;display:block}
+@media (orientation:landscape) and (max-height:500px){#ghBtn{top:44px;right:calc(max(8px,env(safe-area-inset-right)) + 150px);padding:4px 9px;font-size:11px}#ghs{max-width:70px}}
 @media (orientation:landscape) and (max-height:500px){#back{top:44px;right:max(8px,env(safe-area-inset-right));padding:4px 9px;font-size:11px}#again{top:44px;right:calc(max(8px,env(safe-area-inset-right)) + 72px);padding:4px 9px;font-size:11px}#bt{top:78px!important}#lbp{top:112px!important;max-height:calc(100vh - 122px)!important}}
 /* 순위표 맵 탭 */
 #mlbBtn{display:inline-flex;align-items:center;gap:8px;padding:12px 26px;border-radius:99px;border:1.5px solid #f2c230;background:#14171ce6;color:#f2c230;font:700 clamp(14px,2.2vh,17px)/1 inherit;letter-spacing:.04em;cursor:pointer;box-shadow:0 0 18px #f2c23033}
@@ -551,11 +555,12 @@ body.bike #nit.burn{border-color:#7cc4ff}
   <div><b id="cur">0:00.000</b><span>현재 랩</span></div>
   <div><b id="last">-</b><span>직전 랩</span></div>
   <div><b id="best">-</b><span>내 최고</span></div>
+  <div id="ghc"><b id="ghd">-</b><span id="ghs">👻 1등</span></div>
 </div>
 <div class="hud" id="tr"><div id="bar"><i id="rpm"></i></div><div id="snd" style="font-size:12px;margin-top:6px;color:#cdd7e6"></div></div>
 <button id="bt">순위표 (L)</button>
 <button id="back" type="button">← 나가기</button>
-<button id="again" type="button">↻ 다시하기</button>
+<button id="again" type="button">↻ 다시하기</button><button id="ghBtn" type="button" aria-pressed="true">👻 고스트</button>
 <aside id="lbp">
   <h2 id="lbTitle">리더보드</h2>
   <div class="lbtabs" id="lbTabs" role="tablist" aria-label="맵별 순위표"></div>
@@ -3331,7 +3336,7 @@ function loop(now){
   if(started&&!HOLD&&!DEAD)step(dt);
   if(RP)rpTick(dt);else if((MODE==='lap'||MODE==='bike')&&started&&!HOLD&&lapStart!==null)recTick();
   drive(dt);
-  if(MODE==='duel'){lcTick(dt);duelFrame(dt,now)}
+  if(MODE==='duel'){lcTick(dt);duelFrame(dt,now)}else if(MODE==='lap'||MODE==='bike')ghostFrame(dt,now);else ghostOff();
   if(MODE==='practice'&&started)pracFrame(dt);
   if(MAPID==='tokyo')tokyoFrame(dt);else if(MAPID==='ny')nyFrame(dt);else if(MAPID==='alps')alpsFrame(dt);else if(MAPID==='pyongyang')pyFrame(dt);else if(MAPID==='coast')coastFrame(dt);else if(MAPID==='jtouge')jpFrame(dt);else if(MAPID==='volcano')vcFrame(dt);
   const fx=Math.cos(c.h),fz=Math.sin(c.h),rx=-fz,rz=fx;
@@ -3664,7 +3669,7 @@ async function replayUpload(name,ms,mp,md){
     const r=await fetch(SB+'?select=lap_ms&mode=eq.'+(md==='bike'?'bike':'lap')+'&map=eq.'+mp+'&order=lap_ms.asc&limit=1',{headers:HDR});if(!r.ok)return;
     const top=await r.json();if(!top.length||top[0].lap_ms<ms)return;
     const q=await fetch(RPC,{method:'POST',headers:HDR,body:JSON.stringify({p_map:mp,p_name:name,p_lap_ms:ms,p_car:R0.car,p_data:RP_DT+'|'+rpEnc(R0.a)})});
-    if(q.ok&&(await q.json())===true)$('msg').textContent=fmt(ms)+' · 맵 1등! 리플레이도 저장했어요 🎬';
+    if(q.ok&&(await q.json())===true){$('msg').textContent=fmt(ms)+' · 맵 1등! 리플레이도 저장했어요 🎬';if(window.GHC)delete GHC[mp]}
   }catch(e){}
 }
 /* 모드 선택 화면: 리플레이 창 */
@@ -4567,9 +4572,85 @@ function duelFrame(dt,now){
   oppSample(now);
   OPPM.visible=true;OPPM.position.set(O.x,groundAt(O.x,O.z,O.ci),O.z);
   OPPM.rotation.set(0,-O.h,Math.atan((TSL[O.ci]||0)*Math.cos(O.h-(TH[O.ci]||0))));
+  if(GH&&GH.shown)ghostOff();oppTag.visible=true;
   oppVisual(dt,now);
   const d=Math.hypot(O.x-cam.position.x,O.z-cam.position.z),s=Math.max(.75,d/22);oppTag.scale.set(2.8*s,.7*s,1);oppTag.position.y=2.2+.3*s;
 }
+/* ================= 1등 고스트 (2026-11-18) =================
+   개인 랩타임(자동차·오토바이)에서 그 맵 1등 리플레이(replays 표)를 반투명 차로 같이 달리게 해요.
+   내가 출발(첫 가속)하는 순간 고스트도 출발, 한 바퀴마다 다시. 부딪히지 않아요.
+   타이머 옆 "👻 1등" 칸에 같은 지점에서 고스트보다 몇 초 빠른지(초록 −) 느린지(빨강 +) 보여 줘요.
+   달리는 화면의 "👻 고스트" 버튼으로 끄고 켬(localStorage drift-ghost). 1vs1 상대 차 그리기(OPPM·oppVisual)를 그대로 써요. */
+var GH={shown:false,on:true,cur:null,hudT:0,tagFor:''},GHC={};
+try{GH.on=localStorage.getItem('drift-ghost')!=='off'}catch(e){}
+const ghTag=new THREE.Sprite(new THREE.SpriteMaterial({transparent:true,depthTest:false,depthWrite:false,fog:false}));ghTag.renderOrder=20;ghTag.visible=false;OPPM.add(ghTag);
+function ghTagDraw(t){
+  const cv=document.createElement('canvas');cv.width=448;cv.height=64;const x=cv.getContext('2d');
+  x.fillStyle='rgba(10,14,28,.78)';x.beginPath();x.moveTo(32,4);x.lineTo(416,4);x.arc(416,32,28,-Math.PI/2,Math.PI/2);x.lineTo(32,60);x.arc(32,32,28,Math.PI/2,Math.PI*1.5);x.fill();
+  x.strokeStyle='#9fd4ff';x.lineWidth=4;x.stroke();x.fillStyle='#e8f4ff';x.font='800 28px system-ui,sans-serif';x.textAlign='center';x.textBaseline='middle';
+  let s=t;while(x.measureText(s).width>380&&s.length>3)s=s.slice(0,-2)+'…';x.fillText(s,224,34);
+  if(ghTag.material.map)ghTag.material.map.dispose();ghTag.material.map=new THREE.CanvasTexture(cv);ghTag.material.needsUpdate=true;
+}
+/* 그 맵 1등 리플레이 불러오기(맵마다 한 번, 5분 지나면 다시) */
+function ghostGet(m){
+  const g=GHC[m];if(g&&(g.st==='loading'||performance.now()-g.at<300000))return g;
+  const e=GHC[m]={st:'loading',at:performance.now()};
+  fetch(RPT+'?select=name,lap_ms,car,data&map=eq.'+m,{headers:HDR}).then(r=>r.ok?r.json():[]).then(rows=>{
+    const x=rows&&rows[0],d=x&&String(x.data||''),k=d?d.indexOf('|'):-1;
+    if(!x||k<0){e.st='none';return}
+    const a=rpDec(d.slice(k+1)),n=Math.floor(a.length/6);if(n<2){e.st='none';return}
+    Object.assign(e,{st:'ok',name:String(x.name||''),ms:+x.lap_ms||0,car:String(x.car||''),dt:clamp(+d.slice(0,k)||RP_DT,20,1000)/1000,a,n,gp:null});
+  }).catch(()=>{e.st='none';e.at=performance.now()-240000});   /* 실패하면 1분 뒤 다시 */
+  return e;
+}
+/* 고스트가 각 순간까지 코스를 얼마나 갔는지(진행 칸). 내 위치와 비교해 시간 차이를 계산해요 */
+function ghostProg(g){
+  if(g.gp&&g.gpMap===MAPID)return g.gp;
+  const gp=new Float32Array(g.n);let gi=nearest(g.a[0]/10,g.a[1]/10,0,N/2|0),acc=0,mx=0;
+  for(let k=0;k<g.n;k++){const x=g.a[k*6]/10,z=g.a[k*6+1]/10,ni=nearest(x,z,gi,60);let di=ni-gi;if(di>N/2)di-=N;if(di<-N/2)di+=N;if(Math.abs(di)<120)acc+=di;gi=ni;mx=Math.max(mx,acc);gp[k]=mx}
+  g.gp=gp;g.gpMap=MAPID;return gp;
+}
+function ghostAlpha(a){   /* a: 투명도(0~1), null이면 원래대로 */
+  const f=o=>{if(!o.material||o===ghTag||o===oppTag)return;[].concat(o.material).forEach(m=>{const u=m.userData;if(!u.gh0)u.gh0=[m.transparent,m.opacity,m.depthWrite];
+    if(a==null){if(u.ghOn){m.transparent=u.gh0[0];m.opacity=u.gh0[1];m.depthWrite=u.gh0[2];u.ghOn=false;m.needsUpdate=true}}
+    else{if(!u.ghOn){m.transparent=true;m.depthWrite=false;u.ghOn=true;m.needsUpdate=true}m.opacity=u.gh0[1]*a}})};
+  OPPM.traverse(f);OPPC.traverse(f);
+}
+function ghostOff(){if(!GH||!GH.shown)return;GH.shown=false;hideOpp();ghostAlpha(null);ghTag.visible=false;oppTag.visible=true;$('tl').classList.remove('gh')}
+function ghostFrame(dt,now){
+  if(!GH)return;
+  const g=GH.on&&started&&MAPS[MAPID]&&!MAPS[MAPID].noLB?ghostGet(MAPID):null;
+  if(!g||g.st!=='ok'){ghostOff();return}
+  const el=lapStart===null?0:(performance.now()-lapStart)/1000;
+  /* HUD: 같은 지점에서 고스트보다 빠른지 느린지 */
+  const tl=$('tl');if(!tl.classList.contains('gh')){tl.classList.add('gh');$('ghs').textContent='👻 '+g.name;$('ghd').textContent='-';$('ghd').className=''}
+  if(now-GH.hudT>200){GH.hudT=now;const gp=ghostProg(g),d=$('ghd');
+    if(lapStart!==null&&prog>15&&!AIR){let lo=0,hi=g.n-1;while(lo<hi){const m=(lo+hi)>>1;if(gp[m]<prog)lo=m+1;else hi=m}
+      const k=lo,f=k>0&&gp[k]>gp[k-1]?(prog-gp[k-1])/(gp[k]-gp[k-1]):0,gt=(k-1+clamp(f,0,1))*g.dt;
+      if(gp[g.n-1]>=prog){const df=el-gt;d.textContent=(df>=0?'+':'−')+Math.abs(df).toFixed(2);d.className=df>=0?'behind':'ahead'}}
+    else if(lapStart===null){d.textContent=fmt(g.ms);d.className=''}}
+  /* 고스트가 결승에 들어가면 숨겨요 */
+  if(el*1000>g.ms+300){if(GH.shown){hideOpp();ghTag.visible=false}GH.shownEnd=true;GH.shown=true;return}
+  const u=Math.min(el/g.dt,g.n-1.001),i=Math.max(0,Math.floor(u)),f=u-i,A=i*6,B=Math.min(i+1,g.n-1)*6,a=g.a;
+  let dh=a[B+2]/1e4-a[A+2]/1e4;dh=Math.atan2(Math.sin(dh),Math.cos(dh));
+  let x=(a[A]+(a[B]-a[A])*f)/10,z=(a[A+1]+(a[B+1]-a[A+1])*f)/10;if(Math.hypot(a[B]-a[A],a[B+1]-a[A+1])>300){x=a[B]/10;z=a[B+1]/10}
+  const h=a[A+2]/1e4+dh*f,v=(a[A+3]+(a[B+3]-a[A+3])*f)/100;
+  O.x=x;O.z=z;O.h=h;O.vx=Math.cos(h)*v;O.vz=Math.sin(h)*v;O.fl=f<.5?a[A+5]:a[B+5];O.ci=nearest(x,z,O.ci||0,O.ci?60:N/2|0);
+  if(D.oppCar!==g.car){D.oppCar=g.car;V.init=false}
+  if(GH.tagFor!==g.name+g.ms){GH.tagFor=g.name+g.ms;ghTagDraw('👻 '+g.name+' · '+fmt(g.ms))}
+  smokeStep(dt);
+  OPPM.visible=true;OPPM.position.set(x,groundAt(x,z,O.ci),z);
+  OPPM.rotation.set(0,-h,Math.atan((TSL[O.ci]||0)*Math.cos(h-(TH[O.ci]||0))));
+  oppTag.visible=false;oppVisual(dt,now);
+  /* 가까우면 더 투명하게 (내 차와 겹쳐도 앞이 보이게) */
+  const dd=Math.hypot(x-cam.position.x,z-cam.position.z);ghostAlpha(.5*clamp((dd-2.5)/9,.12,1));
+  ghTag.visible=dd>6;const s=Math.max(.75,dd/22);ghTag.scale.set(5*s,.72*s,1);ghTag.position.y=2.2+.3*s;
+  GH.shown=true;
+}
+$('ghBtn').setAttribute('aria-pressed',GH.on);
+$('ghBtn').onclick=e=>{GH.on=!GH.on;try{localStorage.setItem('drift-ghost',GH.on?'on':'off')}catch(x){}e.currentTarget.setAttribute('aria-pressed',GH.on);toast(GH.on?'👻 1등 고스트 켰어요':'고스트 껐어요');e.currentTarget.blur()};
+/* === 1등 고스트 끝 === */
+
 /* 차끼리 부딪힘: 차를 앞뒤 원 2개로 보고, 겹치면 살짝 튕겨 나가요 (상대도 자기 화면에서 똑같이 계산) */
 let bumpX=0,bumpZ=0,bumpT=0;
 function duelCollide(dt){
