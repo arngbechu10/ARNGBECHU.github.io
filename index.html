@@ -1458,9 +1458,36 @@ function pyFrame(dt){if(PY_STAT)PY_STAT.rotation.y=Math.atan2(cam.position.x-PY_
    → "서울 →" 철교(강 위) → 지뢰밭 → 공습 구간(폭격기가 빨간 원에 폭탄) → 부서진 탱크·트럭 지그재그 → 결승.
    방해물에 맞으면 실패가 아니라 속도가 크게 줄고 흔들려요(시간 손해). 지뢰는 터지면 25초 뒤 다시 생겨요.
    잠금: 맵 버튼을 누르면 비밀번호(BK_HASH와 같은 비밀번호) → KW_OK(메모리, 새로고침하면 다시 잠김). 순위표·리플레이·고스트 없음(noLB). */
-const KW_CTRL=[[0,0],[130,0],[230,-6],[320,10],[380,50],[400,110],[380,170],[330,195],[302,232],[326,272],[312,312],[355,338],[420,340],[480,370],[495,420],[460,450],[400,470],[320,460],[250,420],[200,360],[150,330],[90,340],[40,390],[-20,410],[-75,395],[-95,350],[-60,320],[-70,270],[-110,235],[-95,180],[-60,140],[-100,95],[-95,40],[-55,8]];
+const KW_CTRL=[[0,0],[169,0],[299,-8],[390,-50],[450,-140],[458,-300],[462,-470],[500,-560],[590,-575],[655,-510],[668,-380],[660,-220],[640,-90],[600,10],[494,65],[520,143],[494,221],[429,254],[393,302],[424,354],[406,406],[462,439],[546,442],[624,481],[644,546],[598,585],[520,611],[416,598],[325,546],[260,468],[195,429],[117,442],[52,507],[-26,533],[-97,514],[-123,455],[-78,416],[-91,351],[-143,306],[-123,234],[-78,182],[-130,124],[-123,52],[-71,10]];   /* 2026-11-20 약 4.1km로 늘림(예전 길 ×1.3 + 끊어진 다리가 있는 남쪽 우회로) */
 MAPS.kwar={half:8,wall:1.6,rail:'jersey',bg:0x0b0b0e,fog:[0x141217,30,430],gnd:0x1d1b17,gy:-.6,asph:0x45454a,kerb:['#bdb6a6','#7a2a24'],
-  pts:()=>closedSpline(KW_CTRL),shoulder:0x2b2620,kw:true,noLB:true};
+  pts:()=>closedSpline(KW_CTRL),shoulder:0x2b2620,kw:true,noLB:true,tyFn:()=>kwTY(),prep:()=>kwPrep(),respawn:true,respawnI:()=>KWJ?KWJ.back:0};
+/* 끊어진 다리 점프: 남쪽 우회로 직선. 다리가 올라가다(경사로) 가운데가 끊겨 있어요 → 니트로로 속도를 내야 건너편에 닿아요.
+   lip=끊긴 끝(점프하는 곳), land=건너편 시작. 못 닿으면 강에 떨어져 점프대 앞에서 다시 출발(시간은 계속 흘러요). */
+const KW_JUMP={at:[459,-345],D:122,H0:5,H1:8,HL:6};
+let KWJ=null;
+function kwTY(){const ss=t=>t<=0?0:t>=1?1:t*t*(3-2*t);let lip=0,bd=1e18;TP.forEach((p,i)=>{const d=(p[0]-KW_JUMP.at[0])**2+(p[1]-KW_JUMP.at[1])**2;if(d<bd){bd=d;lip=i}});
+  let L=0;for(let i=1;i<N;i++)L+=Math.hypot(TP[i][0]-TP[i-1][0],TP[i][1]-TP[i-1][1]);const sp=L/N,m=x=>Math.round(x/sp);
+  const J=KW_JUMP,land=lip+m(J.D),r0=lip-m(25),u0=lip-m(90),le=land+m(14),down=le+m(60);
+  const th=Math.atan2(J.H1-J.H0,(lip-r0)*sp),dy=J.HL-1.3-J.H1,D=(land-lip)*sp,v=Math.sqrt(4.9*D*D/(Math.cos(th)**2*(D*Math.tan(th)-dy)));
+  KWJ={lip,land,r0,u0,le,down,th,D,need:Math.ceil(v*3.6/5)*5,pad:lip-m(170),back:lip-m(230)};
+  const T=new Array(N).fill(0);for(let i=u0;i<=down;i++){T[i]=i<r0?J.H0*ss((i-u0)/(r0-u0)):i<=lip?J.H0+(J.H1-J.H0)*(i-r0)/(lip-r0):i<land?J.H1+(J.HL-J.H1)*(i-lip)/(land-lip):i<=le?J.HL:J.HL*(1-ss((i-le)/(down-le)))}
+  return T}
+const kwGap=i=>KWJ&&i>KWJ.lip&&i<KWJ.land;
+function kwPrep(){ROADW=new Float32Array(N);KERBW=new Float32Array(N);SHW=new Float32Array(N);WALLA=new Float32Array(N);
+  for(let i=0;i<N;i++){const g=kwGap(i);ROADW[i]=g?0:HALF;KERBW[i]=g?0:1.4;WALLA[i]=g?99:WALL;SHW[i]=g?0:WALL+1.2}}
+/* 점프 판정 (step 안에서) */
+function kwJumpStep(){if(!KWJ||DEAD||FALL||AIR)return;const J=KWJ,v=Math.hypot(c.vx,c.vz);
+  if(KWS.lastJ!=null&&KWS.lastJ<J.pad&&ci>=J.pad&&ci<J.lip){NITG=1;NIT.ready=true;toast('⚡ 니트로 충전! 끊어진 다리 앞에서 N을 눌러요')}
+  if(KWS.lastJ!=null&&KWS.lastJ<=J.lip&&ci>J.lip&&ci<J.land){const hv=v*Math.cos(J.th);c.h=TH[J.lip];c.vx=Math.cos(c.h)*hv;c.vz=Math.sin(c.h)*hv;AIR=true;cy=TY[J.lip];cvy=v*Math.sin(J.th)}
+  if(!AIR&&kwGap(ci)){kwFallBridge('🌊 강에 빠졌어요! 니트로(N)를 쓰세요');return}
+  KWS.lastJ=ci}
+function kwAir(dt){const J=KWJ;c.x+=c.vx*dt;c.z+=c.vz*dt;cvy-=9.8*dt;cy+=cvy*dt;
+  const ni=nearest(c.x,c.z,ci,60);prog+=ni-ci;ci=ni;KWS.lastJ=ci;
+  if(ci>=J.land&&cy<=TY[ci]){if(cy<TY[ci]-1.3){AIR=false;kwFallBridge('💥 다리 끝에 부딪혔어요! 니트로(N)를 쓰세요');return}
+    AIR=false;const imp=-cvy;cy=TY[ci];cvy=0;hitK=Math.min(1,Math.max(hitK,imp/14));thump(Math.min(1,imp/12));c.vx*=.93;c.vz*=.93;toast('🛬 점프 성공!');return}
+  if(cy<-3.5){AIR=false;kwFallBridge('🌊 강에 빠졌어요! 니트로(N)를 쓰세요')}}
+function kwFallBridge(msg){kwBoomSnd(.4);fallI=KWJ.lip;startFall();toast(msg)}
+
 let KW_OK=false;
 async function kwUnlock(){
   const pw=prompt('🔒 Korean War는 아직 테스트 중인 맵이에요.\n비밀번호를 입력하세요');if(pw==null)return false;
@@ -1468,11 +1495,12 @@ async function kwUnlock(){
   if(h!==BK_HASH){toast('비밀번호가 달라요.');return false}KW_OK=true;kwBtnUI();toast('🔓 Korean War 잠금 해제! (새로고침하면 다시 잠겨요)');return true}
 function kwBtnUI(){const b=document.querySelector('.maps button[data-map="kwar"] b');if(b)b.textContent=(KW_OK?'':'🔒 ')+'Korean War'}
 /* 구간 (코스 점 번호, N=1400) */
-const KW_Z={hq:[15,70],gate:56,check:[105,195],gun:[226,300],nest:262,ruins:[360,500],tun:[508,560],tank:[592,722],seoul:736,bridge:[752,806],mine:[862,1000],air:[1012,1200],wreck:[1220,1380]};
-const KW_MINEZ=[[304,362],[862,1000],[1140,1212]];   /* 지뢰밭 [시작, 끝] */
-const KW_GAS=[[108,200],[560,610],[1318,1395]];    /* 최루탄 구간 */
-const KW_GUNS=[[226,300,262],[384,456,420],[1244,1316,1280]];   /* 기관총 사격 구간 [시작, 끝, 진지 위치] */
-const KW_BAR=[[112,-1],[136,1],[160,-1],[184,1]];            /* 검문소 바리케이드: 도로 반쪽을 막아요 (-1 왼쪽, 1 오른쪽) */
+const KW_Z={hq:[10,48],gate:39,check:[72,128],ruins:[684,780],tun:[785,821],tank:[843,933],seoul:943,bridge:[954,991],air:[1133,1262],wreck:[1276,1386],slum:[[140,176],[300,420],[1150,1240]]};
+const KW_AIR=[[1133,1262],[395,560]];   /* 공습 구간 2곳 */
+const KW_MINEZ=[[645,684],[1029,1125],[1221,1270]];   /* 지뢰밭 [시작, 끝] */
+const KW_GAS=[[74,130],[821,856],[1344,1397]];    /* 최루탄 구간 */
+const KW_GUNS=[[596,644,618],[700,752,725],[1292,1342,1317]];   /* 기관총 사격 구간 [시작, 끝, 진지 위치] */
+const KW_BAR=[[80,-1],[94,1],[108,-1],[122,1]];            /* 검문소 바리케이드: 도로 반쪽을 막아요 (-1 왼쪽, 1 오른쪽) */
 const KWS={};
 /* 태극기 (3:2) */
 function kwFlagTex(){return tkTex(300,200,(x,w,h)=>{x.fillStyle='#f4f1ea';x.fillRect(0,0,w,h);
@@ -1534,7 +1562,7 @@ function buildKW(){
     const mf=new THREE.Sprite(new THREE.SpriteMaterial({map:T.glowO,color:0xffd080,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true,opacity:0}));mf.position.set(6,.1,0);mf.scale.set(5,5,1);tur.add(mf);
     G.position.set(x,0,z);G.rotation.y=ry;MG.add(G);return {G,tur,mf,x,z}};
   /* ===== 1) 출발: 무너진 본부 건물 + 태극기 + 현수막 게이트 ===== */
-  {const i=36,sd=-1,off=ext+14,[x,z]=tkAt(i,sd*off),ry=yaw(i);
+  {const i=24,sd=-1,off=ext+14,[x,z]=tkAt(i,sd*off),ry=yaw(i);
     tkAdd(boxWinGeo(26,13,14),ruinMs[0],x,6.5,z,ry);tkAdd(boxWinGeo(9,6,14),ruinMs[0],x+Math.cos(TH[i])*8,16,z+Math.sin(TH[i])*8,ry);
     for(let k=0;k<10;k++){const [rx,rz]=tkAt(i+((rnd()-.5)*30|0),sd*(off-9+rnd()*4));tkAdd(new THREE.BoxGeometry(1+rnd()*2.5,.5+rnd(),1+rnd()*2),rubble,rx,.4,rz,rnd()*3)}
     const [fx,fz]=tkAt(i,sd*(off-7.05),-3);tkBoard(fx,7,fz,9,6,-TN[i][0]*sd,-TN[i][1]*sd,new THREE.MeshBasicMaterial({map:kwFlagTex(),side:THREE.DoubleSide}));
@@ -1550,7 +1578,7 @@ function buildKW(){
     const n=TN[i];[1,-1].forEach(d=>{const g=new THREE.PlaneGeometry(W2*2-1,2);const m=new THREE.Mesh(g,bm);m.position.set(cx+Math.cos(TH[i])*.32*d,8.4,cz+Math.sin(TH[i])*.32*d);m.rotation.y=Math.atan2(Math.cos(TH[i])*d,Math.sin(TH[i])*d);MG.add(m)});}
   /* ===== 2) 검문소: 바리케이드 지그재그 + 감시탑 + 군인 ===== */
   {const ck=kwSign(256,96,(x,w,h)=>{x.fillStyle='#e8e2d0';x.fillRect(0,0,w,h);x.fillStyle='#8e1414';x.fillRect(0,0,w,30);x.fillStyle='#fff';x.font='900 22px '+KR;x.textAlign='center';x.fillText('검 문 소',w/2,23);x.fillStyle='#111';x.font='900 30px system-ui';x.fillText('CHECKPOINT',w/2,66);x.font='700 15px '+KR;x.fillText('서행 · 정지',w/2,88)});
-    {const i=KW_Z.check[0]-8,[x,z]=tkAt(i,ext+1.4);tkAdd(new THREE.BoxGeometry(.15,3,.15),steel,x,1.5,z);tkBoard(x,3.3,z,3,1.1,-Math.cos(TH[i]),-Math.sin(TH[i]),ck)}
+    {const i=KW_Z.check[0]-5,[x,z]=tkAt(i,ext+1.4);tkAdd(new THREE.BoxGeometry(.15,3,.15),steel,x,1.5,z);tkBoard(x,3.3,z,3,1.1,-Math.cos(TH[i]),-Math.sin(TH[i]),ck)}
     const jw=tkM(0xd9d4c8),jr=tkM(0x9a2a24);
     KW_BAR.forEach(([i,sd])=>{const th=TH[i],hw=HALF/2+.4,[x,z]=tkAt(i,sd*(HALF/2+.3));TOBS.push({x,z,c:Math.cos(th),s:Math.sin(th),hl:.55,hw});
       const n=Math.round(hw*2/2);for(let k=0;k<n;k++){const [bx,bz]=tkAt(i,sd*(HALF/2+.3)+(k-(n-1)/2)*2);tkAdd(new THREE.BoxGeometry(.6,1,1.95),k%2?jw:jr,bx,.5,bz,yaw(i))}
@@ -1558,7 +1586,7 @@ function buildKW(){
       const [lx,lz]=tkAt(i,sd*.4);const L=new THREE.Sprite(new THREE.SpriteMaterial({map:T.glowR,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true}));L.position.set(lx,1.3,lz);L.scale.set(2,2,1);MG.add(L);(KWS.blink=KWS.blink||[]).push(L);
       soldier(...tkAt(i,sd*(ext+1.5),2),yaw(i)+Math.PI/2*sd)});
     /* 감시탑 2개 (탐조등이 빙빙 돌아요) */
-    KWS.lights=[];[[150,1],[1300,-1]].forEach(([i,sd])=>{let off=ext+9;let [x,z]=tkAt(i,sd*off);if(!far(x,z,off-1)){[x,z]=tkAt(i,-sd*off)}
+    KWS.lights=[];[[103,1],[1331,-1],[360,1]].forEach(([i,sd])=>{let off=ext+9;let [x,z]=tkAt(i,sd*off);if(!far(x,z,off-1)){[x,z]=tkAt(i,-sd*off)}
       const H=14;[[-1.6,-1.6],[1.6,-1.6],[-1.6,1.6],[1.6,1.6]].forEach(([a,b])=>{const g=new THREE.BoxGeometry(.25,H,.25);g.rotateZ(-a*.03);g.rotateX(b*.03);tkAdd(g,steel,x+a,H/2,z+b)});
       for(let h=2;h<H;h+=3.5)[[0,1.6,0],[0,-1.6,0],[1.6,0,1],[-1.6,0,1]].forEach(([a,b,r])=>{const g=new THREE.BoxGeometry(3.4,.12,.12);g.rotateZ(.7);if(r)g.rotateY(Math.PI/2);tkAdd(g,steel,x+a,h+1.4,z+b)});
       tkAdd(new THREE.BoxGeometry(4.4,.3,4.4),wood,x,H,z);tkAdd(new THREE.BoxGeometry(4,1.2,4),wood,x,H+.75,z);tkAdd(new THREE.BoxGeometry(4.6,.3,4.6),dark,x,H+3,z);
@@ -1585,10 +1613,10 @@ function buildKW(){
     const dust=new THREE.Points(dg,new THREE.PointsMaterial({size:2.6,map:T.smoke,color:0xd8c8a8,transparent:true,depthWrite:false,opacity:.8}));dust.frustumCulled=false;MG.add(dust);
     KWS.guns.push({x:gx,z:gz,mf,lines,dust,t:gk*1.1,a:ga,b:gb,shotT:0});
     const sg=kwSign(256,128,(x,w,h)=>{x.fillStyle='#f2c230';x.fillRect(0,0,w,h);x.fillStyle='#111';x.fillRect(6,6,w-12,h-12);x.fillStyle='#f2c230';x.font='900 40px '+KR;x.textAlign='center';x.fillText('사격 구역',w/2,56);x.font='900 26px system-ui';x.fillText('GUNFIRE ⚠',w/2,100)});
-    {const j=ga-30,[sx_,sz_]=tkAt(j,ext+1.4);tkAdd(new THREE.BoxGeometry(.15,3,.15),steel,sx_,1.5,sz_);tkBoard(sx_,3.2,sz_,3.2,1.6,-Math.cos(TH[j]),-Math.sin(TH[j]),sg)}});
+    {const j=ga-16,[sx_,sz_]=tkAt(j,ext+1.4);tkAdd(new THREE.BoxGeometry(.15,3,.15),steel,sx_,1.5,sz_);tkBoard(sx_,3.2,sz_,3.2,1.6,-Math.cos(TH[j]),-Math.sin(TH[j]),sg)}});
   /* ===== 4) 폐허 거리 (길 양쪽 무너진 건물·불·잔해) ===== */
   for(let i=0;i<N;i+=13)for(const sd of[-1,1]){
-    if(i>KW_Z.tun[0]-12&&i<KW_Z.tun[1]+12)continue;if(i>KW_Z.bridge[0]-14&&i<KW_Z.bridge[1]+14)continue;if(KW_MINEZ.some(([a,b])=>i>a&&i<b))continue;if(i<75&&sd<0)continue;
+    if(i>KW_Z.tun[0]-12&&i<KW_Z.tun[1]+12)continue;if(i>KW_Z.bridge[0]-14&&i<KW_Z.bridge[1]+14)continue;if(KW_MINEZ.some(([a,b])=>i>a&&i<b))continue;if(i<50&&sd<0)continue;if(KWJ&&i>KWJ.u0-8&&i<KWJ.down+8)continue;
     if(rnd()<(i>=KW_Z.ruins[0]&&i<=KW_Z.ruins[1]?.15:.5))continue;
     const w=10+rnd()*12,d=9+rnd()*8,h=5+Math.pow(rnd(),1.4)*16,off=ext+8+rnd()*12+d/2,[bx,bz]=tkAt(i,sd*off);
     if(!far(bx,bz,off-.5)||!far(bx,bz,ext+5+Math.hypot(w,d)/2,i))continue;
@@ -1598,6 +1626,24 @@ function buildKW(){
     for(let k=0;k<6;k++){const o=(rnd()-.5)*w,o2=(rnd()-.5)*d*.6-sd*(d/2+1.5);tkAdd(new THREE.BoxGeometry(.8+rnd()*2.4,.4+rnd()*1.2,.8+rnd()*2),rubble,bx+Math.cos(-ry)*o-TN[i][0]*o2*0+TN[i][0]*o2,.35,bz+Math.sin(-ry)*o+TN[i][1]*o2,rnd()*3)}
     if(rnd()<.45)fireAt(bx,h*(.3+rnd()*.6),bz,3+rnd()*3);
   }
+  /* ===== 판자촌 (나무판·양철 지붕 판잣집 무리) ===== */
+  {const plank=c0=>{const t=tkTex(128,128,(x,w,h)=>{x.fillStyle=c0;x.fillRect(0,0,w,h);for(let k=0;k<16;k++){const v=40+rnd()*50|0;x.fillStyle='rgba('+v+','+(v*.8|0)+','+(v*.6|0)+',.55)';x.fillRect(k*8,0,7,h);x.fillStyle='rgba(0,0,0,.5)';x.fillRect(k*8+7,0,1,h)}
+      for(let k=0;k<5;k++){x.fillStyle=rnd()<.5?'rgba(120,70,40,.6)':'rgba(70,75,80,.7)';x.fillRect(rnd()*w,rnd()*h,20+rnd()*30,14+rnd()*24)}});return new THREE.MeshBasicMaterial({map:t})};
+    const walls=['#4a3b2c','#3e3a33','#55473a'].map(plank),tin=new THREE.MeshBasicMaterial({map:tkTex(128,64,(x,w,h)=>{x.fillStyle='#5a4a3e';x.fillRect(0,0,w,h);for(let k=0;k<32;k++){x.fillStyle=k%2?'rgba(255,255,255,.08)':'rgba(0,0,0,.25)';x.fillRect(k*4,0,2,h)}for(let k=0;k<8;k++){x.fillStyle='rgba(140,60,20,.6)';x.fillRect(rnd()*w,rnd()*h,18,10)}})}),
+      lit=tkM(0xffb050),dk=tkM(0x0c0b0a),cloth=[0xb03030,0xd8d0b8,0x3050a0,0x7a8a40].map(c=>tkM(c));KWS.chim=[];
+    const shack=(x,z,ry,w,d,h)=>{tkAdd(new THREE.BoxGeometry(w,h,d),walls[(rnd()*3)|0],x,h/2,z,ry);const g=new THREE.BoxGeometry(w+.7,.1,d+.8);g.rotateZ(.2*(rnd()<.5?1:-1));tkAdd(g,tin,x,h+.25,z,ry);
+      const fx=Math.cos(-ry),fz=Math.sin(-ry),nx=-fz,nz=fx;tkAdd(new THREE.BoxGeometry(.7,1.5,.05),dk,x+nx*(d/2+.03),.75,z+nz*(d/2+.03),ry);
+      if(rnd()<.5)tkAdd(new THREE.BoxGeometry(.6,.45,.05),rnd()<.5?lit:dk,x+nx*(d/2+.03)+fx*w*.28,1.5,z+nz*(d/2+.03)+fz*w*.28,ry);
+      if(rnd()<.3){tkAdd(new THREE.CylinderGeometry(.08,.08,1.6,6),tkM(0x2a2a2a),x+fx*w*.3,h+.9,z+fz*w*.3);KWS.chim.push([x+fx*w*.3,h+1.6,z+fz*w*.3])}
+      if(rnd()<.25){const g2=new THREE.BoxGeometry(w*.6,.1,1.6);g2.rotateX(.25);tkAdd(g2,tin,x+nx*(d/2+.8),h*.8,z+nz*(d/2+.8),ry)}};
+    const cluster=(cx,cz,ry,n,r)=>{for(let q=0;q<n;q++){const a=rnd()*6.28,rr=rnd()*r,x=cx+Math.cos(a)*rr,z=cz+Math.sin(a)*rr;if(!far(x,z,ext+3))continue;shack(x,z,ry+(rnd()-.5)*.5,2.6+rnd()*2.6,2.4+rnd()*2,2.1+rnd()*1.1)}
+      /* 빨랫줄 */
+      for(let q=0;q<2;q++){const a=rnd()*6.28,x=cx+Math.cos(a)*r*.5,z=cz+Math.sin(a)*r*.5;if(!far(x,z,ext+3))continue;tkAdd(new THREE.BoxGeometry(5,.02,.02),tkM(0x222222),x,2.2,z,ry);for(let k=0;k<4;k++)tkAdd(new THREE.BoxGeometry(.5,.7,.03),cloth[(rnd()*4)|0],x+Math.cos(-ry)*(k-1.5)*1.1,1.85,z+Math.sin(-ry)*(k-1.5)*1.1,ry)}
+      if(rnd()<.5)fireAt(cx+(rnd()-.5)*r,.3,cz+(rnd()-.5)*r,1.4)};
+    KW_Z.slum.forEach(([a,b])=>{for(let i=a;i<b;i+=6)for(const sd of[-1,1]){if(rnd()<.35)continue;const off=ext+7+rnd()*22,[x,z]=tkAt(i,sd*off);if(!far(x,z,ext+6,i))continue;cluster(x,z,yaw(i),4+(rnd()*5|0),7+rnd()*5)}});
+    /* 다른 곳에도 중간중간 */
+    for(let i=20;i<N;i+=37){if(KW_Z.slum.some(([a,b])=>i>a-10&&i<b+10)||(KWJ&&i>KWJ.u0-10&&i<KWJ.down+10)||(i>KW_Z.tun[0]-8&&i<KW_Z.tun[1]+8)||(i>KW_Z.bridge[0]-10&&i<KW_Z.bridge[1]+10))continue;
+      if(rnd()<.45)continue;const sd=rnd()<.5?-1:1,off=ext+10+rnd()*18,[x,z]=tkAt(i,sd*off);if(!far(x,z,ext+7,i))continue;cluster(x,z,yaw(i),3+(rnd()*4|0),6+rnd()*4)}}
   /* 길가 소품: 모래주머니·드럼통(불)·고슴도치·철조망·군인 */
   for(let i=6,k=0;i<N;i+=17,k++){const sd=k%2?1:-1;if(i>KW_Z.tun[0]-6&&i<KW_Z.tun[1]+6)continue;if(i>KW_Z.bridge[0]-4&&i<KW_Z.bridge[1]+4)continue;
     const [x,z]=tkAt(i,sd*(ext+2.2));if(!far(x,z,ext+1.4))continue;const r=rnd();
@@ -1608,7 +1654,7 @@ function buildKW(){
   }
   /* 젖은 도로에 비친 불빛 (드럼통 불 근처) */
   /* ===== 5) 곡사포 (폐허 S자 바깥) ===== */
-  {const i=440;let sd=-1,off=ext+12,[x,z]=tkAt(i,sd*off);if(!far(x,z,off-1)){sd=1;[x,z]=tkAt(i,sd*off)}
+  {const i=738;let sd=-1,off=ext+12,[x,z]=tkAt(i,sd*off);if(!far(x,z,off-1)){sd=1;[x,z]=tkAt(i,sd*off)}
     const ry=yaw(i)+Math.PI/2*sd*-1;const add=(g,m,lx,ly,lz,rz)=>{if(rz)g.rotateZ(rz);g.translate(lx,ly,lz);tkAdd(g,m,x,0,z,ry)};
     add(new THREE.BoxGeometry(3.6,.6,1.6),olive,0,.9,0);[-1,1].forEach(s=>add(new THREE.CylinderGeometry(.7,.7,.35,12).rotateX(Math.PI/2),dark,-.3,.7,s*1.1));
     [-1,1].forEach(s=>{const g=new THREE.BoxGeometry(4,.2,.2);g.rotateY(s*.35);g.translate(-2.4,.35,s*.5);tkAdd(g,olive,x,0,z,ry)});
@@ -1628,10 +1674,10 @@ function buildKW(){
       const [tx,tz]=tkAt(i,-(wl+2.5),e?SP*2+.8:-.8);barrel(tx,tz,true);const [ux,uz]=tkAt(i,wl+2.5,e?SP*2+.8:-.8);barrel(ux,uz,true)});
   }
   /* ===== 7) 탱크 포격 구간 (헤어핀) ===== */
-  KWS.tanks=[];[[640,1],[700,-1],[612,-1]].forEach(([i,sd0])=>{let sd=sd0,off=ext+11,[x,z]=tkAt(i,sd*off);if(!far(x,z,off-1)){sd=-sd;[x,z]=tkAt(i,sd*off)}if(!far(x,z,off-1))return;
+  KWS.tanks=[];[[876,1],[918,-1],[857,-1]].forEach(([i,sd0])=>{let sd=sd0,off=ext+11,[x,z]=tkAt(i,sd*off);if(!far(x,z,off-1)){sd=-sd;[x,z]=tkAt(i,sd*off)}if(!far(x,z,off-1))return;
     const T1=liveTank(x,z,yaw(i)+(sd>0?Math.PI/2:-Math.PI/2));KWS.tanks.push(T1);sandbags(...tkAt(i,sd*(off-4.5)),yaw(i),9,2);soldier(...tkAt(i,sd*(off+3),3),yaw(i),false)});
   {const sg=kwSign(256,128,(x,w,h)=>{x.fillStyle='#8e1414';x.fillRect(0,0,w,h);x.fillStyle='#fff';x.font='900 38px '+KR;x.textAlign='center';x.fillText('포격 주의',w/2,54);x.font='900 24px system-ui';x.fillText('TANK FIRE ⚠',w/2,100)});
-    const j=KW_Z.tank[0]-28,[sx_,sz_]=tkAt(j,ext+1.4);tkAdd(new THREE.BoxGeometry(.15,3,.15),steel,sx_,1.5,sz_);tkBoard(sx_,3.2,sz_,3.2,1.6,-Math.cos(TH[j]),-Math.sin(TH[j]),sg)}
+    const j=KW_Z.tank[0]-15,[sx_,sz_]=tkAt(j,ext+1.4);tkAdd(new THREE.BoxGeometry(.15,3,.15),steel,sx_,1.5,sz_);tkBoard(sx_,3.2,sz_,3.2,1.6,-Math.cos(TH[j]),-Math.sin(TH[j]),sg)}
   /* ===== 8) "서울 →" 표지판 + 철교 + 강 ===== */
   {const i=KW_Z.seoul,[x,z]=tkAt(i,ext+2.2),sg=kwSign(320,160,(x,w,h)=>{x.fillStyle='#1d4a33';x.fillRect(0,0,w,h);x.strokeStyle='#e8e8e8';x.lineWidth=6;x.strokeRect(8,8,w-16,h-16);x.fillStyle='#fff';x.font='900 72px '+KR;x.textAlign='center';x.textBaseline='middle';x.fillText('서울 →',w/2,72);x.font='700 22px system-ui';x.fillText('SEOUL  12 km',w/2,128)});
     [-1.4,1.4].forEach(o=>{const [px,pz]=tkAt(i,ext+2.2,o);tkAdd(new THREE.BoxGeometry(.18,3.6,.18),steel,px,1.8,pz)});tkBoard(x,4.2,z,4,2,-Math.cos(TH[i]),-Math.sin(TH[i]),sg);barrel(...tkAt(i,ext+3.5,3),false);barrel(...tkAt(i,ext+3.4,4.1),false)}
@@ -1653,7 +1699,7 @@ function buildKW(){
     for(let k=0;k<14;k++){const d=60+rnd()*120,sd=k%2?1:-1,ax=mx+n[0]*sd*d+Math.cos(TH[mid])*(rnd()-.5)*90,az=mz+n[1]*sd*d+Math.sin(TH[mid])*(rnd()-.5)*90;if(!far(ax,az,30))continue;const h=8+rnd()*22,w=10+rnd()*14;tkAdd(boxWinGeo(w,h,w),ruinMs[k%3],ax,h/2,az,rnd()*3);if(rnd()<.6)fireAt(ax,h*.8,az,5+rnd()*4)}}
   /* ===== 9) 지뢰밭 ===== */
   KWS.mines=[];const mineM=tkM(0x3a3a2c),pinM=tkM(0x6a6a5a);KW_MINEZ.forEach(([a,b],zk)=>{let last=0;const mpos=[];
-    for(let i=a+6;i<b-3;i+=4+(rnd()*3|0)){let lat;do{lat=Math.round((rnd()*2-1)*(HALF-1.6))}while(Math.abs(lat-last)<3);last=lat;mpos.push([i,lat]);
+    for(let i=a+3;i<b-2;i+=2+(rnd()*2|0)){let lat;do{lat=Math.round((rnd()*2-1)*(HALF-1.6))}while(Math.abs(lat-last)<3);last=lat;mpos.push([i,lat]);
       if(rnd()<.4){let l2,t=0;do{l2=Math.round((rnd()*2-1)*(HALF-1.6));t++}while(Math.abs(l2-lat)<5&&t<20);if(Math.abs(l2-lat)>=5)mpos.push([i+1,l2])}}
     mpos.forEach(([i,lat])=>{const [x,z]=tkAt(i,lat);
       const g=new THREE.Group();g.position.set(x,0,z);const d=new THREE.Mesh(new THREE.CylinderGeometry(.38,.42,.14,12),mineM);d.position.y=.07;g.add(d);const p=new THREE.Mesh(new THREE.CylinderGeometry(.06,.06,.12,6),pinM);p.position.y=.18;g.add(p);MG.add(g);
@@ -1661,22 +1707,68 @@ function buildKW(){
       KWS.mines.push({x,z,g,cr,armed:true,t:0})});
     const ms=kwSign(256,256,(x,w,h)=>{x.fillStyle='#b01818';x.beginPath();x.moveTo(w/2,8);x.lineTo(w-8,h-8);x.lineTo(8,h-8);x.closePath();x.fill();x.fillStyle='#f2ead8';x.beginPath();x.moveTo(w/2,40);x.lineTo(w-36,h-24);x.lineTo(36,h-24);x.closePath();x.fill();
       x.fillStyle='#111';x.font='900 64px system-ui';x.textAlign='center';x.fillText('☠',w/2,150);x.font='900 34px '+KR;x.fillText('지 뢰',w/2,192);x.font='900 22px system-ui';x.fillText('MINES',w/2,220)});
-    [a-24,a+Math.round((b-a)/2)].forEach((i,k)=>[-1,1].forEach(sd=>{const [x,z]=tkAt(i,sd*(ext+1.5));if(!far(x,z,ext+1))return;tkAdd(new THREE.BoxGeometry(.12,2.2,.12),wood,x,1.1,z);tkBoard(x,2.6,z,1.8,1.8,-Math.cos(TH[i]),-Math.sin(TH[i]),ms)}));
+    [a-14,a+Math.round((b-a)/2)].forEach((i,k)=>[-1,1].forEach(sd=>{const [x,z]=tkAt(i,sd*(ext+1.5));if(!far(x,z,ext+1))return;tkAdd(new THREE.BoxGeometry(.12,2.2,.12),wood,x,1.1,z);tkBoard(x,2.6,z,1.8,1.8,-Math.cos(TH[i]),-Math.sin(TH[i]),ms)}));
     /* 지뢰밭 양옆 철조망 */
     for(let i=a;i<b;i+=6)[-1,1].forEach(sd=>{const [x,z]=tkAt(i,sd*(ext+3));if(!far(x,z,ext+2))return;tkAdd(new THREE.BoxGeometry(.1,1.3,.1),wood,x,.65,z);[.45,.9,1.25].forEach(h=>tkAdd(new THREE.BoxGeometry(SP*6+.2,.03,.03),wireM,...tkAt(i,sd*(ext+3),SP*3).reduce((q,v,k)=>(k?q.push(h,v):q.push(v),q),[]),yaw(i)))});});
   /* ===== 10) 공습 구간: 경고판 + 폭격기 ===== */
   {const sg=kwSign(256,128,(x,w,h)=>{x.fillStyle='#111';x.fillRect(0,0,w,h);x.strokeStyle='#e8262c';x.lineWidth=8;x.strokeRect(4,4,w-8,h-8);x.fillStyle='#e8262c';x.font='900 40px '+KR;x.textAlign='center';x.fillText('공습 경보',w/2,56);x.fillStyle='#fff';x.font='900 24px system-ui';x.fillText('AIR RAID ✈',w/2,100)});
-    [KW_Z.air[0]-26,KW_Z.air[0]+80].forEach(j=>{const [sx_,sz_]=tkAt(j,ext+1.4);tkAdd(new THREE.BoxGeometry(.15,3,.15),steel,sx_,1.5,sz_);tkBoard(sx_,3.2,sz_,3.2,1.6,-Math.cos(TH[j]),-Math.sin(TH[j]),sg)})}
+    [...KW_AIR.map(z=>z[0]-14),KW_Z.air[0]+40].forEach(j=>{const [sx_,sz_]=tkAt(j,ext+1.4);tkAdd(new THREE.BoxGeometry(.15,3,.15),steel,sx_,1.5,sz_);tkBoard(sx_,3.2,sz_,3.2,1.6,-Math.cos(TH[j]),-Math.sin(TH[j]),sg)})}
   const plane=()=>{const G=new THREE.Group(),pm=tkM(0x15171a),pm2=tkM(0x23262a),ad=(g,m,x,y,z)=>{const me=new THREE.Mesh(g,m);me.position.set(x,y,z);G.add(me)};
     ad(new THREE.CylinderGeometry(.75,.55,11,10).rotateZ(Math.PI/2),pm,0,0,0);ad(new THREE.BoxGeometry(2.4,.22,17),pm2,.6,.1,0);ad(new THREE.BoxGeometry(1.3,.16,5.2),pm2,-5,.3,0);ad(new THREE.BoxGeometry(1.5,1.9,.16),pm2,-5,1.1,0);
     [-3.6,3.6].forEach(o=>{ad(new THREE.CylinderGeometry(.45,.4,2.6,8).rotateZ(Math.PI/2),pm,1.6,-.2,o)});
     const nl=new THREE.Sprite(new THREE.SpriteMaterial({map:T.glowR,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true,fog:false}));nl.position.set(0,0,8.5);nl.scale.set(2.2,2.2,1);G.add(nl);MG.add(G);return G};
-  KWS.planes=[0,1].map(k=>({G:plane(),a:k*Math.PI,r:520+k*120,y:85+k*20,sp:.09+k*.03}));KWS.bomber=plane();KWS.bomber.visible=false;
+  KWS.planes=[0,1,2,3].map(k=>({G:plane(),a:k*Math.PI/2,r:420+k*110,y:80+k*14,sp:(.07+k*.025)*(k%2?-1:1)}));
+  {let cx=0,cz=0;TP.forEach(p=>{cx+=p[0];cz+=p[1]});cx/=N;cz/=N;KWS.ctr=[cx,cz];
+    /* 멀리 지평선 포격 섬광 */
+    KWS.flash=[];for(let k=0;k<14;k++){const a=rnd()*6.28,d=650+rnd()*300,sp=new THREE.Sprite(new THREE.SpriteMaterial({map:T.glowO,color:0xffc070,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true,fog:false,opacity:0}));sp.position.set(cx+Math.cos(a)*d,8+rnd()*20,cz+Math.sin(a)*d);sp.scale.set(70,40,1);MG.add(sp);KWS.flash.push({sp,t:rnd()*6})}
+    /* 먼 마을 불 (연기 기둥도 나와요) */
+    for(let k=0;k<10;k++){const a=rnd()*6.28,d=330+rnd()*240,x=cx+Math.cos(a)*d,z=cz+Math.sin(a)*d;if(!far(x,z,60))continue;fireAt(x,2,z,7+rnd()*5)}
+    /* 대공포 예광탄 (빨강·주황 점이 하늘로) */
+    const AA=[];for(let k=0;k<5;k++){const a=rnd()*6.28,d=380+rnd()*260;AA.push([cx+Math.cos(a)*d,cz+Math.sin(a)*d,rnd()*6.28])}
+    const TN2=300,tp=new Float32Array(TN2*3),td=[];for(let k=0;k<TN2;k++)td.push({s:AA[k%AA.length],age:rnd()*3,dx:0,dz:0});const tg=new THREE.BufferGeometry();tg.setAttribute('position',new THREE.BufferAttribute(tp,3));
+    const tr=new THREE.Points(tg,new THREE.PointsMaterial({size:3.2,map:T.glowO,color:0xffa050,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,fog:false}));tr.frustumCulled=false;MG.add(tr);KWS.aa={tr,td};
+    /* 하늘 탐조등 (멀리서 위로 흔들려요) */
+    KWS.sky=[];for(let k=0;k<5;k++){const a=k/5*6.28+rnd(),d=420+rnd()*200,pv=new THREE.Group();pv.position.set(cx+Math.cos(a)*d,0,cz+Math.sin(a)*d);MG.add(pv);
+      const cg=new THREE.CylinderGeometry(9,1.2,320,12,1,true);cg.translate(0,160,0);const cone=new THREE.Mesh(cg,new THREE.MeshBasicMaterial({color:0xc8d4ff,transparent:true,opacity:.06,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,fog:false}));pv.add(cone);KWS.sky.push({pv,ph:rnd()*6,sp:.25+rnd()*.25})}}KWS.bomber=plane();KWS.bomber.visible=false;
   /* ===== 11) 부서진 탱크·트럭 (도로 위 장애물) ===== */
-  [[1236,4.6],[1318,-4.4],[1102,-4.8]].forEach(([i,lat],k)=>{const [x,z]=tkAt(i,lat),th=TH[i]+(k%2?.25:-.25);
+  [[1287,4.6],[1356,-4.4],[1195,-4.8]].forEach(([i,lat],k)=>{const [x,z]=tkAt(i,lat),th=TH[i]+(k%2?.25:-.25);
     if(k!==1){wreckTank(x,z,-th);TOBS.push({x,z,c:Math.cos(th),s:Math.sin(th),hl:3.6,hw:1.9})}
     else{const ry=-th,ad=(g,m,lx,ly,lz)=>{g.translate(lx,ly,lz);tkAdd(g,m,x,0,z,ry)};ad(new THREE.BoxGeometry(2.4,2,2.3),tkM(0x2c2c24),2,1.6,0);ad(new THREE.BoxGeometry(4.6,.4,2.4),dark,-1.4,.9,0);ad(new THREE.BoxGeometry(4.4,1.6,2.4),tkM(0x34322a),-1.4,2,0);
       [-2.6,-.6,2].forEach(o=>[-1,1].forEach(sd=>ad(new THREE.CylinderGeometry(.5,.5,.3,10).rotateX(Math.PI/2),dark,o,.5,sd*1.1)));fireAt(x,2.8,z,3.5);TOBS.push({x,z,c:Math.cos(th),s:Math.sin(th),hl:3.6,hw:1.3})}});
+  /* ===== 12) 끊어진 다리 (점프) ===== */
+  if(KWJ){const J=KWJ,wb=WALL+.6,deckM=tkM(0x4a4844),deckD=tkM(0x2e2d2b),rebar=tkM(0x5a3a2a);
+    /* 강 2: 끊긴 곳 아래를 가로질러요 */
+    {const mid=(J.lip+J.land)>>1,n=TN[mid],ang=Math.atan2(n[1],n[0]),[mx,mz]=tkAt(mid,0),rg=new THREE.PlaneGeometry(320,(J.land-J.lip)*SP+70);rg.rotateX(-Math.PI/2);
+      const wm=new THREE.MeshBasicMaterial({map:tkTex(256,256,(x,w,h)=>{x.fillStyle='#0b1216';x.fillRect(0,0,w,h);for(let k=0;k<200;k++){x.fillStyle='rgba(255,140,60,'+Math.random()*.2+')';x.fillRect(Math.random()*w,Math.random()*h,10+Math.random()*30,1)}})});
+      wm.map.wrapS=wm.map.wrapT=THREE.RepeatWrapping;wm.map.repeat.set(9,2);const w=new THREE.Mesh(rg,wm);w.position.set(mx,-.45,mz);w.rotation.y=-ang;MG.add(w);KWS.water2=w;
+      /* 강둑 바위 */
+      for(let k=0;k<40;k++){const sd=k%2?1:-1,al=(rnd()-.5)*300,[bx,bz]=[mx+n[0]*al+Math.cos(TH[mid])*sd*((J.land-J.lip)*SP/2+35+rnd()*8),mz+n[1]*al+Math.sin(TH[mid])*sd*((J.land-J.lip)*SP/2+35+rnd()*8)];
+        if(!far(bx,bz,wb+2))continue;tkAdd(new THREE.IcosahedronGeometry(2+rnd()*3,0),rock,bx,0,bz,rnd()*3)}}
+    /* 다리 상판·기둥 (경사로부터 내려가는 곳까지, 끊긴 곳 빼고) */
+    for(let i=J.u0;i<=J.down;i+=2){if(kwGap(i)||kwGap(i+1))continue;const y=TY[i];if(y<.4)continue;const [x,z]=tkAt(i,0,SP);
+      tkAdd(new THREE.BoxGeometry(SP*2+.2,1.2,wb*2+.6),deckD,x,y-.62,z,yaw(i));[-1,1].forEach(sd=>{const [ex,ez]=tkAt(i,sd*(wb+.1),SP);tkAdd(new THREE.BoxGeometry(SP*2+.2,.9,.4),deckM,ex,y+.2,ez,yaw(i))});
+      if((i-J.u0)%10===0&&y>2)[-1,1].forEach(sd=>{const [px,pz]=tkAt(i,sd*(wb-1.5));tkAdd(new THREE.BoxGeometry(1.4,y+1,1.4),deckM,px,(y-1.2)/2-.6,pz,yaw(i))})}
+    /* 끊어진 끝: 들쭉날쭉 콘크리트 + 삐져나온 철근 + 기울어진 조각 */
+    [[J.lip,1],[J.land,-1]].forEach(([i,dir])=>{const y=TY[i];for(let k=-6;k<=6;k++){const lat=k*(wb/6),len=.6+rnd()*2.2,[x,z]=tkAt(i,lat,dir*len/2);tkAdd(new THREE.BoxGeometry(len,1+rnd()*.5,wb/6),deckD,x,y-.6,z,yaw(i)+(rnd()-.5)*.2)}
+      for(let k=0;k<14;k++){const lat=(rnd()*2-1)*wb,[x,z]=tkAt(i,lat,dir*(.5+rnd()*1.5)),g=new THREE.BoxGeometry(1.6+rnd()*1.4,.06,.06);g.rotateZ(dir*(-.2-rnd()*.6));tkAdd(g,rebar,x,y-.4,z,yaw(i))}
+      const [cx,cz]=tkAt(i,(rnd()-.5)*4,dir*7);const g=new THREE.BoxGeometry(10,1,wb*1.4);g.rotateZ(dir*.55);tkAdd(g,deckD,cx,y*.45-1,cz,yaw(i));
+      /* 노랑·검정 경고 막대 */
+      if(dir>0)[-1,1].forEach(sd=>{const [bx,bz]=tkAt(i-2,sd*(wb-.4));tkAdd(new THREE.BoxGeometry(.4,1.6,.4),tkM(0xf2c230),bx,y+.8,bz)})});
+    /* 경고판 + 니트로 충전 문 */
+    {const sg=kwSign(320,160,(x,w,h)=>{x.fillStyle='#f2c230';x.fillRect(0,0,w,h);x.fillStyle='#111';x.fillRect(8,8,w-16,h-16);x.fillStyle='#f2c230';x.font='900 46px '+KR;x.textAlign='center';x.fillText('다리 끊김!',w/2,66);x.fillStyle='#5ad8ff';x.font='900 34px system-ui';x.fillText('NITRO ▶ JUMP',w/2,122)});
+      [J.pad-18,J.lip-30].forEach(j=>[-1,1].forEach(sd=>{const [x,z]=tkAt(j,sd*(ext+1.5));tkAdd(new THREE.BoxGeometry(.15,3.4,.15),steel,x,TY[j]+1.7,z);tkBoard(x,TY[j]+3.6,z,3.6,1.8,-Math.cos(TH[j]),-Math.sin(TH[j]),sg)}));
+      const gi=J.pad,[gx,gz]=tkAt(gi,0),W2=WALL+1.4,bl=new THREE.MeshBasicMaterial({color:0x3ab8ff});[-1,1].forEach(sd=>{const [px,pz]=tkAt(gi,sd*W2);tkAdd(new THREE.BoxGeometry(.6,6,.6),bl,px,3+TY[gi],pz,yaw(gi))});
+      tkAdd(new THREE.BoxGeometry(.6,.9,W2*2+.6),bl,gx,6+TY[gi],gz,yaw(gi));
+      const nm=kwSign(512,64,(x,w,h)=>{x.fillStyle='#062a44';x.fillRect(0,0,w,h);x.fillStyle='#7fe0ff';x.font='900 44px system-ui';x.textAlign='center';x.textBaseline='middle';x.fillText('⚡ NITRO ⚡',w/2,h/2+2)});
+      [1,-1].forEach(d=>{const m=new THREE.Mesh(new THREE.PlaneGeometry(W2*2-1,1.4),nm);m.position.set(gx+Math.cos(TH[gi])*.32*d,4.9+TY[gi],gz+Math.sin(TH[gi])*.32*d);m.rotation.y=Math.atan2(Math.cos(TH[gi])*d,Math.sin(TH[gi])*d);MG.add(m)});
+      const gl=new THREE.Sprite(new THREE.SpriteMaterial({map:T.glowW,color:0x3ab8ff,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true}));gl.position.set(gx,5+TY[gi],gz);gl.scale.set(18,10,1);MG.add(gl)}
+    /* 건너편이 멀리서도 보이게: 착지 쪽 끝에 주황 등불 + 초록 화살표 판 */
+    for(let q=0;q<3;q++)[-1,1].forEach(sd=>{const i=J.land+q*4,[x,z]=tkAt(i,sd*(wb-.2));tkAdd(new THREE.BoxGeometry(.25,2.4,.25),steel,x,TY[i]+1.2,z);const s2=new THREE.Sprite(new THREE.SpriteMaterial({map:T.glowO,color:0xffc070,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true,fog:false}));s2.position.set(x,TY[i]+2.6,z);s2.scale.set(4,4,1);MG.add(s2)});
+    {const i=J.land+2,[x,z]=tkAt(i,0),am=kwSign(256,128,(x,w,h)=>{x.fillStyle='#14361f';x.fillRect(0,0,w,h);x.fillStyle='#7dffb4';x.font='900 70px system-ui';x.textAlign='center';x.textBaseline='middle';x.fillText('▼ ▼ ▼',w/2,h/2)});
+      tkBoard(x,TY[i]+6.5,z,6,3,-Math.cos(TH[i]),-Math.sin(TH[i]),am);[-1,1].forEach(sd=>{const [px,pz]=tkAt(i,sd*3);tkAdd(new THREE.BoxGeometry(.2,6,.2),steel,px,TY[i]+3,pz)})}
+    /* 건너편 불타는 트럭 + 무너진 트러스 조각 */
+    {const [x,z]=tkAt(J.le+4,-wb-4);fireAt(x,.5,z,3.4);const [x2,z2]=tkAt(J.lip-6,wb+5);fireAt(x2,TY[J.lip-6]*.2,z2,2.6)}
+  }
   /* 공습 구간·끝 구간 군인 참호 */
   for(let i=KW_Z.wreck[0];i<KW_Z.wreck[1];i+=24){const sd=(i/24|0)%2?1:-1,[x,z]=tkAt(i,sd*(ext+4));if(!far(x,z,ext+3))continue;sandbags(x,z,yaw(i),8,2);for(let q=-1;q<=1;q++)soldier(...tkAt(i,sd*(ext+5),q*2.2),yaw(i)-Math.PI/2*sd,q!==0)}
   /* 멀리 산 (하늘 사진 앞쪽에 어두운 능선) */
@@ -1688,7 +1780,7 @@ function buildKW(){
   /* 도로 근처 불은 젖은 도로에 주황 반사 */
   {const rg=new THREE.MeshBasicMaterial({map:T.glowO,color:0xb05020,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2});
     FIRES.forEach(([x,y,z,s])=>{const [d,i]=nearD(x,z);if(d>WALL+8)return;const [rx,rz]=tkAt(i,Math.max(-HALF+2,Math.min(HALF-2,(x-TP[i][0])*TN[i][0]+(z-TP[i][1])*TN[i][1])));const g=new THREE.PlaneGeometry(7,14);g.rotateX(-Math.PI/2);const m=new THREE.Mesh(g,rg);m.position.set(rx,.05,rz);m.rotation.y=-TH[i];MG.add(m)})}
-  const big=FIRES.filter(f=>f[3]>=2.6);const SN=Math.min(340,big.length*14);if(SN){const sp=new Float32Array(SN*3),sd=[];for(let k=0;k<SN;k++){const f=big[k%big.length];sd.push({f,age:rnd()*9,ox:(rnd()-.5)*2,oz:(rnd()-.5)*2})}
+  const big=FIRES.filter(f=>f[3]>=2.6).concat((KWS.chim||[]).map(([x,y,z])=>[x,y-1,z,1.2]));const SN=Math.min(340,big.length*14);if(SN){const sp=new Float32Array(SN*3),sd=[];for(let k=0;k<SN;k++){const f=big[k%big.length];sd.push({f,age:rnd()*9,ox:(rnd()-.5)*2,oz:(rnd()-.5)*2})}
     const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(sp,3));const pts=new THREE.Points(g,new THREE.PointsMaterial({size:9,map:T.smoke,color:0x2a2624,transparent:true,depthWrite:false,opacity:.75}));pts.frustumCulled=false;MG.add(pts);KWS.smoke={pts,sd}}
   if(FIRES.length){const EN=220,ep=new Float32Array(EN*3),ed=[];for(let k=0;k<EN;k++)ed.push({f:FIRES[k%FIRES.length],age:rnd()*3,ox:(rnd()-.5)*2,oz:(rnd()-.5)*2});
     const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(ep,3));const pts=new THREE.Points(g,new THREE.PointsMaterial({size:.45,color:0xffa040,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}));pts.frustumCulled=false;MG.add(pts);KWS.emb={pts,ed}}
@@ -1711,7 +1803,7 @@ function buildKW(){
   KWS.airT=1.5;KWS.tankT=1;KWS.lastHit=0;KWS.lastToast=0;KWS.time=0;
   if(!document.getElementById('kwfx')){const d=document.createElement('div');d.id='kwfx';document.body.append(d)}if(!document.getElementById('kwgas')){const d=document.createElement('div');d.id='kwgas';$('fx').after(d)}   /* 도로 화면(gl·fx) 바로 위, 콕핏·시계·미니맵 아래 */
 }
-function kwReset(){if(!KWS.mines)return;KWS.mines.forEach(m=>{m.armed=true;m.g.visible=true;m.cr.visible=false});KWS.mark.forEach(m=>{m.on=false;m.ring.visible=m.disk.visible=m.bomb.visible=m.pil.visible=false});KWS.airT=1.5;KWS.tankT=1;KWS.lastHit=0;KWS.lastToast=0;if(KWS.guns)KWS.guns.forEach((g,k)=>g.t=k*1.1);KWS.knock=null;KWS.gasT=1;KWS.gasV=0;if(KWS.cans)KWS.cans.forEach(o=>{o.on=false;o.G.visible=false});if(KWS.clouds)KWS.clouds.forEach(o=>{o.t=99;o.ps.forEach(p=>p.sp.visible=false)});if(KWS.bomber)KWS.bomber.visible=false}
+function kwReset(){if(!KWS.mines)return;KWS.mines.forEach(m=>{m.armed=true;m.g.visible=true;m.cr.visible=false});KWS.mark.forEach(m=>{m.on=false;m.ring.visible=m.disk.visible=m.bomb.visible=m.pil.visible=false});KWS.airT=1.5;KWS.tankT=1;KWS.lastHit=0;KWS.lastToast=0;if(KWS.guns)KWS.guns.forEach((g,k)=>g.t=k*1.1);KWS.knock=null;KWS.lastJ=null;KWS.gasT=1;KWS.gasV=0;if(KWS.cans)KWS.cans.forEach(o=>{o.on=false;o.G.visible=false});if(KWS.clouds)KWS.clouds.forEach(o=>{o.t=99;o.ps.forEach(p=>p.sp.visible=false)});if(KWS.bomber)KWS.bomber.visible=false}
 function kwBoomAt(x,z,big){const b=KWS.boom.find(o=>o.t>2.4)||KWS.boom[0];b.t=0;b.x=x;b.z=z;b.big=big||1;b.fb.visible=b.sm.visible=b.gl.visible=b.core.visible=true;
   const d=Math.hypot(x-c.x,z-c.z);kwBoomSnd(Math.max(.05,Math.min(1,22/(d+8)))*b.big)}
 function kwBoomSnd(v){if(!AC||AC.state!=='running')return;const t=AC.currentTime,sr=AC.sampleRate,n=sr*1.1|0,bf=AC.createBuffer(1,n,sr),dd=bf.getChannelData(0);for(let i=0;i<n;i++)dd[i]=(Math.random()*2-1)*Math.pow(1-i/n,2.2);
@@ -1747,8 +1839,13 @@ function kwFrame(dt){
   if(KWS.emb){const a=KWS.emb.pts.geometry.attributes.position.array;KWS.emb.ed.forEach((p,k)=>{p.age+=dt;if(p.age>3)p.age=0;const f=p.f;a[k*3]=f[0]+p.ox*(1+p.age)+Math.sin(p.age*3+k)*.4;a[k*3+1]=f[1]+f[3]*.6+p.age*3;a[k*3+2]=f[2]+p.oz*(1+p.age)});KWS.emb.pts.geometry.attributes.position.needsUpdate=true}
   /* 탐조등 */
   KWS.lights.forEach(L=>{const a=T*.45+L.ph;L.pv.rotation.y=-a;const dx=-Math.sin(a),dz=Math.cos(a),d=L.H*2.9;L.spot.position.set(L.x+dx*d,.06,L.z+dz*d);L.spot.rotation.y=-a+Math.PI/2});
+  /* 먼 포격 섬광 · 대공포 · 하늘 탐조등 */
+  if(KWS.flash)KWS.flash.forEach(f=>{f.t-=dt;if(f.t<0){f.t=2+Math.random()*7;f.on=.35}f.on=Math.max(0,(f.on||0)-dt);f.sp.material.opacity=Math.min(1,f.on*4)});
+  if(KWS.aa){const a=KWS.aa.tr.geometry.attributes.position.array;KWS.aa.td.forEach((p,k)=>{p.age+=dt;if(p.age>3.2){p.age=0;const ang=p.s[2]+Math.sin(T*.6+k)*.25;p.dx=Math.cos(ang)*.35;p.dz=Math.sin(ang)*.35}
+    const u=p.age*90;a[k*3]=p.s[0]+p.dx*u;a[k*3+1]=u*.95;a[k*3+2]=p.s[1]+p.dz*u});KWS.aa.tr.geometry.attributes.position.needsUpdate=true}
+  if(KWS.sky)KWS.sky.forEach(L=>{L.pv.rotation.set(Math.sin(T*L.sp+L.ph)*.45,0,Math.cos(T*L.sp*.8+L.ph)*.45)});
   /* 하늘 비행기 */
-  KWS.planes.forEach(p=>{p.a+=p.sp*dt;let cx=0,cz=0;cx=200;cz=210;const x=cx+Math.cos(p.a)*p.r,z=cz+Math.sin(p.a)*p.r;p.G.position.set(x,p.y,z);p.G.rotation.y=-(p.a+Math.PI/2)});
+  KWS.planes.forEach(p=>{p.a+=p.sp*dt;const cx=KWS.ctr[0],cz=KWS.ctr[1];const x=cx+Math.cos(p.a)*p.r,z=cz+Math.sin(p.a)*p.r;p.G.position.set(x,p.y,z);p.G.rotation.y=-(p.a+Math.sign(p.sp)*Math.PI/2)});
   /* 곡사포 */
   if(KWS.how){const h=KWS.how;h.t-=dt;if(h.t<0){h.t=4+Math.random()*3;h.f=.25;const d=Math.hypot(h.x-c.x,h.z-c.z);kwBoomSnd(Math.min(.5,14/(d+10)))}h.f=Math.max(0,(h.f||0)-dt);h.mf.material.opacity=h.f*4}
   /* 폭발 */
@@ -1774,10 +1871,10 @@ function kwFrame(dt){
   KWS.guns.forEach(G=>{const a=G.a,b=G.b,P=3.3,F=1.9;G.t+=dt;const ph=G.t%P,firing=ph<F,cyc=Math.floor(G.t/P),dir=cyc%2?-1:1,u=ph/F,si=Math.round(dir>0?a+u*(b-a):b-u*(b-a));
     const la=G.lines.geometry.attributes.position.array,da=G.dust.geometry.attributes.position.array;
     if(firing){G.mf.material.opacity=Math.random()<.6?1:.2;G.shotT-=dt;const dd=Math.hypot(G.x-c.x,G.z-c.z);if(G.shotT<=0&&dd<160){G.shotT=.08;kwGunSnd(Math.min(1,20/(dd+10)))}
-      for(let k=0;k<8;k++){const j=Math.min(N-1,Math.max(0,si+((Math.random()-.5)*6|0))),[tx,tz]=tkAt(j,(Math.random()*2-1)*HALF);la[k*6]=G.x;la[k*6+1]=1.3;la[k*6+2]=G.z;la[k*6+3]=tx;la[k*6+4]=.2;la[k*6+5]=tz}
-      for(let k=0;k<10;k++){const j=Math.min(N-1,Math.max(0,si+((Math.random()-.5)*6|0))),[tx,tz]=tkAt(j,(Math.random()*2-1)*HALF);da[k*3]=tx;da[k*3+1]=.3+Math.random()*.6;da[k*3+2]=tz}
+      for(let k=0;k<8;k++){const j=Math.min(N-1,Math.max(0,si+((Math.random()-.5)*4|0))),[tx,tz]=tkAt(j,(Math.random()*2-1)*HALF);la[k*6]=G.x;la[k*6+1]=1.3;la[k*6+2]=G.z;la[k*6+3]=tx;la[k*6+4]=.2;la[k*6+5]=tz}
+      for(let k=0;k<10;k++){const j=Math.min(N-1,Math.max(0,si+((Math.random()-.5)*4|0))),[tx,tz]=tkAt(j,(Math.random()*2-1)*HALF);da[k*3]=tx;da[k*3+1]=.3+Math.random()*.6;da[k*3+2]=tz}
       G.lines.visible=G.dust.visible=true;
-      if(run){let dj=Math.abs(ci-si);if(dj<=4&&ci>=a-4&&ci<=b+4)kwShot()}}
+      if(run){let dj=Math.abs(ci-si);if(dj*SP<=6&&ci>=a-3&&ci<=b+3)kwShot()}}
     else{G.mf.material.opacity=0;G.lines.visible=G.dust.visible=false}
     G.lines.geometry.attributes.position.needsUpdate=true;G.dust.geometry.attributes.position.needsUpdate=true});
   /* 최루탄 깡통이 날아가요 → 떨어지면 펑 + 흰 연기 */
@@ -1797,7 +1894,7 @@ function kwFrame(dt){
   /* 지뢰 밟기 */
   if(KW_MINEZ.some(([a,b])=>ci>=a-5&&ci<=b+5))KWS.mines.forEach(m=>{if(m.armed&&Math.hypot(c.x-m.x,c.z-m.z)<1.7){m.armed=false;m.t=0;m.g.visible=false;m.cr.visible=true;kwBlast('💥 지뢰를 밟았어요!')}});
   /* 공습 */
-  if(ci>=KW_Z.air[0]&&ci<=KW_Z.air[1]){KWS.airT-=dt;if(KWS.airT<=0){KWS.airT=2+Math.random()*.9;kwStrike(6,1.7,'air')}}
+  if(KW_AIR.some(([a,b])=>ci>=a&&ci<=b)){KWS.airT-=dt;if(KWS.airT<=0){KWS.airT=1.6+Math.random()*.8;kwStrike(6,1.7,'air')}}
   /* 탱크 포격 */
   if(ci>=KW_Z.tank[0]&&ci<=KW_Z.tank[1]&&KWS.tanks.length){KWS.tankT-=dt;if(KWS.tankT<=0){KWS.tankT=2.2+Math.random();let bt=KWS.tanks[0],bd=1e9;KWS.tanks.forEach(t=>{const d=Math.hypot(t.x-c.x,t.z-c.z);if(d<bd){bd=d;bt=t}});kwStrike(12,1.3,'tank',bt)}}
 }
@@ -3310,13 +3407,13 @@ function setMap(id){
   strip(HALF,HALF+1.4,.02,(i,s)=>[TS[i]/4,s],kerbM);
   strip(-HALF-1.4,-HALF,.02,(i,s)=>[TS[i]/4,s],kerbM);}
   const dashT=mkTex(8,64,(x)=>{x.fillStyle='#fff';x.fillRect(0,0,8,26)});
-  if(!D.touge&&!D.coast&&!D.jp&&!D.vc){const dM=new THREE.MeshBasicMaterial({map:dashT,transparent:true,opacity:.75,depthWrite:false,side:THREE.DoubleSide});strip(-.18,.18,.03,(i,s)=>[s,TS[i]/8],dM);if(D.py)[-4.5,4.5].forEach(l=>strip(l-.14,l+.14,.03,(i,s)=>[s,TS[i]/8],dM))}
+  if(!D.touge&&!D.coast&&!D.jp&&!D.vc&&!D.kw){const dM=new THREE.MeshBasicMaterial({map:dashT,transparent:true,opacity:.75,depthWrite:false,side:THREE.DoubleSide});strip(-.18,.18,.03,(i,s)=>[s,TS[i]/8],dM);if(D.py)[-4.5,4.5].forEach(l=>strip(l-.14,l+.14,.03,(i,s)=>[s,TS[i]/8],dM))}
   /* 바리케이드 */
   if(BR)buildBridge();
   if(D.rail){
     const mk=k=>new THREE.MeshBasicMaterial({map:railTex(k),transparent:true,alphaTest:.5,side:THREE.DoubleSide,color:k==='fence'?0xdcd6cc:0xffffff});
     const hOf=k=>k==='guard'?.9:k==='jersey'?.95:1.05;
-    const segs=BR?[[0,BR.i0,D.rail,0],[BR.i0,BR.i1,'guard',1],[BR.i1,N,D.rail,0]]:[[0,N,D.rail,0]];
+    const segs=BR?[[0,BR.i0,D.rail,0],[BR.i0,BR.i1,'guard',1],[BR.i1,N,D.rail,0]]:D.kw&&KWJ?[[0,KWJ.lip+1,D.rail,0],[KWJ.land,N,D.rail,0]]:[[0,N,D.rail,0]];
     segs.forEach(([a,b,k,br])=>{const m=mk(k),hh=br?1.15:hOf(k);wallStrip(WALL+.35,hh,m,4,a,b);wallStrip(-WALL-.35,hh,m,4,a,b)});
     if(D.rail==='fence'){ /* 울타리 위 전구 */
       const lp=[],lc=[],pal=[[255,214,120],[255,110,100],[120,190,255],[255,245,210]];
@@ -3471,7 +3568,7 @@ function bikeMotion(dt){
 }
 function step(dt){
   if(FALL){fallStep(dt);return}
-  if(AIR){if(VCJ.length)vcAir(dt);else airStep(dt);return}
+  if(AIR){if(VCJ.length)vcAir(dt);else if(MAPID==='kwar'&&KWJ)kwAir(dt);else airStep(dt);return}
   if(VEH==='bike')bikeMotion(dt);else{
   const iceNow=ICE.length?onIce():false;
   steer+=(((keys.right?1:0)-(keys.left?1:0))-steer)*Math.min(1,dt*5);
@@ -3538,6 +3635,7 @@ function step(dt){
   if(TOBS.length)tobsCollide();
   if(HW.length&&!AIR&&Math.abs(side)>HW[ci]+.6){startFall();return}
   if(VCJ.length)vcStep();
+  if(MAPID==='kwar')kwJumpStep();
   if(prog>=LAPEND&&!AIR&&MODE!=='practice'){
     prog-=LAPEND;if(VEH!=='bike'&&!NIT.on){NIT.ready=true;NITG=1}
     if(lapStart!==null){
@@ -4395,7 +4493,7 @@ function hardWater(){
 /* 점프 안내 (화물선 맵) */
 setInterval(()=>{
   const el=$('jh');
-  const J=JMP||(VCJ.length?(()=>{const j=VCJ.find(j=>j.lip>=ci);return j&&{iLip:j.lip,needKmh:j.need,nit:1}})():null);
+  const J=JMP||(MAPID==='kwar'&&KWJ&&ci<=KWJ.lip&&ci>KWJ.pad-40?{iLip:KWJ.lip,needKmh:KWJ.need,nit:1}:null)||(VCJ.length?(()=>{const j=VCJ.find(j=>j.lip>=ci);return j&&{iLip:j.lip,needKmh:j.need,nit:1}})():null);
   if(!started||DEAD||HOLD||!J||AIR){el.classList.remove('on');return}
   const d=(J.iLip-ci)*SP;
   if(d<=0||d>(J.nit?260:160)){el.classList.remove('on');return}
