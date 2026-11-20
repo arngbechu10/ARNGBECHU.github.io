@@ -41,7 +41,7 @@ li:first-child .n,li:first-child .t{color:#f2c230}
 input{flex:1;min-width:0;padding:9px;border-radius:8px;border:1px solid #3a4250;background:#0e1115;color:#eef;font:inherit;user-select:text;-webkit-user-select:text}
 #send{background:#f2c230;color:#111;border:0;font-weight:700}#send:disabled{opacity:.4}
 #msg{margin:8px 0 0;font-size:13px;color:#9aa4b2;min-height:20px}
-#kwfx{position:fixed;inset:0;pointer-events:none;z-index:4;opacity:0;background:radial-gradient(ellipse at 50% 55%,rgba(255,170,60,.25) 10%,rgba(255,80,20,.6) 100%)}#kwfx.on{animation:kwfx .75s ease-out}@keyframes kwfx{0%{opacity:1}100%{opacity:0}}
+#kwfx{position:fixed;inset:0;pointer-events:none;z-index:4;opacity:0;background:radial-gradient(ellipse at 50% 55%,rgba(255,170,60,.25) 10%,rgba(255,80,20,.6) 100%)}#kwfx.on{animation:kwfx .75s ease-out}#kwfx.big{background:radial-gradient(ellipse at 50% 55%,rgba(255,240,200,.85) 0,rgba(255,140,40,.8) 45%,rgba(120,20,0,.85) 100%)}#kwfx.on.big{animation:kwfx 1.2s ease-out}@keyframes kwfx{0%{opacity:1}100%{opacity:0}}
 #start{--cmh:max(110px,min(34vh,calc(100vh - 475px)));--gold:#f2c230;--line:#2c3342;--u:8px;position:fixed;inset:0;z-index:50;display:grid;grid-template-columns:minmax(0,1.2fr) minmax(310px,.8fr);grid-template-rows:minmax(0,1fr);gap:clamp(12px,3vw,44px);padding:clamp(12px,3.5vh,36px) clamp(14px,3.5vw,48px);background:#090a16;overflow:hidden;text-align:left;color:#eef}
 #start .bg{position:absolute;inset:0;pointer-events:none;background:radial-gradient(70% 55% at 30% 80%,#2f62ff3a,transparent 70%),linear-gradient(90deg,#090a1688 0,#090a1600 40%,#090a16f0 100%),linear-gradient(0deg,#090a16 0,#090a1600 36%),var(--sky) 50% 100%/auto 80% no-repeat,#090a16}
 #start .hero{position:relative;z-index:1;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:clamp(16px,5vh,44px);min-width:0;min-height:0}
@@ -1469,6 +1469,7 @@ async function kwUnlock(){
 function kwBtnUI(){const b=document.querySelector('.maps button[data-map="kwar"] b');if(b)b.textContent=(KW_OK?'':'🔒 ')+'Korean War'}
 /* 구간 (코스 점 번호, N=1400) */
 const KW_Z={hq:[15,70],gate:56,check:[105,195],gun:[226,300],nest:262,ruins:[360,500],tun:[508,560],tank:[592,722],seoul:736,bridge:[752,806],mine:[862,1000],air:[1012,1200],wreck:[1220,1380]};
+const KW_GUNS=[[226,300,262],[384,456,420],[1244,1316,1280]];   /* 기관총 사격 구간 [시작, 끝, 진지 위치] */
 const KW_BAR=[[112,-1],[136,1],[160,-1],[184,1]];            /* 검문소 바리케이드: 도로 반쪽을 막아요 (-1 왼쪽, 1 오른쪽) */
 const KWS={};
 /* 태극기 (3:2) */
@@ -1569,7 +1570,7 @@ function buildKW(){
       soldier(x+.8,z,0);});
   }
   /* ===== 3) 기관총 진지 (사격 구간) ===== */
-  {const i=KW_Z.nest;let sd=1,off=ext+5;let [x,z]=tkAt(i,sd*off);if(!far(x,z,off-1)){sd=-1;[x,z]=tkAt(i,sd*off)}
+  KWS.guns=[];KW_GUNS.forEach(([ga,gb,gn],gk)=>{const i=gn;let sd=1,off=ext+5;let [x,z]=tkAt(i,sd*off);if(!far(x,z,off-1)){sd=-1;[x,z]=tkAt(i,sd*off)}
     const ry=yaw(i);
     sandbags(...tkAt(i,sd*(off-1.6)),ry,7,3);sandbags(...tkAt(i,sd*off,3.6),ry+Math.PI/2,4,3);sandbags(...tkAt(i,sd*off,-3.6),ry+Math.PI/2,4,3);
     /* 총 */
@@ -1580,9 +1581,9 @@ function buildKW(){
     const lines=new THREE.LineSegments(lg,new THREE.LineBasicMaterial({color:0xffd060,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,fog:false}));lines.frustumCulled=false;MG.add(lines);
     const dp=new Float32Array(10*3);const dg=new THREE.BufferGeometry();dg.setAttribute('position',new THREE.BufferAttribute(dp,3));
     const dust=new THREE.Points(dg,new THREE.PointsMaterial({size:2.6,map:T.smoke,color:0xd8c8a8,transparent:true,depthWrite:false,opacity:.8}));dust.frustumCulled=false;MG.add(dust);
-    KWS.gun={x:gx,z:gz,mf,lines,dust,t:0,dir:1,hitT:0,shotT:0};
+    KWS.guns.push({x:gx,z:gz,mf,lines,dust,t:gk*1.1,a:ga,b:gb,shotT:0});
     const sg=kwSign(256,128,(x,w,h)=>{x.fillStyle='#f2c230';x.fillRect(0,0,w,h);x.fillStyle='#111';x.fillRect(6,6,w-12,h-12);x.fillStyle='#f2c230';x.font='900 40px '+KR;x.textAlign='center';x.fillText('사격 구역',w/2,56);x.font='900 26px system-ui';x.fillText('GUNFIRE ⚠',w/2,100)});
-    {const j=KW_Z.gun[0]-30,[sx_,sz_]=tkAt(j,ext+1.4);tkAdd(new THREE.BoxGeometry(.15,3,.15),steel,sx_,1.5,sz_);tkBoard(sx_,3.2,sz_,3.2,1.6,-Math.cos(TH[j]),-Math.sin(TH[j]),sg)}}
+    {const j=ga-30,[sx_,sz_]=tkAt(j,ext+1.4);tkAdd(new THREE.BoxGeometry(.15,3,.15),steel,sx_,1.5,sz_);tkBoard(sx_,3.2,sz_,3.2,1.6,-Math.cos(TH[j]),-Math.sin(TH[j]),sg)}});
   /* ===== 4) 폐허 거리 (길 양쪽 무너진 건물·불·잔해) ===== */
   for(let i=0;i<N;i+=13)for(const sd of[-1,1]){
     if(i>KW_Z.tun[0]-12&&i<KW_Z.tun[1]+12)continue;if(i>KW_Z.bridge[0]-14&&i<KW_Z.bridge[1]+14)continue;if(i>KW_Z.mine[0]&&i<KW_Z.mine[1])continue;if(i<75&&sd<0)continue;
@@ -1700,7 +1701,7 @@ function buildKW(){
   KWS.airT=1.5;KWS.tankT=1;KWS.lastHit=0;KWS.lastToast=0;KWS.time=0;
   if(!document.getElementById('kwfx')){const d=document.createElement('div');d.id='kwfx';document.body.append(d)}
 }
-function kwReset(){if(!KWS.mines)return;KWS.mines.forEach(m=>{m.armed=true;m.g.visible=true;m.cr.visible=false});KWS.mark.forEach(m=>{m.on=false;m.ring.visible=m.disk.visible=m.bomb.visible=m.pil.visible=false});KWS.airT=1.5;KWS.tankT=1;KWS.lastHit=0;KWS.lastToast=0;if(KWS.gun)KWS.gun.t=0;if(KWS.bomber)KWS.bomber.visible=false}
+function kwReset(){if(!KWS.mines)return;KWS.mines.forEach(m=>{m.armed=true;m.g.visible=true;m.cr.visible=false});KWS.mark.forEach(m=>{m.on=false;m.ring.visible=m.disk.visible=m.bomb.visible=m.pil.visible=false});KWS.airT=1.5;KWS.tankT=1;KWS.lastHit=0;KWS.lastToast=0;if(KWS.guns)KWS.guns.forEach((g,k)=>g.t=k*1.1);KWS.knock=null;if(KWS.bomber)KWS.bomber.visible=false}
 function kwBoomAt(x,z,big){const b=KWS.boom.find(o=>o.t>2.4)||KWS.boom[0];b.t=0;b.x=x;b.z=z;b.big=big||1;b.fb.visible=b.sm.visible=b.gl.visible=b.core.visible=true;
   const d=Math.hypot(x-c.x,z-c.z);kwBoomSnd(Math.max(.05,Math.min(1,22/(d+8)))*b.big)}
 function kwBoomSnd(v){if(!AC||AC.state!=='running')return;const t=AC.currentTime,sr=AC.sampleRate,n=sr*1.1|0,bf=AC.createBuffer(1,n,sr),dd=bf.getChannelData(0);for(let i=0;i<n;i++)dd[i]=(Math.random()*2-1)*Math.pow(1-i/n,2.2);
@@ -1708,13 +1709,22 @@ function kwBoomSnd(v){if(!AC||AC.state!=='running')return;const t=AC.currentTime
   const o=AC.createOscillator();o.frequency.setValueAtTime(110,t);o.frequency.exponentialRampToValueAtTime(30,t+.6);const og=AC.createGain();og.gain.setValueAtTime(.8*v,t);og.gain.exponentialRampToValueAtTime(.001,t+.7);o.connect(og);og.connect(AC.destination);o.start(t);o.stop(t+.75)}
 function kwGunSnd(v){if(!AC||AC.state!=='running')return;const t=AC.currentTime,sr=AC.sampleRate,n=sr*.05|0,bf=AC.createBuffer(1,n,sr),dd=bf.getChannelData(0);for(let i=0;i<n;i++)dd[i]=(Math.random()*2-1)*Math.pow(1-i/n,4);
   const s=AC.createBufferSource();s.buffer=bf;const bp=AC.createBiquadFilter();bp.type='bandpass';bp.frequency.value=900;bp.Q.value=.8;const g=AC.createGain();g.gain.value=.5*v;s.connect(bp);bp.connect(g);g.connect(AC.destination);s.start(t)}
+/* 총에 맞으면: 지금 속도에서 28% 줄어요 (옆으로 밀지 않아요) */
+function kwShot(){const t=performance.now();if(t-KWS.lastHit<450)return;KWS.lastHit=t;c.vx*=.72;c.vz*=.72;hitK=Math.max(hitK,.45);thump(.5);
+  const f=$('kwfx');if(f){f.classList.remove('on');void f.offsetWidth;f.classList.add('on')}if(t-KWS.lastToast>1800){KWS.lastToast=t;toast('🔫 총에 맞았어요! 총알 줄을 피하세요')}}
+/* 지뢰·폭격·포탄에 맞으면: 차 위치에서 크게 펑 터지고, 뒤로 밀려나며 속도 0 */
+function kwBlast(msg){const t=performance.now();if(KWS.knock||t-KWS.lastHit<500)return;KWS.lastHit=t;
+  const sp=Math.hypot(c.vx,c.vz),fx=Math.cos(c.h),fz=Math.sin(c.h);kwBoomAt(c.x+fx*3,c.z+fz*3,1.5);explodeSound();
+  KWS.airT=Math.max(KWS.airT,3);KWS.tankT=Math.max(KWS.tankT,3);KWS.knock={t:0,T:.75,dx:-fx,dz:-fz,v0:Math.min(16,9+sp*.2)};c.vx=c.vz=0;c.h+=(Math.random()<.5?-1:1)*.18;
+  hitK=1;thump(1);const f=$('kwfx');if(f){f.classList.remove('on','big');void f.offsetWidth;f.classList.add('on','big')}
+  if(t-KWS.lastToast>1200){KWS.lastToast=t;toast(msg)}}
 function kwHit(p,msg){const t=performance.now();if(t-KWS.lastHit<650)return;KWS.lastHit=t;
   c.vx*=1-.55*p;c.vz*=1-.55*p;const n=TN[ci],k=(Math.random()<.5?-1:1)*2.2*p;c.vx+=n[0]*k;c.vz+=n[1]*k;
   hitK=1;thump(Math.min(1,.5+p*.5));const f=$('kwfx');if(f){f.classList.remove('on');void f.offsetWidth;f.classList.add('on')}
   if(t-KWS.lastToast>1800){KWS.lastToast=t;toast(msg)}}
 /* 표적 원 → 폭발 예약 (공습·탱크 포격 공통) */
 function kwStrike(ahead,lead,kind,tank){const m=KWS.mark.find(o=>!o.on);if(!m)return;
-  const v=Math.hypot(c.vx,c.vz),ti=(ci+Math.round((v*lead+ahead)/SP))%N,lat=Math.max(-HALF+2.5,Math.min(HALF-2.5,side+(Math.random()-.5)*5)),[x,z]=tkAt(ti,lat);
+  const v=Math.hypot(c.vx,c.vz),ti=(ci+Math.round((v*lead+ahead)/SP))%N,lat=Math.max(-HALF+2,Math.min(HALF-2,side+(Math.random()-.5)*(kind==='air'?3:5))),[x,z]=tkAt(ti,lat);
   Object.assign(m,{on:true,x,z,t:0,T:lead,kind,tank});m.ring.position.set(x,.08,z);m.disk.position.set(x,.08,z);m.pil.position.set(x,0,z);m.ring.visible=m.disk.visible=m.pil.visible=true;
   if(kind==='air'){const B=KWS.bomber,a=TH[ti]+(Math.random()<.5?1.2:-1.2),dx=Math.cos(a),dz=Math.sin(a);B.visible=true;B.userData={x0:x-dx*180,z0:z-dz*180,dx,dz,t:0,T:lead+1.4};B.rotation.y=-a;m.bomb.visible=false}}
 function kwFrame(dt){
@@ -1743,29 +1753,30 @@ function kwFrame(dt){
   /* 지뢰 다시 생기기 */
   KWS.mines.forEach(m=>{if(!m.armed){m.t+=dt;if(m.t>25){m.armed=true;m.g.visible=true;m.cr.visible=false}}});
   const run=started&&!HOLD&&!DEAD&&MODE==='lap';
+  if(KWS.knock){const k=KWS.knock;k.t+=dt;const v=k.v0*Math.pow(Math.max(0,1-k.t/k.T),2);c.x+=k.dx*v*dt;c.z+=k.dz*v*dt;c.vx=c.vz=0;if(k.t>=k.T||!run)KWS.knock=null}
   /* 표적 원 → 폭발 */
   KWS.mark.forEach(m=>{if(!m.on)return;m.t+=dt;const k=m.t/m.T;m.ring.material.opacity=.5+.5*Math.sin(m.t*(10+k*20));m.disk.material.opacity=.15+.35*k;m.pil.material.opacity=.25+.35*k*(.6+.4*Math.sin(m.t*18));const sc=1.15-.15*k;m.ring.scale.setScalar(sc);
     if(m.kind==='air'&&k>.45){m.bomb.visible=true;const u=(k-.45)/.55;m.bomb.position.set(m.x,70*(1-u*u),m.z)}
     if(m.kind==='tank'&&m.tank&&!m.fired&&k>.8){m.fired=true;m.tank.mf.material.opacity=1;kwBoomSnd(Math.min(.6,16/(Math.hypot(m.tank.x-c.x,m.tank.z-c.z)+8)))}
-    if(m.t>=m.T){m.on=false;m.fired=false;m.ring.visible=m.disk.visible=m.bomb.visible=m.pil.visible=false;kwBoomAt(m.x,m.z,m.kind==='air'?1.25:1);
-      if(run&&Math.hypot(c.x-m.x,c.z-m.z)<(m.kind==='air'?6.5:5.5))kwHit(m.kind==='air'?.8:.65,m.kind==='air'?'💣 폭격에 맞았어요!':'💥 탱크 포탄에 맞았어요!')}});
+    if(m.t>=m.T){m.on=false;m.fired=false;m.ring.visible=m.disk.visible=m.bomb.visible=m.pil.visible=false;const hit=run&&Math.hypot(c.x-m.x,c.z-m.z)<(m.kind==='air'?7:5.5);if(!hit)kwBoomAt(m.x,m.z,m.kind==='air'?1.25:1);
+      if(hit)kwBlast(m.kind==='air'?'💣 폭격에 맞았어요!':'💥 탱크 포탄에 맞았어요!')}});
   /* 기관총: 총알 줄이 도로를 따라 훑고 지나가요 (불꽃·먼지 보이면 피하기) */
-  {const G=KWS.gun,[a,b]=KW_Z.gun,P=3.3,F=1.9;G.t+=dt;const ph=G.t%P,firing=ph<F,cyc=Math.floor(G.t/P),dir=cyc%2?-1:1,u=ph/F,si=Math.round(dir>0?a+u*(b-a):b-u*(b-a));
+  KWS.guns.forEach(G=>{const a=G.a,b=G.b,P=3.3,F=1.9;G.t+=dt;const ph=G.t%P,firing=ph<F,cyc=Math.floor(G.t/P),dir=cyc%2?-1:1,u=ph/F,si=Math.round(dir>0?a+u*(b-a):b-u*(b-a));
     const la=G.lines.geometry.attributes.position.array,da=G.dust.geometry.attributes.position.array;
     if(firing){G.mf.material.opacity=Math.random()<.6?1:.2;G.shotT-=dt;const dd=Math.hypot(G.x-c.x,G.z-c.z);if(G.shotT<=0&&dd<160){G.shotT=.08;kwGunSnd(Math.min(1,20/(dd+10)))}
       for(let k=0;k<8;k++){const j=Math.min(N-1,Math.max(0,si+((Math.random()-.5)*6|0))),[tx,tz]=tkAt(j,(Math.random()*2-1)*HALF);la[k*6]=G.x;la[k*6+1]=1.3;la[k*6+2]=G.z;la[k*6+3]=tx;la[k*6+4]=.2;la[k*6+5]=tz}
       for(let k=0;k<10;k++){const j=Math.min(N-1,Math.max(0,si+((Math.random()-.5)*6|0))),[tx,tz]=tkAt(j,(Math.random()*2-1)*HALF);da[k*3]=tx;da[k*3+1]=.3+Math.random()*.6;da[k*3+2]=tz}
       G.lines.visible=G.dust.visible=true;
-      if(run){let dj=Math.abs(ci-si);if(dj<=4&&ci>=a-4&&ci<=b+4)kwHit(.35,'🔫 총에 맞았어요! 총알 줄을 피하세요')}}
+      if(run){let dj=Math.abs(ci-si);if(dj<=4&&ci>=a-4&&ci<=b+4)kwShot()}}
     else{G.mf.material.opacity=0;G.lines.visible=G.dust.visible=false}
-    G.lines.geometry.attributes.position.needsUpdate=true;G.dust.geometry.attributes.position.needsUpdate=true}
+    G.lines.geometry.attributes.position.needsUpdate=true;G.dust.geometry.attributes.position.needsUpdate=true});
   if(!run)return;
   /* 지뢰 밟기 */
-  if(ci>=KW_Z.mine[0]-5&&ci<=KW_Z.mine[1]+5)KWS.mines.forEach(m=>{if(m.armed&&Math.hypot(c.x-m.x,c.z-m.z)<1.7){m.armed=false;m.t=0;m.g.visible=false;m.cr.visible=true;kwBoomAt(m.x,m.z,1);c.h+=(Math.random()<.5?-1:1)*.3;kwHit(1,'💥 지뢰를 밟았어요!')}});
+  if(ci>=KW_Z.mine[0]-5&&ci<=KW_Z.mine[1]+5)KWS.mines.forEach(m=>{if(m.armed&&Math.hypot(c.x-m.x,c.z-m.z)<1.7){m.armed=false;m.t=0;m.g.visible=false;m.cr.visible=true;kwBlast('💥 지뢰를 밟았어요!')}});
   /* 공습 */
-  if(ci>=KW_Z.air[0]&&ci<=KW_Z.air[1]){KWS.airT-=dt;if(KWS.airT<=0){KWS.airT=2.4+Math.random()*1.2;kwStrike(14,1.7,'air')}}
+  if(ci>=KW_Z.air[0]&&ci<=KW_Z.air[1]){KWS.airT-=dt;if(KWS.airT<=0){KWS.airT=2+Math.random()*.9;kwStrike(6,1.7,'air')}}
   /* 탱크 포격 */
-  if(ci>=KW_Z.tank[0]&&ci<=KW_Z.tank[1]&&KWS.tanks.length){KWS.tankT-=dt;if(KWS.tankT<=0){KWS.tankT=2.2+Math.random();let bt=KWS.tanks[0],bd=1e9;KWS.tanks.forEach(t=>{const d=Math.hypot(t.x-c.x,t.z-c.z);if(d<bd){bd=d;bt=t}});kwStrike(10,1.3,'tank',bt)}}
+  if(ci>=KW_Z.tank[0]&&ci<=KW_Z.tank[1]&&KWS.tanks.length){KWS.tankT-=dt;if(KWS.tankT<=0){KWS.tankT=2.2+Math.random();let bt=KWS.tanks[0],bd=1e9;KWS.tanks.forEach(t=>{const d=Math.hypot(t.x-c.x,t.z-c.z);if(d<bd){bd=d;bt=t}});kwStrike(12,1.3,'tank',bt)}}
 }
 /* === Korean War 끝 === */
 /* ================= Midnight Touge 맵 =================
