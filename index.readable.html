@@ -619,7 +619,7 @@ body.bike #nit.burn{border-color:#7cc4ff}
       <button role="radio" aria-checked="false" data-map="ny"><img src="DATAURI" alt=""><b>New York</b><em>어려움 · 다운타운</em></button>
       <button role="radio" aria-checked="false" data-map="pyongyang"><img src="DATAURI" alt=""><b>North Korea</b><em>보통 · 동상 광장</em></button>
       <button role="radio" aria-checked="false" data-map="touge"><img src="DATAURI" alt=""><b>Midnight Touge</b><em>매우 어려움 · 산길 내리막</em></button>
-      <button role="radio" aria-checked="false" data-map="kwar"><img src="DATAURI" alt=""><b>🔒 Korean War</b><em>매우 어려움 · 전쟁터</em></button>
+      <button role="radio" aria-checked="false" data-map="kwar"><img src="DATAURI" alt=""><b>Korean War</b><em>매우 어려움 · 전쟁터</em></button>
     </div>
     <div class="stages"><div class="stl" id="stList"></div><p>스테이지를 하나씩 클리어해요. 벽에 부딪혀도 되는 횟수가 10번부터 스테이지마다 1번씩 줄어요!</p></div>
     <div class="duelinfo" id="duelInfo"><div><span>나</span><b id="diMe"></b></div><div><span id="diOppN">상대</span><b id="diOpp"></b></div></div>
@@ -1462,7 +1462,7 @@ function pyFrame(dt){if(PY_STAT)PY_STAT.rotation.y=Math.atan2(cam.position.x-PY_
    잠금: 맵 버튼을 누르면 비밀번호(BK_HASH와 같은 비밀번호) → KW_OK(메모리, 새로고침하면 다시 잠김). 순위표·리플레이·고스트 없음(noLB). */
 const KW_CTRL=[[0,0],[169,0],[299,-8],[390,-50],[450,-140],[458,-300],[462,-470],[500,-560],[590,-575],[655,-510],[668,-380],[660,-220],[640,-90],[600,10],[494,65],[520,143],[494,221],[429,254],[393,302],[424,354],[406,406],[462,439],[546,442],[624,481],[644,546],[598,585],[520,611],[416,598],[325,546],[260,468],[195,429],[117,442],[52,507],[-26,533],[-97,514],[-123,455],[-78,416],[-91,351],[-143,306],[-123,234],[-78,182],[-130,124],[-123,52],[-71,10]];   /* 2026-11-20 약 4.1km로 늘림(예전 길 ×1.3 + 끊어진 다리가 있는 남쪽 우회로) */
 MAPS.kwar={half:8,wall:1.6,rail:'jersey',bg:0x0b0b0e,fog:[0x141217,30,430],gnd:0x1d1b17,gy:-.6,asph:0x45454a,kerb:['#bdb6a6','#7a2a24'],
-  pts:()=>closedSpline(KW_CTRL),shoulder:0x2b2620,kw:true,noLB:true,tyFn:()=>kwTY(),prep:()=>kwPrep(),respawn:true,respawnI:()=>KWJ?KWJ.back:0};
+  pts:()=>closedSpline(KW_CTRL),shoulder:0x2b2620,kw:true,tyFn:()=>kwTY(),prep:()=>kwPrep(),respawn:true,respawnI:()=>KWJ?KWJ.back:0};
 /* 끊어진 다리 점프: 남쪽 우회로 직선. 다리가 올라가다(경사로) 가운데가 끊겨 있어요 → 니트로로 속도를 내야 건너편에 닿아요.
    lip=끊긴 끝(점프하는 곳), land=건너편 시작. 못 닿으면 강에 떨어져 점프대 앞에서 다시 출발(시간은 계속 흘러요). */
 const KW_JUMP={at:[459,-345],D:122,H0:5,H1:8,HL:6};
@@ -1492,7 +1492,7 @@ function kwFallBridge(msg){kwBoomSnd(.4);const y=AIR?cy:(TY[ci]||0);AIR=false;st
   /* 다리 밑으로 계속 미끄러져 들어가 화면이 다리 밑면에 가려지던 버그(2026-11-20): 끝에 부딪히면 살짝 뒤로 튕겨 강으로 바로 떨어져요 */
   const fx=Math.cos(c.h),fz=Math.sin(c.h);c.vx=-fx*2;c.vz=-fz*2;if(ci>=KWJ.land){const [x,z]=tkAt(KWJ.land-2,side);c.x=x;c.z=z}toast(msg)}
 
-let KW_OK=false;
+let KW_OK=true;   /* 2026-11-20 정식 공개: 잠금 없음 */
 async function kwUnlock(){
   const pw=prompt('🔒 Korean War는 아직 테스트 중인 맵이에요.\n비밀번호를 입력하세요');if(pw==null)return false;
   let h='';try{const d=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(pw));h=[...new Uint8Array(d)].map(x=>x.toString(16).padStart(2,'0')).join('')}catch(err){}
@@ -1581,7 +1581,7 @@ function buildKW(){
     [-1,1].forEach(sd=>{const [px,pz]=tkAt(i,sd*W2);for(let h=0;h<4;h++)tkAdd(new THREE.BoxGeometry(.5,2.4,.5),steel,px,1.2+h*2.4,pz,ry);
       for(let h=0;h<4;h++){const g=new THREE.BoxGeometry(.12,2.6,.12);g.rotateX(h%2?.6:-.6);tkAdd(g,steel,px,1.2+h*2.4,pz,ry)}});
     tkAdd(new THREE.BoxGeometry(.6,.6,W2*2+1),steel,cx,9.6,cz,ry);tkAdd(new THREE.BoxGeometry(.6,.6,W2*2+1),steel,cx,7.2,cz,ry);
-    const bm=kwSign(1024,96,(x,w,h)=>{x.fillStyle='#5e0f12';x.fillRect(0,0,w,h);x.strokeStyle='#d8b060';x.lineWidth=4;x.strokeRect(6,6,w-12,h-12);x.fillStyle='#f2ead8';x.font='900 58px '+KR;x.textAlign='center';x.textBaseline='middle';x.fillText('대한민국은 반드시 승리한다',w/2,h/2+3)});
+    const bm=kwSign(1024,96,(x,w,h)=>{x.fillStyle='#5e0f12';x.fillRect(0,0,w,h);x.strokeStyle='#d8b060';x.lineWidth=4;x.strokeRect(6,6,w-12,h-12);x.fillStyle='#f2ead8';x.font='900 58px '+KR;x.textAlign='center';x.textBaseline='middle';x.fillText('끝까지 전진해라!',w/2,h/2+3)});
     const n=TN[i];[1,-1].forEach(d=>{const g=new THREE.PlaneGeometry(W2*2-1,2);const m=new THREE.Mesh(g,bm);m.position.set(cx+Math.cos(TH[i])*.32*d,8.4,cz+Math.sin(TH[i])*.32*d);m.rotation.y=Math.atan2(Math.cos(TH[i])*d,Math.sin(TH[i])*d);MG.add(m)});}
   /* ===== 2) 검문소: 바리케이드 지그재그 + 감시탑 + 군인 ===== */
   {const ck=kwSign(256,96,(x,w,h)=>{x.fillStyle='#e8e2d0';x.fillRect(0,0,w,h);x.fillStyle='#8e1414';x.fillRect(0,0,w,30);x.fillStyle='#fff';x.font='900 22px '+KR;x.textAlign='center';x.fillText('검 문 소',w/2,23);x.fillStyle='#111';x.font='900 30px system-ui';x.fillText('CHECKPOINT',w/2,66);x.font='700 15px '+KR;x.fillText('서행 · 정지',w/2,88)});
@@ -4120,7 +4120,7 @@ function boardUrl(){
   return SB+'?select=name,lap_ms&mode=eq.lap&map=eq.'+LBMAP+'&order=lap_ms.asc&limit=200';
 }
 /* 개인 랩타임 순위표는 맵마다 따로. 위쪽 탭으로 다른 맵 순위도 볼 수 있어요 (m을 안 주면 지금 맵) */
-const LB_MAPS=['seoul','mountain','xmas','tokyo','ny','pyongyang','touge'],BIKE_MAPS=['coast','jtouge','volcano'],BMLABEL={coast:'🏍️ Coast',jtouge:'🏍️ Japan Touge',volcano:'🏍️ Volcano'};
+const LB_MAPS=['seoul','mountain','xmas','tokyo','ny','pyongyang','touge','kwar'],BIKE_MAPS=['coast','jtouge','volcano'],BMLABEL={coast:'🏍️ Coast',jtouge:'🏍️ Japan Touge',volcano:'🏍️ Volcano'};
 let LBMAP='seoul';
 function lbTabs(){
   const row=$('lbTabs');if(!row.children.length)LB_MAPS.forEach(id=>{const b=document.createElement('button');b.type='button';b.setAttribute('role','tab');b.dataset.map=id;b.textContent=MAPLABEL[id];b.onclick=()=>loadBoard(id);row.append(b)});
