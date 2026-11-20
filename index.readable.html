@@ -4843,7 +4843,7 @@ function pracReset(){
 function practiceBounds(){
   const L=PA-1.4;
   [['x','vx'],['z','vz']].forEach(([p,v])=>{
-    if(Math.abs(c[p])>L){const sg=Math.sign(c[p]);c[p]=sg*L;const vn=c[v]*sg;if(vn>0){if(VEH==='bike'){c[v]=-sg*1.5;const sp=Math.hypot(c.vx,c.vz);if(sp>2){let d=Math.atan2(c.vz,c.vx)-c.h;d=Math.atan2(Math.sin(d),Math.cos(d));c.h+=clamp(d,-.08,.08)}}else c[v]=-sg*vn*.35;c.vx*=.85;c.vz*=.85;hitK=Math.min(1,Math.max(hitK,vn/14));if(vn>2.5)thump(Math.min(1,vn/14))}}
+    if(Math.abs(c[p])>L){const sg=Math.sign(c[p]);c[p]=sg*L;const vn=c[v]*sg;if(vn>0){if(VEH==='bike'){/* 오토바이: 벽을 따라 미끄러지게(정면으로 박아도 벽 방향으로 빠져나가요, 2026-11-20) */const q=v==='vx'?'vz':'vx',hq=q==='vx'?Math.cos(c.h):Math.sin(c.h),dir=Math.sign(c[q])||Math.sign(hq)||1,sp=Math.max(Math.abs(c[q]),Math.hypot(c.vx,c.vz)*.6,3);c[q]=dir*sp;c[v]=-sg*1.5;const ta=q==='vx'?(dir>0?0:Math.PI):(dir>0?Math.PI/2:-Math.PI/2);let d=ta-c.h;d=Math.atan2(Math.sin(d),Math.cos(d));c.h+=clamp(d*.35,-.08,.08)}else c[v]=-sg*vn*.35;c.vx*=.85;c.vz*=.85;hitK=Math.min(1,Math.max(hitK,vn/14));if(vn>2.5)thump(Math.min(1,vn/14))}}
   });
 }
 /* 연습장 화면: 드리프트 각도·시간, 최고 속도, 콘 쓰러뜨리기, 니트로 다시 채우기 */
