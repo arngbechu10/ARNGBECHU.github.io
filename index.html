@@ -41,7 +41,8 @@ li:first-child .n,li:first-child .t{color:#f2c230}
 input{flex:1;min-width:0;padding:9px;border-radius:8px;border:1px solid #3a4250;background:#0e1115;color:#eef;font:inherit;user-select:text;-webkit-user-select:text}
 #send{background:#f2c230;color:#111;border:0;font-weight:700}#send:disabled{opacity:.4}
 #msg{margin:8px 0 0;font-size:13px;color:#9aa4b2;min-height:20px}
-#kwfx{position:fixed;inset:0;pointer-events:none;z-index:4;opacity:0;background:radial-gradient(ellipse at 50% 55%,rgba(255,170,60,.25) 10%,rgba(255,80,20,.6) 100%)}#kwgas.water{background:radial-gradient(ellipse at 50% 30%,#1c3a48 0,#08141c 70%)}#kwgas{position:fixed;inset:0;pointer-events:none;opacity:0;background:radial-gradient(ellipse at 50% 40%,rgba(236,238,226,.97) 0,rgba(214,218,200,.95) 55%,rgba(170,176,156,.88) 100%)}#kwfx.on{animation:kwfx .75s ease-out}#kwfx.big{background:radial-gradient(ellipse at 50% 55%,rgba(255,240,200,.85) 0,rgba(255,140,40,.8) 45%,rgba(120,20,0,.85) 100%)}#kwfx.on.big{animation:kwfx 1.2s ease-out}@keyframes kwfx{0%{opacity:1}100%{opacity:0}}
+#kwfx{position:fixed;inset:0;pointer-events:none;z-index:4;opacity:0;background:radial-gradient(ellipse at 50% 55%,rgba(255,170,60,.25) 10%,rgba(255,80,20,.6) 100%)}#kwwarn{position:fixed;left:50%;top:clamp(120px,22vh,190px);transform:translateX(-50%);z-index:6;pointer-events:none;display:none;flex-direction:column;align-items:center;gap:4px;padding:10px 22px;border:3px solid #ff3b2a;border-radius:12px;background:#2a0606e6;color:#fff;text-align:center;font-family:system-ui,sans-serif}#kwwarn b{font-size:clamp(18px,3.2vw,30px);color:#ff5a4a;letter-spacing:.06em}#kwwarn span{font-size:clamp(12px,1.6vw,16px)}#kwwarn.on{display:flex;animation:kwwarn 3s ease-out forwards}@keyframes kwwarn{0%,20%,40%{opacity:1}10%,30%{opacity:.35}85%{opacity:1}100%{opacity:0}}
+#kwgas.water{background:radial-gradient(ellipse at 50% 30%,#1c3a48 0,#08141c 70%)}#kwgas{position:fixed;inset:0;pointer-events:none;opacity:0;background:radial-gradient(ellipse at 50% 40%,rgba(236,238,226,.97) 0,rgba(214,218,200,.95) 55%,rgba(170,176,156,.88) 100%)}#kwfx.on{animation:kwfx .75s ease-out}#kwfx.big{background:radial-gradient(ellipse at 50% 55%,rgba(255,240,200,.85) 0,rgba(255,140,40,.8) 45%,rgba(120,20,0,.85) 100%)}#kwfx.on.big{animation:kwfx 1.2s ease-out}@keyframes kwfx{0%{opacity:1}100%{opacity:0}}
 #start{--cmh:max(110px,min(34vh,calc(100vh - 475px)));--gold:#f2c230;--line:#2c3342;--u:8px;position:fixed;inset:0;z-index:50;display:grid;grid-template-columns:minmax(0,1.2fr) minmax(310px,.8fr);grid-template-rows:minmax(0,1fr);gap:clamp(12px,3vw,44px);padding:clamp(12px,3.5vh,36px) clamp(14px,3.5vw,48px);background:#090a16;overflow:hidden;text-align:left;color:#eef}
 #start .bg{position:absolute;inset:0;pointer-events:none;background:radial-gradient(70% 55% at 30% 80%,#2f62ff3a,transparent 70%),linear-gradient(90deg,#090a1688 0,#090a1600 40%,#090a16f0 100%),linear-gradient(0deg,#090a16 0,#090a1600 36%),var(--sky) 50% 100%/auto 80% no-repeat,#090a16}
 #start .hero{position:relative;z-index:1;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:clamp(16px,5vh,44px);min-width:0;min-height:0}
@@ -1564,7 +1565,7 @@ function buildKW(){
   const liveTank=(x,z,ry)=>{const G=new THREE.Group(),mk=(g,m,lx,ly,lz,par)=>{const me=new THREE.Mesh(g,m);me.position.set(lx,ly,lz);(par||G).add(me)};
     tankParts((g,m,lx,ly,lz)=>mk(g,m,lx,ly,lz),olive,oliveD);const tur=new THREE.Group();tur.position.set(-.3,2.05,0);G.add(tur);tankTurret((g,m,lx,ly,lz)=>mk(g,m,lx,ly,lz,tur),olive);
     const mf=new THREE.Sprite(new THREE.SpriteMaterial({map:T.glowO,color:0xffd080,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true,opacity:0}));mf.position.set(6,.1,0);mf.scale.set(5,5,1);tur.add(mf);
-    G.position.set(x,0,z);G.rotation.y=ry;MG.add(G);return {G,tur,mf,x,z}};
+    G.position.set(x,0,z);G.rotation.y=ry;G.scale.setScalar(1.7);MG.add(G);return {G,tur,mf,x,z}};   /* 2026-11-20 1.7배로 크게 */
   /* ===== 1) 출발: 무너진 본부 건물 + 태극기 + 현수막 게이트 ===== */
   {const i=24,sd=-1,off=ext+14,[x,z]=tkAt(i,sd*off),ry=yaw(i);
     tkAdd(boxWinGeo(26,13,14),ruinMs[0],x,6.5,z,ry);tkAdd(boxWinGeo(9,6,14),ruinMs[0],x+Math.cos(TH[i])*8,16,z+Math.sin(TH[i])*8,ry);
@@ -1682,6 +1683,7 @@ function buildKW(){
     const T1=liveTank(x,z,yaw(i)+(sd>0?Math.PI/2:-Math.PI/2));KWS.tanks.push(T1);sandbags(...tkAt(i,sd*(off-4.5)),yaw(i),9,2);soldier(...tkAt(i,sd*(off+3),3),yaw(i),false)});
   /* 직접 쏘는 탱크 (빨간 원 없이 포탄이 날아와요) */
   KWS.dt=[];KW_DT.forEach(([i,a,b])=>{for(const sd of[1,-1]){const off=ext+13,[x,z]=tkAt(i,sd*off);if(!far(x,z,off-1))continue;const T2=liveTank(x,z,yaw(i)+(sd>0?Math.PI/2:-Math.PI/2));T2.a=a;T2.b=b;T2.t=1.2;KWS.dt.push(T2);
+    barrel(...tkAt(i,sd*(off-6),-7),true);barrel(...tkAt(i,sd*(off-6),7),true);   /* 불타는 드럼통이 탱크를 비춰서 잘 보이게 */
     sandbags(...tkAt(i,sd*(off-4.5)),yaw(i),10,2);for(let q=-1;q<=1;q++)soldier(...tkAt(i,sd*(off-6),q*2.4),yaw(i)-Math.PI/2*sd,q===0);break}});
   KWS.shells=[];for(let k=0;k<3;k++){const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:T.glowO,color:0xffe0a0,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true,fog:false}));sp.scale.set(6,6,1);sp.visible=false;MG.add(sp);const tg=new THREE.BufferGeometry();tg.setAttribute('position',new THREE.BufferAttribute(new Float32Array(6),3));const tr=new THREE.Line(tg,new THREE.LineBasicMaterial({color:0xffc060,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,fog:false}));tr.frustumCulled=false;tr.visible=false;MG.add(tr);KWS.shells.push({sp,tr,on:false})}
   {const sg=kwSign(256,128,(x,w,h)=>{x.fillStyle='#8e1414';x.fillRect(0,0,w,h);x.fillStyle='#fff';x.font='900 38px '+KR;x.textAlign='center';x.fillText('포격 주의',w/2,54);x.font='900 24px system-ui';x.fillText('TANK FIRE ⚠',w/2,100)});
@@ -1707,7 +1709,7 @@ function buildKW(){
     for(let k=0;k<14;k++){const d=60+rnd()*120,sd=k%2?1:-1,ax=mx+n[0]*sd*d+Math.cos(TH[mid])*(rnd()-.5)*90,az=mz+n[1]*sd*d+Math.sin(TH[mid])*(rnd()-.5)*90;if(!far(ax,az,30))continue;const h=8+rnd()*22,w=10+rnd()*14;tkAdd(boxWinGeo(w,h,w),ruinMs[k%3],ax,h/2,az,rnd()*3);if(rnd()<.6)fireAt(ax,h*.8,az,5+rnd()*4)}}
   /* ===== 9) 지뢰밭 ===== */
   KWS.mines=[];const mineM=tkM(0x3a3a2c),pinM=tkM(0x6a6a5a);KW_MINEZ.forEach(([a,b],zk)=>{let last=0;const mpos=[];
-    for(let i=a+3;i<b-2;i+=2+(rnd()*2|0)){let lat;do{lat=Math.round((rnd()*2-1)*(HALF-1.6))}while(Math.abs(lat-last)<3);last=lat;mpos.push([i,lat]);
+    for(let i=a+3;i<b-2;i+=2+(rnd()*3|0)){let lat;do{lat=Math.round((rnd()*2-1)*(HALF-1.6))}while(Math.abs(lat-last)<3);last=lat;mpos.push([i,lat]);
       if(rnd()<.4){let l2,t=0;do{l2=Math.round((rnd()*2-1)*(HALF-1.6));t++}while(Math.abs(l2-lat)<5&&t<20);if(Math.abs(l2-lat)>=5)mpos.push([i+1,l2])}}
     mpos.forEach(([i,lat])=>{const [x,z]=tkAt(i,lat);
       const g=new THREE.Group();g.position.set(x,0,z);const d=new THREE.Mesh(new THREE.CylinderGeometry(.38,.42,.14,12),mineM);d.position.y=.07;g.add(d);const p=new THREE.Mesh(new THREE.CylinderGeometry(.06,.06,.12,6),pinM);p.position.y=.18;g.add(p);MG.add(g);
@@ -1754,7 +1756,8 @@ function buildKW(){
         if(!far(bx,bz,wb+2))continue;tkAdd(new THREE.IcosahedronGeometry(2+rnd()*3,0),rock,bx,0,bz,rnd()*3)}}
     /* 다리 상판·기둥 (경사로부터 내려가는 곳까지, 끊긴 곳 빼고) */
     for(let i=J.u0;i<=J.down;i+=2){if(kwGap(i)||kwGap(i+1))continue;const y=TY[i];if(y<.4)continue;const [x,z]=tkAt(i,0,SP);
-      tkAdd(new THREE.BoxGeometry(SP*2+.2,1.2,wb*2+.6),deckD,x,y-.62,z,yaw(i));[-1,1].forEach(sd=>{const [ex,ez]=tkAt(i,sd*(wb+.1),SP);tkAdd(new THREE.BoxGeometry(SP*2+.2,.9,.4),deckM,ex,y+.2,ez,yaw(i))});
+      const ym=(TY[i]+TY[Math.min(N-1,i+2)])/2,sl=Math.atan2(TY[Math.min(N-1,i+2)]-TY[i],SP*2),dg=new THREE.BoxGeometry(SP*2+.2,1.2,wb*2+.6);dg.rotateZ(sl);tkAdd(dg,deckD,x,ym-.68,z,yaw(i));   /* 경사 따라 기울여서 도로 위로 안 튀어나오게 */
+      [-1,1].forEach(sd=>{const [ex,ez]=tkAt(i,sd*(wb+.1),SP),rg=new THREE.BoxGeometry(SP*2+.2,.9,.4);rg.rotateZ(sl);tkAdd(rg,deckM,ex,ym+.2,ez,yaw(i))});
       if((i-J.u0)%10===0&&y>2)[-1,1].forEach(sd=>{const [px,pz]=tkAt(i,sd*(wb-1.5));tkAdd(new THREE.BoxGeometry(1.4,y+1,1.4),deckM,px,(y-1.2)/2-.6,pz,yaw(i))})}
     /* 끊어진 끝: 들쭉날쭉 콘크리트 + 삐져나온 철근 + 기울어진 조각 */
     [[J.lip,1],[J.land,-1]].forEach(([i,dir])=>{const y=TY[i];for(let k=-6;k<=6;k++){const lat=k*(wb/6),len=.6+rnd()*2.2,[x,z]=tkAt(i,lat,dir*len/2);tkAdd(new THREE.BoxGeometry(len,1+rnd()*.5,wb/6),deckD,x,y-.6,z,yaw(i)+(rnd()-.5)*.2)}
@@ -1806,21 +1809,34 @@ function buildKW(){
     for(let k=0;k<4;k++){const ps=[];for(let q=0;q<7;q++){const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:T.smoke,color:0xe6e9dc,transparent:true,depthWrite:false,opacity:0}));sp.visible=false;MG.add(sp);ps.push({sp,ox:(rnd()-.5)*2,oz:(rnd()-.5)*2,ph:rnd()*6})}KWS.clouds.push({ps,t:99})}}
   KWS.gasT=1;KWS.gasV=0;
   KWS.airT=1.5;KWS.tankT=1;KWS.lastHit=0;KWS.lastToast=0;KWS.time=0;
-  if(!document.getElementById('kwfx')){const d=document.createElement('div');d.id='kwfx';document.body.append(d)}if(!document.getElementById('kwgas')){const d=document.createElement('div');d.id='kwgas';$('fx').after(d)}   /* 도로 화면(gl·fx) 바로 위, 콕핏·시계·미니맵 아래 */
+  if(!document.getElementById('kwfx')){const d=document.createElement('div');d.id='kwfx';document.body.append(d)}if(!document.getElementById('kwwarn')){const d=document.createElement('div');d.id='kwwarn';d.innerHTML='<b>⚠ 탱크 포격 구간 ⚠</b><span>탱크 포탑이 보이면 포탄이 날아와요!</span>';document.body.append(d)}if(!document.getElementById('kwgas')){const d=document.createElement('div');d.id='kwgas';$('fx').after(d)}   /* 도로 화면(gl·fx) 바로 위, 콕핏·시계·미니맵 아래 */
 }
-function kwReset(){if(!KWS.mines)return;KWS.mines.forEach(m=>{m.armed=true;m.g.visible=true;m.cr.visible=false});KWS.mark.forEach(m=>{m.on=false;m.ring.visible=m.disk.visible=m.bomb.visible=m.pil.visible=false});KWS.airT=1.5;KWS.tankT=1;KWS.lastHit=0;KWS.lastToast=0;if(KWS.guns)KWS.guns.forEach((g,k)=>g.t=k*1.1);KWS.knock=null;KWS.lastJ=null;KWS.lastS=null;if(KWS.shells)KWS.shells.forEach(q=>{q.on=false;q.sp.visible=false;q.tr.visible=false});if(KWS.dt)KWS.dt.forEach(q=>q.t=1.2);KWS.gasT=1;KWS.gasV=0;if(KWS.cans)KWS.cans.forEach(o=>{o.on=false;o.G.visible=false});if(KWS.clouds)KWS.clouds.forEach(o=>{o.t=99;o.ps.forEach(p=>p.sp.visible=false)});if(KWS.bomber)KWS.bomber.visible=false}
+function kwReset(){if(!KWS.mines)return;KWS.mines.forEach(m=>{m.armed=true;m.g.visible=true;m.cr.visible=false});KWS.mark.forEach(m=>{m.on=false;m.ring.visible=m.disk.visible=m.bomb.visible=m.pil.visible=false});KWS.airT=1.5;KWS.tankT=1;KWS.lastHit=0;KWS.lastToast=0;if(KWS.guns)KWS.guns.forEach((g,k)=>g.t=k*1.1);KWS.knock=null;KWS.lastJ=null;KWS.lastS=null;KWS.inT=false;KWS.amb=1;if(KWS.shells)KWS.shells.forEach(q=>{q.on=false;q.sp.visible=false;q.tr.visible=false});if(KWS.dt)KWS.dt.forEach(q=>q.t=1.2);KWS.gasT=1;KWS.gasV=0;if(KWS.cans)KWS.cans.forEach(o=>{o.on=false;o.G.visible=false});if(KWS.clouds)KWS.clouds.forEach(o=>{o.t=99;o.ps.forEach(p=>p.sp.visible=false)});if(KWS.bomber)KWS.bomber.visible=false}
 function kwBoomAt(x,z,big){const b=KWS.boom.find(o=>o.t>2.4)||KWS.boom[0];b.t=0;b.x=x;b.z=z;b.big=big||1;b.fb.visible=b.sm.visible=b.gl.visible=b.core.visible=true;
   const d=Math.hypot(x-c.x,z-c.z);kwBoomSnd(Math.max(.05,Math.min(1,22/(d+8)))*b.big)}
 function kwBoomSnd(v){if(!AC||AC.state!=='running')return;const t=AC.currentTime,sr=AC.sampleRate,n=sr*1.1|0,bf=AC.createBuffer(1,n,sr),dd=bf.getChannelData(0);for(let i=0;i<n;i++)dd[i]=(Math.random()*2-1)*Math.pow(1-i/n,2.2);
   const s=AC.createBufferSource();s.buffer=bf;const lp=AC.createBiquadFilter();lp.type='lowpass';lp.frequency.setValueAtTime(3200,t);lp.frequency.exponentialRampToValueAtTime(120,t+.9);const g=AC.createGain();g.gain.value=.9*v;s.connect(lp);lp.connect(g);g.connect(AC.destination);s.start(t);
   const o=AC.createOscillator();o.frequency.setValueAtTime(110,t);o.frequency.exponentialRampToValueAtTime(30,t+.6);const og=AC.createGain();og.gain.setValueAtTime(.8*v,t);og.gain.exponentialRampToValueAtTime(.001,t+.7);o.connect(og);og.connect(AC.destination);o.start(t);o.stop(t+.75)}
 /* 군인 함성 "와아아!" (여러 목소리: 톱니파 + 모음 필터 + 떨림) */
-function kwShoutSnd(v){if(!AC||AC.state!=='running')return;const t=AC.currentTime,out=AC.createGain();out.gain.value=.22*v;out.connect(AC.destination);
+function kwShoutSnd(v){if(!AC||AC.state!=='running')return;const t=AC.currentTime,out=AC.createGain();out.gain.value=.42*v;out.connect(AC.destination);
   for(let k=0;k<9;k++){const o=AC.createOscillator();o.type='sawtooth';const f=120+Math.random()*110,st=t+Math.random()*.25,len=1.3+Math.random()*.8;o.frequency.setValueAtTime(f*.85,st);o.frequency.linearRampToValueAtTime(f*1.12,st+.35);o.frequency.linearRampToValueAtTime(f*.95,st+len);
     const lfo=AC.createOscillator(),lg=AC.createGain();lfo.frequency.value=4+Math.random()*3;lg.gain.value=f*.04;lfo.connect(lg);lg.connect(o.frequency);
     const g=AC.createGain();g.gain.setValueAtTime(.0001,st);g.gain.exponentialRampToValueAtTime(.5,st+.18);g.gain.setValueAtTime(.5,st+len-.35);g.gain.exponentialRampToValueAtTime(.001,st+len);
     [[650+Math.random()*150,4],[1100+Math.random()*150,5],[2500,6]].forEach(([fq,q],n)=>{const bp=AC.createBiquadFilter();bp.type='bandpass';bp.frequency.value=fq;bp.Q.value=q;const bg=AC.createGain();bg.gain.value=n===2?.3:1;o.connect(bp);bp.connect(bg);bg.connect(g)});
     g.connect(out);o.start(st);o.stop(st+len+.05);lfo.start(st);lfo.stop(st+len+.05)}}
+/* 총 한 발 '탕' (짧은 잡음 + 메아리) */
+function kwCrack(v,at){if(!AC||AC.state!=='running')return;const t=(at||AC.currentTime),sr=AC.sampleRate,n=sr*.06|0,bf=AC.createBuffer(1,n,sr),dd=bf.getChannelData(0);for(let i=0;i<n;i++)dd[i]=(Math.random()*2-1)*Math.pow(1-i/n,6);
+  [[1,0],[.35,.13+Math.random()*.1],[.15,.32+Math.random()*.15]].forEach(([g0,dl])=>{const s=AC.createBufferSource();s.buffer=bf;const hp=AC.createBiquadFilter();hp.type='highpass';hp.frequency.value=dl?500:900;const lp=AC.createBiquadFilter();lp.type='lowpass';lp.frequency.value=dl?2200:5200;const g=AC.createGain();g.gain.value=v*g0;s.connect(hp);hp.connect(lp);lp.connect(g);g.connect(AC.destination);s.start(t+dl)})}
+/* 경고 사이렌 (구간 들어올 때) */
+function kwSiren(){if(!AC||AC.state!=='running')return;const t=AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.type='sawtooth';o.frequency.setValueAtTime(520,t);for(let k=0;k<4;k++){o.frequency.linearRampToValueAtTime(880,t+k*.5+.25);o.frequency.linearRampToValueAtTime(520,t+k*.5+.5)}
+  const lp=AC.createBiquadFilter();lp.type='lowpass';lp.frequency.value=1800;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.12,t+.05);g.gain.setValueAtTime(.12,t+1.8);g.gain.exponentialRampToValueAtTime(.001,t+2.1);o.connect(lp);lp.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+2.15)}
+/* 전투 배경 소리: 총격전(단발·연사)·먼 포성·함성이 무작위로 */
+function kwAmbient(dt){if(!AC||AC.state!=='running')return;KWS.amb-=dt;if(KWS.amb>0)return;
+  const near=KW_GUNS.some(([a,b])=>ci>=a-30&&ci<=b+30)||KW_DT.some(([i,a,b])=>ci>=a&&ci<=b)||(ci>=KW_Z.wreck[0]&&ci<=KW_Z.wreck[1])||(ci>=KW_Z.check[0]&&ci<=KW_Z.check[1]),V=near?.55:.3,r=Math.random(),t=AC.currentTime;
+  if(r<.5){kwCrack(V*(.4+Math.random()*.6));if(Math.random()<.5)kwCrack(V*.5,t+.12+Math.random()*.2);KWS.amb=.25+Math.random()*.7}
+  else if(r<.8){const n=5+(Math.random()*9|0),gap=.065+Math.random()*.03,v=V*(.3+Math.random()*.6);for(let k=0;k<n;k++)kwCrack(v*(.8+Math.random()*.3),t+k*gap);KWS.amb=n*gap+.3+Math.random()*.8}
+  else if(r<.95){kwBoomSnd(.12+Math.random()*.2);KWS.amb=.6+Math.random()*1.2}
+  else{kwShoutSnd(near?.8:.5);KWS.amb=1.5+Math.random()}}
 function kwGunSnd(v){if(!AC||AC.state!=='running')return;const t=AC.currentTime,sr=AC.sampleRate,n=sr*.05|0,bf=AC.createBuffer(1,n,sr),dd=bf.getChannelData(0);for(let i=0;i<n;i++)dd[i]=(Math.random()*2-1)*Math.pow(1-i/n,4);
   const s=AC.createBufferSource();s.buffer=bf;const bp=AC.createBiquadFilter();bp.type='bandpass';bp.frequency.value=900;bp.Q.value=.8;const g=AC.createGain();g.gain.value=.5*v;s.connect(bp);bp.connect(g);g.connect(AC.destination);s.start(t)}
 /* 총에 맞으면: 지금 속도에서 28% 줄어요 (옆으로 밀지 않아요) */
@@ -1911,10 +1927,16 @@ function kwFrame(dt){
   /* 공습 */
   if(KW_AIR.some(([a,b])=>ci>=a&&ci<=b)){KWS.airT-=dt;if(KWS.airT<=0){KWS.airT=1.6+Math.random()*.8;kwStrike(6,1.7,'air')}}
   /* 직접 쏘는 탱크: 차가 갈 자리 근처로 포탄을 쏴요 (반은 바로 앞, 반은 차를 노림) */
-  KWS.dt.forEach(tk=>{if(ci<tk.a||ci>tk.b)return;tk.t-=dt;if(tk.t>0)return;tk.t=2+Math.random()*1.3;const sh=KWS.shells.find(q=>!q.on);if(!sh)return;
+  KWS.dt.forEach(tk=>{if(ci<tk.a||ci>tk.b)return;{const wa=Math.atan2(c.z-tk.z,c.x-tk.x);let d=(-wa-tk.G.rotation.y)-tk.tur.rotation.y;d=Math.atan2(Math.sin(d),Math.cos(d));tk.tur.rotation.y+=d*Math.min(1,dt*1.5)}
+    /* 운전석에서 보일 때만 쏴요: 차 앞쪽 ±40° 안, 220m 안 */
+    {const dx=tk.x-c.x,dz=tk.z-c.z,dd=Math.hypot(dx,dz);let ang=Math.atan2(dz,dx)-c.h;ang=Math.atan2(Math.sin(ang),Math.cos(ang));if(dd>220||Math.abs(ang)>.7){tk.t=Math.max(tk.t,.6);return}}
+    tk.t-=dt;if(tk.t>0)return;tk.t=2+Math.random()*1.3;const sh=KWS.shells.find(q=>!q.on);if(!sh)return;
     const v=Math.hypot(c.vx,c.vz),T0=.55,aim=Math.random()<.5,ahead=aim?v*T0:v*T0+9+Math.random()*8,ti=(ci+Math.round(ahead/SP))%N,[x,z]=tkAt(ti,Math.max(-HALF+1.5,Math.min(HALF-1.5,side+(Math.random()-.5)*(aim?2:6))));
     const fx=tk.x,fz=tk.z,a=Math.atan2(z-fz,x-fx);tk.tur.rotation.y=-a-tk.G.rotation.y;tk.mf.material.opacity=1;kwBoomSnd(Math.min(.8,22/(Math.hypot(fx-c.x,fz-c.z)+8)));
-    Object.assign(sh,{on:true,t:0,T:T0,x0:fx+Math.cos(a)*5.5,z0:fz+Math.sin(a)*5.5,x1:x,z1:z});sh.sp.visible=true});
+    Object.assign(sh,{on:true,t:0,T:T0,x0:fx+Math.cos(a)*9.5,z0:fz+Math.sin(a)*9.5,x1:x,z1:z});sh.sp.visible=true});
+  kwAmbient(dt);
+  /* 탱크 포격 구간에 들어오면 경고 */
+  {const inT=KWS.dt.some(t=>ci>=t.a&&ci<=t.b)||(ci>=KW_Z.tank[0]&&ci<=KW_Z.tank[1]);if(inT&&!KWS.inT){const w=$('kwwarn');if(w){w.classList.remove('on');void w.offsetWidth;w.classList.add('on')}kwSiren()}KWS.inT=inT}
   /* 군인 함성: 지점을 지나가면 */
   KW_SHOUT.forEach(i=>{if(KWS.lastS!=null&&KWS.lastS<i&&ci>=i&&ci-KWS.lastS<20)kwShoutSnd(1)});KWS.lastS=ci;
   /* 탱크 포격 */
