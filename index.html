@@ -1501,7 +1501,7 @@ function kwBtnUI(){const b=document.querySelector('.maps button[data-map="kwar"]
 /* 구간 (코스 점 번호, N=1400) */
 const KW_Z={hq:[10,48],gate:39,check:[72,128],ruins:[684,780],tun:[785,821],tank:[843,933],seoul:943,bridge:[954,991],air:[1133,1262],wreck:[1276,1386],slum:[[140,176],[300,420],[1150,1240]]};
 const KW_AIR=[[1133,1262],[395,560],[15,70],[560,596],[752,785],[933,975]];   /* 공습 구간 (2026-11-20 빈 구간 4곳 추가) */
-const KW_HP=15;   /* 차량 내구도: 지뢰·폭격·포탄 15번 맞으면 차가 터져서 처음부터 */   /* 공습 구간 2곳 */
+const KW_HP=10;   /* 차량 내구도: 지뢰·폭격·포탄 10번 맞으면 차가 터져서 처음부터 */   /* 공습 구간 2곳 */
 const KW_MINEZ=[[645,684],[1029,1125],[1221,1270]];   /* 지뢰밭 [시작, 끝] */
 const KW_GAS=[[74,130],[821,856],[1344,1397],[440,520],[1170,1225]];   /* 최루탄 구간 (2026-11-20 2곳 추가) */
 const KW_DT=[[345,300,372],[1012,975,1060],[1370,1330,1392]];   /* 직접 쏘는 탱크 [위치, 쏘는 구간 시작, 끝]: 포탄이 날아와 차 앞에서 터지거나 맞으면 뒤로 밀려나요 */
@@ -1851,7 +1851,7 @@ function kwBlast(msg){const t=performance.now();if(KWS.knock||DEAD||t-KWS.lastHi
   KWS.airT=Math.max(KWS.airT,3);KWS.tankT=Math.max(KWS.tankT,3);if(KWS.dt)KWS.dt.forEach(q=>q.t=Math.max(q.t,3));KWS.knock={t:0,T:.75,dx:-fx,dz:-fz,v0:Math.min(16,9+sp*.2)};c.vx=c.vz=0;c.h+=(Math.random()<.5?-1:1)*.18;
   hitK=1;thump(1);const f=$('kwfx');if(f){f.classList.remove('on','big');void f.offsetWidth;f.classList.add('on','big')}
   if(t-KWS.lastToast>1200){KWS.lastToast=t;toast(msg)}}
-/* 차량 내구도 표시 (니트로 게이지 아래 칸 15개) */
+/* 차량 내구도 표시 (니트로 게이지 아래 칸 10개) */
 function kwHpUI(hit){const el=$('kwhp');if(!el)return;const h=KWS.hp==null?KW_HP:KWS.hp;el.querySelector('b').textContent='차량 내구도 '+h+'/'+KW_HP;
   el.querySelectorAll('i').forEach((q,k)=>q.className=k<h?(h<=3?'low':h<=6?'mid':''):'off');if(hit){el.classList.remove('hit');void el.offsetWidth;el.classList.add('hit')}}
 /* 내구도 0: 차가 크게 폭발 → 처음부터 다시 */
@@ -1927,7 +1927,7 @@ function kwFrame(dt){
   KWS.gasV=Math.max(0,KWS.gasV-dt/2.6);{const el=$('kwgas'),under=FALL&&cy<-.3;if(el){el.classList.toggle('water',under);el.style.opacity=under?'1':Math.min(1,KWS.gasV).toFixed(3)}}   /* 강에 빠지면 물속처럼 어둡게 */
   /* 포탄 날아가기 → 터짐 */
   KWS.shells.forEach(sh=>{if(!sh.on)return;sh.t+=dt;const u=Math.min(1,sh.t/sh.T);sh.sp.position.set(sh.x0+(sh.x1-sh.x0)*u,2.1*(1-u)+.4,sh.z0+(sh.z1-sh.z0)*u);{const u0=Math.max(0,u-.25),a=sh.tr.geometry.attributes.position.array;a[0]=sh.x0+(sh.x1-sh.x0)*u0;a[1]=2.1*(1-u0)+.4;a[2]=sh.z0+(sh.z1-sh.z0)*u0;a[3]=sh.sp.position.x;a[4]=sh.sp.position.y;a[5]=sh.sp.position.z;sh.tr.geometry.attributes.position.needsUpdate=true;sh.tr.visible=true}
-    if(u>=1){sh.on=false;sh.sp.visible=false;sh.tr.visible=false;if(run&&Math.hypot(c.x-sh.x1,c.z-sh.z1)<6)kwBlast('💥 탱크 포탄에 맞았어요!');else kwBoomAt(sh.x1,sh.z1,1.1)}});
+    if(u>=1){sh.on=false;sh.sp.visible=false;sh.tr.visible=false;if(run&&Math.hypot(c.x-sh.x1,c.z-sh.z1)<7)kwBlast('💥 탱크 포탄에 맞았어요!');else kwBoomAt(sh.x1,sh.z1,1.1)}});
   if(!run)return;
   /* 최루탄 던지기 (최루탄 구간) */
   if(KW_GAS.some(([a,b])=>ci>=a&&ci<=b)){KWS.gasT-=dt;if(KWS.gasT<=0){KWS.gasT=1.7+Math.random()*1.1;const o=KWS.cans.find(q=>!q.on);
@@ -1941,8 +1941,8 @@ function kwFrame(dt){
   KWS.dt.forEach(tk=>{if(ci<tk.a||ci>tk.b)return;{const wa=Math.atan2(c.z-tk.z,c.x-tk.x);let d=(-wa-tk.G.rotation.y)-tk.tur.rotation.y;d=Math.atan2(Math.sin(d),Math.cos(d));tk.tur.rotation.y+=d*Math.min(1,dt*1.5)}
     /* 운전석에서 보일 때만 쏴요: 차 앞쪽 ±40° 안, 220m 안 */
     {const dx=tk.x-c.x,dz=tk.z-c.z,dd=Math.hypot(dx,dz);let ang=Math.atan2(dz,dx)-c.h;ang=Math.atan2(Math.sin(ang),Math.cos(ang));if(dd>220||Math.abs(ang)>.7){tk.t=Math.max(tk.t,.6);return}}
-    tk.t-=dt;if(tk.t>0)return;tk.t=1.4+Math.random()*1;const sh=KWS.shells.find(q=>!q.on);if(!sh)return;
-    const v=Math.hypot(c.vx,c.vz),T0=.33,aim=Math.random()<.7,ahead=aim?v*T0:v*T0+9+Math.random()*8,ti=(ci+Math.round(ahead/SP))%N,[x,z]=tkAt(ti,Math.max(-HALF+1.5,Math.min(HALF-1.5,side+(Math.random()-.5)*(aim?2:6))));
+    tk.t-=dt;if(tk.t>0)return;tk.t=1+Math.random()*.8;const sh=KWS.shells.find(q=>!q.on);if(!sh)return;
+    const v=Math.hypot(c.vx,c.vz),T0=.25,aim=Math.random()<.85,ahead=aim?v*T0:v*T0+9+Math.random()*8,ti=(ci+Math.round(ahead/SP))%N,[x,z]=tkAt(ti,Math.max(-HALF+1.5,Math.min(HALF-1.5,side+(Math.random()-.5)*(aim?2:6))));
     const fx=tk.x,fz=tk.z,a=Math.atan2(z-fz,x-fx);tk.tur.rotation.y=-a-tk.G.rotation.y;tk.mf.material.opacity=1;kwBoomSnd(Math.min(.8,22/(Math.hypot(fx-c.x,fz-c.z)+8)));
     Object.assign(sh,{on:true,t:0,T:T0,x0:fx+Math.cos(a)*9.5,z0:fz+Math.sin(a)*9.5,x1:x,z1:z});sh.sp.visible=true});
   kwAmbient(dt);
