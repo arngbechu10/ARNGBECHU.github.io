@@ -41,7 +41,7 @@ li:first-child .n,li:first-child .t{color:#f2c230}
 input{flex:1;min-width:0;padding:9px;border-radius:8px;border:1px solid #3a4250;background:#0e1115;color:#eef;font:inherit;user-select:text;-webkit-user-select:text}
 #send{background:#f2c230;color:#111;border:0;font-weight:700}#send:disabled{opacity:.4}
 #msg{margin:8px 0 0;font-size:13px;color:#9aa4b2;min-height:20px}
-#kwfx{position:fixed;inset:0;pointer-events:none;z-index:4;opacity:0;background:radial-gradient(ellipse at 50% 55%,rgba(255,170,60,.25) 10%,rgba(255,80,20,.6) 100%)}#kwfx.on{animation:kwfx .75s ease-out}#kwfx.big{background:radial-gradient(ellipse at 50% 55%,rgba(255,240,200,.85) 0,rgba(255,140,40,.8) 45%,rgba(120,20,0,.85) 100%)}#kwfx.on.big{animation:kwfx 1.2s ease-out}@keyframes kwfx{0%{opacity:1}100%{opacity:0}}
+#kwfx{position:fixed;inset:0;pointer-events:none;z-index:4;opacity:0;background:radial-gradient(ellipse at 50% 55%,rgba(255,170,60,.25) 10%,rgba(255,80,20,.6) 100%)}#kwgas{position:fixed;inset:0;pointer-events:none;opacity:0;background:radial-gradient(ellipse at 50% 40%,rgba(236,238,226,.97) 0,rgba(214,218,200,.95) 55%,rgba(170,176,156,.88) 100%)}#kwfx.on{animation:kwfx .75s ease-out}#kwfx.big{background:radial-gradient(ellipse at 50% 55%,rgba(255,240,200,.85) 0,rgba(255,140,40,.8) 45%,rgba(120,20,0,.85) 100%)}#kwfx.on.big{animation:kwfx 1.2s ease-out}@keyframes kwfx{0%{opacity:1}100%{opacity:0}}
 #start{--cmh:max(110px,min(34vh,calc(100vh - 475px)));--gold:#f2c230;--line:#2c3342;--u:8px;position:fixed;inset:0;z-index:50;display:grid;grid-template-columns:minmax(0,1.2fr) minmax(310px,.8fr);grid-template-rows:minmax(0,1fr);gap:clamp(12px,3vw,44px);padding:clamp(12px,3.5vh,36px) clamp(14px,3.5vw,48px);background:#090a16;overflow:hidden;text-align:left;color:#eef}
 #start .bg{position:absolute;inset:0;pointer-events:none;background:radial-gradient(70% 55% at 30% 80%,#2f62ff3a,transparent 70%),linear-gradient(90deg,#090a1688 0,#090a1600 40%,#090a16f0 100%),linear-gradient(0deg,#090a16 0,#090a1600 36%),var(--sky) 50% 100%/auto 80% no-repeat,#090a16}
 #start .hero{position:relative;z-index:1;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:clamp(16px,5vh,44px);min-width:0;min-height:0}
@@ -1469,6 +1469,8 @@ async function kwUnlock(){
 function kwBtnUI(){const b=document.querySelector('.maps button[data-map="kwar"] b');if(b)b.textContent=(KW_OK?'':'🔒 ')+'Korean War'}
 /* 구간 (코스 점 번호, N=1400) */
 const KW_Z={hq:[15,70],gate:56,check:[105,195],gun:[226,300],nest:262,ruins:[360,500],tun:[508,560],tank:[592,722],seoul:736,bridge:[752,806],mine:[862,1000],air:[1012,1200],wreck:[1220,1380]};
+const KW_MINEZ=[[304,362],[862,1000],[1140,1212]];   /* 지뢰밭 [시작, 끝] */
+const KW_GAS=[[108,200],[560,610],[1318,1395]];    /* 최루탄 구간 */
 const KW_GUNS=[[226,300,262],[384,456,420],[1244,1316,1280]];   /* 기관총 사격 구간 [시작, 끝, 진지 위치] */
 const KW_BAR=[[112,-1],[136,1],[160,-1],[184,1]];            /* 검문소 바리케이드: 도로 반쪽을 막아요 (-1 왼쪽, 1 오른쪽) */
 const KWS={};
@@ -1586,7 +1588,7 @@ function buildKW(){
     {const j=ga-30,[sx_,sz_]=tkAt(j,ext+1.4);tkAdd(new THREE.BoxGeometry(.15,3,.15),steel,sx_,1.5,sz_);tkBoard(sx_,3.2,sz_,3.2,1.6,-Math.cos(TH[j]),-Math.sin(TH[j]),sg)}});
   /* ===== 4) 폐허 거리 (길 양쪽 무너진 건물·불·잔해) ===== */
   for(let i=0;i<N;i+=13)for(const sd of[-1,1]){
-    if(i>KW_Z.tun[0]-12&&i<KW_Z.tun[1]+12)continue;if(i>KW_Z.bridge[0]-14&&i<KW_Z.bridge[1]+14)continue;if(i>KW_Z.mine[0]&&i<KW_Z.mine[1])continue;if(i<75&&sd<0)continue;
+    if(i>KW_Z.tun[0]-12&&i<KW_Z.tun[1]+12)continue;if(i>KW_Z.bridge[0]-14&&i<KW_Z.bridge[1]+14)continue;if(KW_MINEZ.some(([a,b])=>i>a&&i<b))continue;if(i<75&&sd<0)continue;
     if(rnd()<(i>=KW_Z.ruins[0]&&i<=KW_Z.ruins[1]?.15:.5))continue;
     const w=10+rnd()*12,d=9+rnd()*8,h=5+Math.pow(rnd(),1.4)*16,off=ext+8+rnd()*12+d/2,[bx,bz]=tkAt(i,sd*off);
     if(!far(bx,bz,off-.5)||!far(bx,bz,ext+5+Math.hypot(w,d)/2,i))continue;
@@ -1650,16 +1652,18 @@ function buildKW(){
     /* 강 건너 멀리 불타는 시가지 */
     for(let k=0;k<14;k++){const d=60+rnd()*120,sd=k%2?1:-1,ax=mx+n[0]*sd*d+Math.cos(TH[mid])*(rnd()-.5)*90,az=mz+n[1]*sd*d+Math.sin(TH[mid])*(rnd()-.5)*90;if(!far(ax,az,30))continue;const h=8+rnd()*22,w=10+rnd()*14;tkAdd(boxWinGeo(w,h,w),ruinMs[k%3],ax,h/2,az,rnd()*3);if(rnd()<.6)fireAt(ax,h*.8,az,5+rnd()*4)}}
   /* ===== 9) 지뢰밭 ===== */
-  {const [a,b]=KW_Z.mine,mineM=tkM(0x3a3a2c),pinM=tkM(0x6a6a5a),crM=tkM(0x0e0c0a);KWS.mines=[];let last=0;
-    for(let i=a+8;i<b-4;i+=6+(rnd()*4|0)){let lat;do{lat=Math.round((rnd()*2-1)*(HALF-1.6))}while(Math.abs(lat-last)<3);last=lat;const [x,z]=tkAt(i,lat);
+  KWS.mines=[];const mineM=tkM(0x3a3a2c),pinM=tkM(0x6a6a5a);KW_MINEZ.forEach(([a,b],zk)=>{let last=0;const mpos=[];
+    for(let i=a+6;i<b-3;i+=4+(rnd()*3|0)){let lat;do{lat=Math.round((rnd()*2-1)*(HALF-1.6))}while(Math.abs(lat-last)<3);last=lat;mpos.push([i,lat]);
+      if(rnd()<.4){let l2,t=0;do{l2=Math.round((rnd()*2-1)*(HALF-1.6));t++}while(Math.abs(l2-lat)<5&&t<20);if(Math.abs(l2-lat)>=5)mpos.push([i+1,l2])}}
+    mpos.forEach(([i,lat])=>{const [x,z]=tkAt(i,lat);
       const g=new THREE.Group();g.position.set(x,0,z);const d=new THREE.Mesh(new THREE.CylinderGeometry(.38,.42,.14,12),mineM);d.position.y=.07;g.add(d);const p=new THREE.Mesh(new THREE.CylinderGeometry(.06,.06,.12,6),pinM);p.position.y=.18;g.add(p);MG.add(g);
       const cg=new THREE.CircleGeometry(1.6,14);cg.rotateX(-Math.PI/2);const cr=new THREE.Mesh(cg,new THREE.MeshBasicMaterial({color:0x0e0c0a,transparent:true,opacity:.85,polygonOffset:true,polygonOffsetFactor:-4,depthWrite:false}));cr.position.set(x,.03,z);cr.visible=false;MG.add(cr);
-      KWS.mines.push({x,z,g,cr,armed:true,t:0})}
+      KWS.mines.push({x,z,g,cr,armed:true,t:0})});
     const ms=kwSign(256,256,(x,w,h)=>{x.fillStyle='#b01818';x.beginPath();x.moveTo(w/2,8);x.lineTo(w-8,h-8);x.lineTo(8,h-8);x.closePath();x.fill();x.fillStyle='#f2ead8';x.beginPath();x.moveTo(w/2,40);x.lineTo(w-36,h-24);x.lineTo(36,h-24);x.closePath();x.fill();
       x.fillStyle='#111';x.font='900 64px system-ui';x.textAlign='center';x.fillText('☠',w/2,150);x.font='900 34px '+KR;x.fillText('지 뢰',w/2,192);x.font='900 22px system-ui';x.fillText('MINES',w/2,220)});
-    [a-24,a+40,a+90].forEach((i,k)=>[-1,1].forEach(sd=>{const [x,z]=tkAt(i,sd*(ext+1.5));if(!far(x,z,ext+1))return;tkAdd(new THREE.BoxGeometry(.12,2.2,.12),wood,x,1.1,z);tkBoard(x,2.6,z,1.8,1.8,-Math.cos(TH[i]),-Math.sin(TH[i]),ms)}));
+    [a-24,a+Math.round((b-a)/2)].forEach((i,k)=>[-1,1].forEach(sd=>{const [x,z]=tkAt(i,sd*(ext+1.5));if(!far(x,z,ext+1))return;tkAdd(new THREE.BoxGeometry(.12,2.2,.12),wood,x,1.1,z);tkBoard(x,2.6,z,1.8,1.8,-Math.cos(TH[i]),-Math.sin(TH[i]),ms)}));
     /* 지뢰밭 양옆 철조망 */
-    for(let i=a;i<b;i+=6)[-1,1].forEach(sd=>{const [x,z]=tkAt(i,sd*(ext+3));if(!far(x,z,ext+2))return;tkAdd(new THREE.BoxGeometry(.1,1.3,.1),wood,x,.65,z);[.45,.9,1.25].forEach(h=>tkAdd(new THREE.BoxGeometry(SP*6+.2,.03,.03),wireM,...tkAt(i,sd*(ext+3),SP*3).reduce((q,v,k)=>(k?q.push(h,v):q.push(v),q),[]),yaw(i)))});}
+    for(let i=a;i<b;i+=6)[-1,1].forEach(sd=>{const [x,z]=tkAt(i,sd*(ext+3));if(!far(x,z,ext+2))return;tkAdd(new THREE.BoxGeometry(.1,1.3,.1),wood,x,.65,z);[.45,.9,1.25].forEach(h=>tkAdd(new THREE.BoxGeometry(SP*6+.2,.03,.03),wireM,...tkAt(i,sd*(ext+3),SP*3).reduce((q,v,k)=>(k?q.push(h,v):q.push(v),q),[]),yaw(i)))});});
   /* ===== 10) 공습 구간: 경고판 + 폭격기 ===== */
   {const sg=kwSign(256,128,(x,w,h)=>{x.fillStyle='#111';x.fillRect(0,0,w,h);x.strokeStyle='#e8262c';x.lineWidth=8;x.strokeRect(4,4,w-8,h-8);x.fillStyle='#e8262c';x.font='900 40px '+KR;x.textAlign='center';x.fillText('공습 경보',w/2,56);x.fillStyle='#fff';x.font='900 24px system-ui';x.fillText('AIR RAID ✈',w/2,100)});
     [KW_Z.air[0]-26,KW_Z.air[0]+80].forEach(j=>{const [sx_,sz_]=tkAt(j,ext+1.4);tkAdd(new THREE.BoxGeometry(.15,3,.15),steel,sx_,1.5,sz_);tkBoard(sx_,3.2,sz_,3.2,1.6,-Math.cos(TH[j]),-Math.sin(TH[j]),sg)})}
@@ -1698,10 +1702,16 @@ function buildKW(){
     const pg=new THREE.CylinderGeometry(4.6,4.6,40,24,1,true);pg.translate(0,20,0);const pil=new THREE.Mesh(pg,new THREE.MeshBasicMaterial({map:tkTex(4,64,(x,w,h)=>{const g=x.createLinearGradient(0,0,0,h);g.addColorStop(0,'rgba(255,40,30,0)');g.addColorStop(1,'rgba(255,40,30,1)');x.fillStyle=g;x.fillRect(0,0,w,h)}),transparent:true,opacity:.35,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,fog:false}));
     ring.visible=disk.visible=pil.visible=false;MG.add(ring);MG.add(disk);MG.add(pil);
     const bomb=new THREE.Mesh(new THREE.CylinderGeometry(.25,.25,1.2,8),tkM(0x111111));bomb.visible=false;MG.add(bomb);KWS.mark.push({ring,disk,bomb,pil,on:false})}
+  /* ===== 최루탄: 깡통 + 흰 연기 구름 ===== */
+  KWS.cans=[];KWS.clouds=[];{const canM=tkM(0x6a6e64),stripe=tkM(0x3fbf3a);
+    for(let k=0;k<3;k++){const G=new THREE.Group(),a=new THREE.Mesh(new THREE.CylinderGeometry(.13,.13,.42,10),canM),b=new THREE.Mesh(new THREE.CylinderGeometry(.135,.135,.08,10),stripe);G.add(a);G.add(b);
+      const tr=new THREE.Sprite(new THREE.SpriteMaterial({map:T.smoke,color:0xeef0e4,transparent:true,depthWrite:false,opacity:.7}));tr.scale.set(1.6,1.6,1);G.add(tr);G.visible=false;MG.add(G);KWS.cans.push({G,on:false})}
+    for(let k=0;k<4;k++){const ps=[];for(let q=0;q<7;q++){const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:T.smoke,color:0xe6e9dc,transparent:true,depthWrite:false,opacity:0}));sp.visible=false;MG.add(sp);ps.push({sp,ox:(rnd()-.5)*2,oz:(rnd()-.5)*2,ph:rnd()*6})}KWS.clouds.push({ps,t:99})}}
+  KWS.gasT=1;KWS.gasV=0;
   KWS.airT=1.5;KWS.tankT=1;KWS.lastHit=0;KWS.lastToast=0;KWS.time=0;
-  if(!document.getElementById('kwfx')){const d=document.createElement('div');d.id='kwfx';document.body.append(d)}
+  if(!document.getElementById('kwfx')){const d=document.createElement('div');d.id='kwfx';document.body.append(d)}if(!document.getElementById('kwgas')){const d=document.createElement('div');d.id='kwgas';$('fx').after(d)}   /* 도로 화면(gl·fx) 바로 위, 콕핏·시계·미니맵 아래 */
 }
-function kwReset(){if(!KWS.mines)return;KWS.mines.forEach(m=>{m.armed=true;m.g.visible=true;m.cr.visible=false});KWS.mark.forEach(m=>{m.on=false;m.ring.visible=m.disk.visible=m.bomb.visible=m.pil.visible=false});KWS.airT=1.5;KWS.tankT=1;KWS.lastHit=0;KWS.lastToast=0;if(KWS.guns)KWS.guns.forEach((g,k)=>g.t=k*1.1);KWS.knock=null;if(KWS.bomber)KWS.bomber.visible=false}
+function kwReset(){if(!KWS.mines)return;KWS.mines.forEach(m=>{m.armed=true;m.g.visible=true;m.cr.visible=false});KWS.mark.forEach(m=>{m.on=false;m.ring.visible=m.disk.visible=m.bomb.visible=m.pil.visible=false});KWS.airT=1.5;KWS.tankT=1;KWS.lastHit=0;KWS.lastToast=0;if(KWS.guns)KWS.guns.forEach((g,k)=>g.t=k*1.1);KWS.knock=null;KWS.gasT=1;KWS.gasV=0;if(KWS.cans)KWS.cans.forEach(o=>{o.on=false;o.G.visible=false});if(KWS.clouds)KWS.clouds.forEach(o=>{o.t=99;o.ps.forEach(p=>p.sp.visible=false)});if(KWS.bomber)KWS.bomber.visible=false}
 function kwBoomAt(x,z,big){const b=KWS.boom.find(o=>o.t>2.4)||KWS.boom[0];b.t=0;b.x=x;b.z=z;b.big=big||1;b.fb.visible=b.sm.visible=b.gl.visible=b.core.visible=true;
   const d=Math.hypot(x-c.x,z-c.z);kwBoomSnd(Math.max(.05,Math.min(1,22/(d+8)))*b.big)}
 function kwBoomSnd(v){if(!AC||AC.state!=='running')return;const t=AC.currentTime,sr=AC.sampleRate,n=sr*1.1|0,bf=AC.createBuffer(1,n,sr),dd=bf.getChannelData(0);for(let i=0;i<n;i++)dd[i]=(Math.random()*2-1)*Math.pow(1-i/n,2.2);
@@ -1770,9 +1780,22 @@ function kwFrame(dt){
       if(run){let dj=Math.abs(ci-si);if(dj<=4&&ci>=a-4&&ci<=b+4)kwShot()}}
     else{G.mf.material.opacity=0;G.lines.visible=G.dust.visible=false}
     G.lines.geometry.attributes.position.needsUpdate=true;G.dust.geometry.attributes.position.needsUpdate=true});
+  /* 최루탄 깡통이 날아가요 → 떨어지면 펑 + 흰 연기 */
+  KWS.cans.forEach(o=>{if(!o.on)return;o.t+=dt;const u=Math.min(1,o.t/o.T);o.G.position.set(o.x0+(o.x1-o.x0)*u,1.6+(.15-1.6)*u+7*u*(1-u),o.z0+(o.z1-o.z0)*u);o.G.rotation.set(o.t*9,0,o.t*6);
+    if(u>=1){o.on=false;o.G.visible=false;const cl=KWS.clouds.find(q=>q.t>8)||KWS.clouds[0];cl.t=0;cl.x=o.x1;cl.z=o.z1;cl.ps.forEach(p=>p.sp.visible=true);
+      const d=Math.hypot(o.x1-c.x,o.z1-c.z);kwBoomSnd(Math.min(.45,10/(d+8)));kwGunSnd(Math.min(1,12/(d+6)))}});
+  KWS.clouds.forEach(cl=>{if(cl.t>8)return;cl.t+=dt;const g=Math.min(1,cl.t/1.2),f=cl.t<6?1:Math.max(0,1-(cl.t-6)/2),R=2+5*g;
+    cl.ps.forEach((p,q)=>{p.sp.position.set(cl.x+p.ox*R*.7+Math.sin(T*.7+p.ph)*.6,.8+q*.35+cl.t*.15,cl.z+p.oz*R*.7);p.sp.scale.setScalar(3+6*g+q*.4);p.sp.material.opacity=.85*f});
+    if(cl.t>8)cl.ps.forEach(p=>p.sp.visible=false);
+    if(run&&cl.t<7&&Math.hypot(c.x-cl.x,c.z-cl.z)<R+1.2){if(KWS.gasV<.9){const t=performance.now();if(t-KWS.lastToast>1500){KWS.lastToast=t;toast('😵 최루탄! 앞이 안 보여요')}}KWS.gasV=Math.min(1.6,KWS.gasV+dt*6)}});
+  KWS.gasV=Math.max(0,KWS.gasV-dt/2.6);{const el=$('kwgas');if(el)el.style.opacity=Math.min(1,KWS.gasV).toFixed(3)}
   if(!run)return;
+  /* 최루탄 던지기 (최루탄 구간) */
+  if(KW_GAS.some(([a,b])=>ci>=a&&ci<=b)){KWS.gasT-=dt;if(KWS.gasT<=0){KWS.gasT=1.7+Math.random()*1.1;const o=KWS.cans.find(q=>!q.on);
+    if(o){const v=Math.hypot(c.vx,c.vz),ti=(ci+Math.round((v*1.1+8)/SP))%N,lat=Math.max(-HALF+2,Math.min(HALF-2,side+(Math.random()-.5)*5)),[x1,z1]=tkAt(ti,lat),sd=Math.random()<.5?-1:1,[x0,z0]=tkAt(Math.max(0,ti-6),sd*(WALL+5));
+      Object.assign(o,{on:true,t:0,T:1.1,x0,z0,x1,z1});o.G.visible=true}}}
   /* 지뢰 밟기 */
-  if(ci>=KW_Z.mine[0]-5&&ci<=KW_Z.mine[1]+5)KWS.mines.forEach(m=>{if(m.armed&&Math.hypot(c.x-m.x,c.z-m.z)<1.7){m.armed=false;m.t=0;m.g.visible=false;m.cr.visible=true;kwBlast('💥 지뢰를 밟았어요!')}});
+  if(KW_MINEZ.some(([a,b])=>ci>=a-5&&ci<=b+5))KWS.mines.forEach(m=>{if(m.armed&&Math.hypot(c.x-m.x,c.z-m.z)<1.7){m.armed=false;m.t=0;m.g.visible=false;m.cr.visible=true;kwBlast('💥 지뢰를 밟았어요!')}});
   /* 공습 */
   if(ci>=KW_Z.air[0]&&ci<=KW_Z.air[1]){KWS.airT-=dt;if(KWS.airT<=0){KWS.airT=2+Math.random()*.9;kwStrike(6,1.7,'air')}}
   /* 탱크 포격 */
@@ -3386,6 +3409,7 @@ function reset(){
   if(MAPID==='practice')pracReset();
   if(MAPID==='volcano')vcReset();
   if(MAPID==='kwar')kwReset();
+  {const kg=document.getElementById('kwgas');if(kg)kg.style.opacity=0}
   if(MAPID==='alps')alpsReset();
 }
 reset();
