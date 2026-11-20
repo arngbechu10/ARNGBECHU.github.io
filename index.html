@@ -41,7 +41,8 @@ li:first-child .n,li:first-child .t{color:#f2c230}
 input{flex:1;min-width:0;padding:9px;border-radius:8px;border:1px solid #3a4250;background:#0e1115;color:#eef;font:inherit;user-select:text;-webkit-user-select:text}
 #send{background:#f2c230;color:#111;border:0;font-weight:700}#send:disabled{opacity:.4}
 #msg{margin:8px 0 0;font-size:13px;color:#9aa4b2;min-height:20px}
-#kwfx{position:fixed;inset:0;pointer-events:none;z-index:4;opacity:0;background:radial-gradient(ellipse at 50% 55%,rgba(255,170,60,.25) 10%,rgba(255,80,20,.6) 100%)}#kwwarn{position:fixed;left:50%;top:clamp(120px,22vh,190px);transform:translateX(-50%);z-index:6;pointer-events:none;display:none;flex-direction:column;align-items:center;gap:4px;padding:10px 22px;border:3px solid #ff3b2a;border-radius:12px;background:#2a0606e6;color:#fff;text-align:center;font-family:system-ui,sans-serif}#kwwarn b{font-size:clamp(18px,3.2vw,30px);color:#ff5a4a;letter-spacing:.06em}#kwwarn span{font-size:clamp(12px,1.6vw,16px)}#kwwarn.on{display:flex;animation:kwwarn 3s ease-out forwards}@keyframes kwwarn{0%,20%,40%{opacity:1}10%,30%{opacity:.35}85%{opacity:1}100%{opacity:0}}
+#kwfx{position:fixed;inset:0;pointer-events:none;z-index:4;opacity:0;background:radial-gradient(ellipse at 50% 55%,rgba(255,170,60,.25) 10%,rgba(255,80,20,.6) 100%)}#kwhp{position:fixed;left:clamp(8px,1.2vw,16px);top:calc(clamp(8px,1.2vw,16px) + 230px);z-index:5;display:none;flex-direction:column;gap:4px;padding:6px 10px;border-radius:10px;background:#0b0d14cc;border:1px solid #3a2a20;color:#ffd9b0;font:700 12px system-ui,sans-serif;pointer-events:none}#kwhp.on{display:flex}#kwhp div{display:flex;gap:3px}#kwhp i{width:13px;height:9px;border-radius:2px;background:#4ad46a}#kwhp i.mid{background:#f2c230}#kwhp i.low{background:#ff4a3a}#kwhp i.off{background:#2a2a2e}#kwhp.hit{animation:kwhp .5s}@keyframes kwhp{0%,60%{transform:scale(1.15);border-color:#ff4a3a}100%{transform:none}}body:not([data-mode=lap]) #kwhp{display:none}@media (orientation:landscape) and (max-height:500px){#kwhp{top:150px;padding:3px 6px;font-size:10px}#kwhp i{width:9px;height:7px}}
+#kwwarn{position:fixed;left:50%;top:clamp(120px,22vh,190px);transform:translateX(-50%);z-index:6;pointer-events:none;display:none;flex-direction:column;align-items:center;gap:4px;padding:10px 22px;border:3px solid #ff3b2a;border-radius:12px;background:#2a0606e6;color:#fff;text-align:center;font-family:system-ui,sans-serif}#kwwarn b{font-size:clamp(18px,3.2vw,30px);color:#ff5a4a;letter-spacing:.06em}#kwwarn span{font-size:clamp(12px,1.6vw,16px)}#kwwarn.on{display:flex;animation:kwwarn 3s ease-out forwards}@keyframes kwwarn{0%,20%,40%{opacity:1}10%,30%{opacity:.35}85%{opacity:1}100%{opacity:0}}
 #kwgas.water{background:radial-gradient(ellipse at 50% 30%,#1c3a48 0,#08141c 70%)}#kwgas{position:fixed;inset:0;pointer-events:none;opacity:0;background:radial-gradient(ellipse at 50% 40%,rgba(236,238,226,.97) 0,rgba(214,218,200,.95) 55%,rgba(170,176,156,.88) 100%)}#kwfx.on{animation:kwfx .75s ease-out}#kwfx.big{background:radial-gradient(ellipse at 50% 55%,rgba(255,240,200,.85) 0,rgba(255,140,40,.8) 45%,rgba(120,20,0,.85) 100%)}#kwfx.on.big{animation:kwfx 1.2s ease-out}@keyframes kwfx{0%{opacity:1}100%{opacity:0}}
 #start{--cmh:max(110px,min(34vh,calc(100vh - 475px)));--gold:#f2c230;--line:#2c3342;--u:8px;position:fixed;inset:0;z-index:50;display:grid;grid-template-columns:minmax(0,1.2fr) minmax(310px,.8fr);grid-template-rows:minmax(0,1fr);gap:clamp(12px,3vw,44px);padding:clamp(12px,3.5vh,36px) clamp(14px,3.5vw,48px);background:#090a16;overflow:hidden;text-align:left;color:#eef}
 #start .bg{position:absolute;inset:0;pointer-events:none;background:radial-gradient(70% 55% at 30% 80%,#2f62ff3a,transparent 70%),linear-gradient(90deg,#090a1688 0,#090a1600 40%,#090a16f0 100%),linear-gradient(0deg,#090a16 0,#090a1600 36%),var(--sky) 50% 100%/auto 80% no-repeat,#090a16}
@@ -1499,10 +1500,11 @@ async function kwUnlock(){
 function kwBtnUI(){const b=document.querySelector('.maps button[data-map="kwar"] b');if(b)b.textContent=(KW_OK?'':'🔒 ')+'Korean War'}
 /* 구간 (코스 점 번호, N=1400) */
 const KW_Z={hq:[10,48],gate:39,check:[72,128],ruins:[684,780],tun:[785,821],tank:[843,933],seoul:943,bridge:[954,991],air:[1133,1262],wreck:[1276,1386],slum:[[140,176],[300,420],[1150,1240]]};
-const KW_AIR=[[1133,1262],[395,560]];   /* 공습 구간 2곳 */
+const KW_AIR=[[1133,1262],[395,560],[15,70],[560,596],[752,785],[933,975]];   /* 공습 구간 (2026-11-20 빈 구간 4곳 추가) */
+const KW_HP=15;   /* 차량 내구도: 지뢰·폭격·포탄 15번 맞으면 차가 터져서 처음부터 */   /* 공습 구간 2곳 */
 const KW_MINEZ=[[645,684],[1029,1125],[1221,1270]];   /* 지뢰밭 [시작, 끝] */
 const KW_GAS=[[74,130],[821,856],[1344,1397],[440,520],[1170,1225]];   /* 최루탄 구간 (2026-11-20 2곳 추가) */
-const KW_DT=[[345,300,372],[1012,975,1060],[1370,1330,1399]];   /* 직접 쏘는 탱크 [위치, 쏘는 구간 시작, 끝]: 포탄이 날아와 차 앞에서 터지거나 맞으면 뒤로 밀려나요 */
+const KW_DT=[[345,300,372],[1012,975,1060],[1370,1330,1392]];   /* 직접 쏘는 탱크 [위치, 쏘는 구간 시작, 끝]: 포탄이 날아와 차 앞에서 터지거나 맞으면 뒤로 밀려나요 */
 const KW_SHOUT=[60,96,600,700,830,1000,1180,1290,1340];   /* 지나가면 군인 함성 */    /* 최루탄 구간 */
 const KW_GUNS=[[596,644,618],[700,752,725],[1292,1342,1317]];   /* 기관총 사격 구간 [시작, 끝, 진지 위치] */
 const KW_BAR=[[80,-1],[94,1],[108,-1],[122,1]];            /* 검문소 바리케이드: 도로 반쪽을 막아요 (-1 왼쪽, 1 오른쪽) */
@@ -1809,9 +1811,9 @@ function buildKW(){
     for(let k=0;k<4;k++){const ps=[];for(let q=0;q<7;q++){const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:T.smoke,color:0xe6e9dc,transparent:true,depthWrite:false,opacity:0}));sp.visible=false;MG.add(sp);ps.push({sp,ox:(rnd()-.5)*2,oz:(rnd()-.5)*2,ph:rnd()*6})}KWS.clouds.push({ps,t:99})}}
   KWS.gasT=1;KWS.gasV=0;
   KWS.airT=1.5;KWS.tankT=1;KWS.lastHit=0;KWS.lastToast=0;KWS.time=0;
-  if(!document.getElementById('kwfx')){const d=document.createElement('div');d.id='kwfx';document.body.append(d)}if(!document.getElementById('kwwarn')){const d=document.createElement('div');d.id='kwwarn';d.innerHTML='<b>⚠ 탱크 포격 구간 ⚠</b><span>탱크 포탑이 보이면 포탄이 날아와요!</span>';document.body.append(d)}if(!document.getElementById('kwgas')){const d=document.createElement('div');d.id='kwgas';$('fx').after(d)}   /* 도로 화면(gl·fx) 바로 위, 콕핏·시계·미니맵 아래 */
+  if(!document.getElementById('kwfx')){const d=document.createElement('div');d.id='kwfx';document.body.append(d)}if(!document.getElementById('kwhp')){const d=document.createElement('div');d.id='kwhp';d.innerHTML='<b></b><div>'+'<i></i>'.repeat(KW_HP)+'</div>';document.body.append(d)}if(!document.getElementById('kwwarn')){const d=document.createElement('div');d.id='kwwarn';d.innerHTML='<b>⚠ 탱크 포격 구간 ⚠</b><span>탱크 포탑이 보이면 포탄이 날아와요!</span>';document.body.append(d)}if(!document.getElementById('kwgas')){const d=document.createElement('div');d.id='kwgas';$('fx').after(d)}   /* 도로 화면(gl·fx) 바로 위, 콕핏·시계·미니맵 아래 */
 }
-function kwReset(){if(!KWS.mines)return;KWS.mines.forEach(m=>{m.armed=true;m.g.visible=true;m.cr.visible=false});KWS.mark.forEach(m=>{m.on=false;m.ring.visible=m.disk.visible=m.bomb.visible=m.pil.visible=false});KWS.airT=1.5;KWS.tankT=1;KWS.lastHit=0;KWS.lastToast=0;if(KWS.guns)KWS.guns.forEach((g,k)=>g.t=k*1.1);KWS.knock=null;KWS.lastJ=null;KWS.lastS=null;KWS.inT=false;KWS.amb=1;if(KWS.shells)KWS.shells.forEach(q=>{q.on=false;q.sp.visible=false;q.tr.visible=false});if(KWS.dt)KWS.dt.forEach(q=>q.t=1.2);KWS.gasT=1;KWS.gasV=0;if(KWS.cans)KWS.cans.forEach(o=>{o.on=false;o.G.visible=false});if(KWS.clouds)KWS.clouds.forEach(o=>{o.t=99;o.ps.forEach(p=>p.sp.visible=false)});if(KWS.bomber)KWS.bomber.visible=false}
+function kwReset(){if(!KWS.mines)return;KWS.mines.forEach(m=>{m.armed=true;m.g.visible=true;m.cr.visible=false});KWS.mark.forEach(m=>{m.on=false;m.ring.visible=m.disk.visible=m.bomb.visible=m.pil.visible=false});KWS.airT=1.5;KWS.tankT=1;KWS.lastHit=0;KWS.lastToast=0;if(KWS.guns)KWS.guns.forEach((g,k)=>g.t=k*1.1);KWS.knock=null;KWS.hp=KW_HP;kwHpUI();KWS.lastJ=null;KWS.lastS=null;KWS.inT=false;KWS.amb=1;if(KWS.shells)KWS.shells.forEach(q=>{q.on=false;q.sp.visible=false;q.tr.visible=false});if(KWS.dt)KWS.dt.forEach(q=>q.t=1.2);KWS.gasT=1;KWS.gasV=0;if(KWS.cans)KWS.cans.forEach(o=>{o.on=false;o.G.visible=false});if(KWS.clouds)KWS.clouds.forEach(o=>{o.t=99;o.ps.forEach(p=>p.sp.visible=false)});if(KWS.bomber)KWS.bomber.visible=false}
 function kwBoomAt(x,z,big){const b=KWS.boom.find(o=>o.t>2.4)||KWS.boom[0];b.t=0;b.x=x;b.z=z;b.big=big||1;b.fb.visible=b.sm.visible=b.gl.visible=b.core.visible=true;
   const d=Math.hypot(x-c.x,z-c.z);kwBoomSnd(Math.max(.05,Math.min(1,22/(d+8)))*b.big)}
 function kwBoomSnd(v){if(!AC||AC.state!=='running')return;const t=AC.currentTime,sr=AC.sampleRate,n=sr*1.1|0,bf=AC.createBuffer(1,n,sr),dd=bf.getChannelData(0);for(let i=0;i<n;i++)dd[i]=(Math.random()*2-1)*Math.pow(1-i/n,2.2);
@@ -1843,11 +1845,20 @@ function kwGunSnd(v){if(!AC||AC.state!=='running')return;const t=AC.currentTime,
 function kwShot(){const t=performance.now();if(t-KWS.lastHit<450)return;KWS.lastHit=t;c.vx*=.72;c.vz*=.72;hitK=Math.max(hitK,.45);thump(.5);
   const f=$('kwfx');if(f){f.classList.remove('on');void f.offsetWidth;f.classList.add('on')}if(t-KWS.lastToast>1800){KWS.lastToast=t;toast('🔫 총에 맞았어요! 총알 줄을 피하세요')}}
 /* 지뢰·폭격·포탄에 맞으면: 차 위치에서 크게 펑 터지고, 뒤로 밀려나며 속도 0 */
-function kwBlast(msg){const t=performance.now();if(KWS.knock||t-KWS.lastHit<500)return;KWS.lastHit=t;
+function kwBlast(msg){const t=performance.now();if(KWS.knock||DEAD||t-KWS.lastHit<500)return;KWS.lastHit=t;
+  KWS.hp=Math.max(0,(KWS.hp==null?KW_HP:KWS.hp)-1);kwHpUI(true);if(KWS.hp<=0){kwDestroy();return}
   const sp=Math.hypot(c.vx,c.vz),fx=Math.cos(c.h),fz=Math.sin(c.h);kwBoomAt(c.x+fx*3,c.z+fz*3,1.5);explodeSound();
   KWS.airT=Math.max(KWS.airT,3);KWS.tankT=Math.max(KWS.tankT,3);if(KWS.dt)KWS.dt.forEach(q=>q.t=Math.max(q.t,3));KWS.knock={t:0,T:.75,dx:-fx,dz:-fz,v0:Math.min(16,9+sp*.2)};c.vx=c.vz=0;c.h+=(Math.random()<.5?-1:1)*.18;
   hitK=1;thump(1);const f=$('kwfx');if(f){f.classList.remove('on','big');void f.offsetWidth;f.classList.add('on','big')}
   if(t-KWS.lastToast>1200){KWS.lastToast=t;toast(msg)}}
+/* 차량 내구도 표시 (니트로 게이지 아래 칸 15개) */
+function kwHpUI(hit){const el=$('kwhp');if(!el)return;const h=KWS.hp==null?KW_HP:KWS.hp;el.querySelector('b').textContent='차량 내구도 '+h+'/'+KW_HP;
+  el.querySelectorAll('i').forEach((q,k)=>q.className=k<h?(h<=3?'low':h<=6?'mid':''):'off');if(hit){el.classList.remove('hit');void el.offsetWidth;el.classList.add('hit')}}
+/* 내구도 0: 차가 크게 폭발 → 처음부터 다시 */
+function kwDestroy(){DEAD=true;for(const k in keys)keys[k]=0;c.vx=c.vz=0;KWS.knock=null;explodeSound();kwBoomAt(c.x,c.z,2.2);thump(1);
+  const b=$('boom');b.classList.remove('on','water','fall');void b.offsetWidth;b.classList.add('on');{const w=$('kwwarn');if(w)w.classList.remove('on')}
+  $('stgT').textContent='💥 차량 파괴!';$('stgS').textContent='내구도가 0이 됐어요 · 처음부터 다시';$('stg').classList.add('on');
+  clearTimeout(kwDestroy.t);kwDestroy.t=setTimeout(()=>{b.classList.remove('on');$('stg').classList.remove('on');DEAD=false;if(MAPID==='kwar')reset()},2800)}
 function kwHit(p,msg){const t=performance.now();if(t-KWS.lastHit<650)return;KWS.lastHit=t;
   c.vx*=1-.55*p;c.vz*=1-.55*p;const n=TN[ci],k=(Math.random()<.5?-1:1)*2.2*p;c.vx+=n[0]*k;c.vz+=n[1]*k;
   hitK=1;thump(Math.min(1,.5+p*.5));const f=$('kwfx');if(f){f.classList.remove('on');void f.offsetWidth;f.classList.add('on')}
@@ -1930,13 +1941,13 @@ function kwFrame(dt){
   KWS.dt.forEach(tk=>{if(ci<tk.a||ci>tk.b)return;{const wa=Math.atan2(c.z-tk.z,c.x-tk.x);let d=(-wa-tk.G.rotation.y)-tk.tur.rotation.y;d=Math.atan2(Math.sin(d),Math.cos(d));tk.tur.rotation.y+=d*Math.min(1,dt*1.5)}
     /* 운전석에서 보일 때만 쏴요: 차 앞쪽 ±40° 안, 220m 안 */
     {const dx=tk.x-c.x,dz=tk.z-c.z,dd=Math.hypot(dx,dz);let ang=Math.atan2(dz,dx)-c.h;ang=Math.atan2(Math.sin(ang),Math.cos(ang));if(dd>220||Math.abs(ang)>.7){tk.t=Math.max(tk.t,.6);return}}
-    tk.t-=dt;if(tk.t>0)return;tk.t=2+Math.random()*1.3;const sh=KWS.shells.find(q=>!q.on);if(!sh)return;
-    const v=Math.hypot(c.vx,c.vz),T0=.55,aim=Math.random()<.5,ahead=aim?v*T0:v*T0+9+Math.random()*8,ti=(ci+Math.round(ahead/SP))%N,[x,z]=tkAt(ti,Math.max(-HALF+1.5,Math.min(HALF-1.5,side+(Math.random()-.5)*(aim?2:6))));
+    tk.t-=dt;if(tk.t>0)return;tk.t=1.4+Math.random()*1;const sh=KWS.shells.find(q=>!q.on);if(!sh)return;
+    const v=Math.hypot(c.vx,c.vz),T0=.33,aim=Math.random()<.7,ahead=aim?v*T0:v*T0+9+Math.random()*8,ti=(ci+Math.round(ahead/SP))%N,[x,z]=tkAt(ti,Math.max(-HALF+1.5,Math.min(HALF-1.5,side+(Math.random()-.5)*(aim?2:6))));
     const fx=tk.x,fz=tk.z,a=Math.atan2(z-fz,x-fx);tk.tur.rotation.y=-a-tk.G.rotation.y;tk.mf.material.opacity=1;kwBoomSnd(Math.min(.8,22/(Math.hypot(fx-c.x,fz-c.z)+8)));
     Object.assign(sh,{on:true,t:0,T:T0,x0:fx+Math.cos(a)*9.5,z0:fz+Math.sin(a)*9.5,x1:x,z1:z});sh.sp.visible=true});
   kwAmbient(dt);
   /* 탱크 포격 구간에 들어오면 경고 */
-  {const inT=KWS.dt.some(t=>ci>=t.a&&ci<=t.b)||(ci>=KW_Z.tank[0]&&ci<=KW_Z.tank[1]);if(inT&&!KWS.inT){const w=$('kwwarn');if(w){w.classList.remove('on');void w.offsetWidth;w.classList.add('on')}kwSiren()}KWS.inT=inT}
+  {const inT=KWS.dt.some(t=>ci>=t.a&&ci<=t.b)||(ci>=KW_Z.tank[0]&&ci<=KW_Z.tank[1]);if(inT&&!KWS.inT&&lapStart!==null){const w=$('kwwarn');if(w){w.classList.remove('on');void w.offsetWidth;w.classList.add('on')}kwSiren()}KWS.inT=inT}
   /* 군인 함성: 지점을 지나가면 */
   KW_SHOUT.forEach(i=>{if(KWS.lastS!=null&&KWS.lastS<i&&ci>=i&&ci-KWS.lastS<20)kwShoutSnd(1)});KWS.lastS=ci;
   /* 탱크 포격 */
@@ -3550,7 +3561,7 @@ function reset(){
   if(MAPID==='practice')pracReset();
   if(MAPID==='volcano')vcReset();
   if(MAPID==='kwar')kwReset();
-  {const kg=document.getElementById('kwgas');if(kg)kg.style.opacity=0}
+  {const kg=document.getElementById('kwgas');if(kg)kg.style.opacity=0;const kh=document.getElementById('kwhp');if(kh)kh.classList.toggle('on',MAPID==='kwar')}
   if(MAPID==='alps')alpsReset();
 }
 reset();
