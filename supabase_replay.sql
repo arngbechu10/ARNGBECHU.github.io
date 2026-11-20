@@ -23,7 +23,7 @@ create or replace function submit_replay(p_map text, p_name text, p_lap_ms int, 
 returns boolean language plpgsql security definer set search_path = public as $$
 declare cur int; md text;
 begin
-  if p_map not in ('seoul','mountain','xmas','tokyo','ny','pyongyang','touge','coast','jtouge','volcano') then return false; end if;
+  if p_map not in ('seoul','mountain','xmas','tokyo','ny','pyongyang','touge','kwar','coast','jtouge','volcano') then return false; end if;
   -- 오토바이 맵(coast, jtouge, volcano)은 오토바이 순위표(mode='bike')에서 1등인지 봐요
   md := case when p_map in ('coast','jtouge','volcano') then 'bike' else 'lap' end;
   if p_car is null or p_car !~ '^[a-z0-9]{1,12}$' then return false; end if;
