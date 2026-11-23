@@ -4265,14 +4265,26 @@ function rpStart(m,x,dt,a){
 function rpTick(dt){
   const P=RP;P.t+=dt;
   if(P.t*1000>=P.ms&&!P.done){P.done=true;$('stgT').textContent='FINISH';$('stgS').textContent=fmt(P.ms);$('stg').classList.add('on');P.end=setTimeout(rpStop,3200)}
-  const u=Math.min(P.t/P.dt,P.n-1.001),i=Math.max(0,Math.floor(u)),f=u-i,A=i*6,B=Math.min(i+1,P.n-1)*6,a=P.a;
-  let dh=a[B+2]/1e4-a[A+2]/1e4;dh=Math.atan2(Math.sin(dh),Math.cos(dh));
-  const h=a[A+2]/1e4+dh*f,v=(a[A+3]+(a[B+3]-a[A+3])*f)/100,fl=f<.5?a[A+5]:a[B+5];
-  let x=(a[A]+(a[B]-a[A])*f)/10,z=(a[A+1]+(a[B+1]-a[A+1])*f)/10;
-  if(Math.hypot(a[B]-a[A],a[B+1]-a[A+1])>300){x=a[B]/10;z=a[B+1]/10}   /* 추락 후 다시 출발처럼 순간 이동 */
-  const mx=x-c.x,mz=z-c.z,mv=Math.hypot(mx,mz),dir=mv>.01?Math.atan2(mz,mx):h;
-  /* 오토바이: 방향이 바뀌는 빠르기로 기울기(LEAN)를 다시 계산해 화면도 실제처럼 기울어요 */
-  if(VEH==='bike'&&dt>0){let dd=dir-(P.pd??dir);dd=Math.atan2(Math.sin(dd),Math.cos(dd));P.pd=dir;const lt=v>3?clamp(Math.atan(v*(dd/dt)/9.8/1.35),-.98,.98):0;LEAN+=(lt-LEAN)*Math.min(1,dt*6)}
+  const u=Math.min(P.t/P.dt,P.n-1.001),i=Math.max(0,Math.floor(u)),f=u-i,a=P.a,L=P.n-1,K=k=>Math.max(0,Math.min(L,k))*6;
+  const A=K(i),B=K(i+1),wr=d=>Math.atan2(Math.sin(d),Math.cos(d));
+  const fl=f<.5?a[A+5]:a[B+5],v=(a[A+3]+(a[B+3]-a[A+3])*f)/100;
+  let x,z,h,tx,tz;
+  if(Math.hypot(a[B]-a[A],a[B+1]-a[A+1])>300){x=a[B]/10;z=a[B+1]/10;h=a[B+2]/1e4;tx=Math.cos(h);tz=Math.sin(h)}   /* 추락 후 다시 출발처럼 순간 이동 */
+  else{
+    /* 부드러운 곡선(Catmull-Rom)으로 이어서 0.1초마다 꺾이며 떨리지 않게 */
+    let P0=K(i-1),P3=K(i+2);
+    if(Math.hypot(a[P0]-a[A],a[P0+1]-a[A+1])>300)P0=A;if(Math.hypot(a[P3]-a[B],a[P3+1]-a[B+1])>300)P3=B;
+    const cr=(p0,p1,p2,p3)=>{const f2=f*f,f3=f2*f;return .5*(2*p1+(p2-p0)*f+(2*p0-5*p1+4*p2-p3)*f2+(3*p1-p0-3*p2+p3)*f3)};
+    const crd=(p0,p1,p2,p3)=>.5*((p2-p0)+2*(2*p0-5*p1+4*p2-p3)*f+3*(3*p1-p0-3*p2+p3)*f*f);
+    x=cr(a[P0],a[A],a[B],a[P3])/10;z=cr(a[P0+1],a[A+1],a[B+1],a[P3+1])/10;
+    tx=crd(a[P0],a[A],a[B],a[P3]);tz=crd(a[P0+1],a[A+1],a[B+1],a[P3+1]);
+    const h1=a[A+2]/1e4,h0=h1-wr(h1-a[P0+2]/1e4),h2=h1+wr(a[B+2]/1e4-h1),h3=h2+wr(a[P3+2]/1e4-h2);h=cr(h0,h1,h2,h3);
+  }
+  const dir=Math.hypot(tx,tz)>.01?Math.atan2(tz,tx):h;
+  /* 오토바이: 기록된 방향이 바뀌는 빠르기(앞뒤 0.4초 평균)로 기울기(LEAN)를 계산 → 화면이 부드럽게 기울어요 */
+  if(VEH==='bike'&&dt>0){
+    const rate=k=>{const k0=Math.max(0,k-2),k1=Math.min(L,k+2);if(k1<=k0)return 0;let s=0;for(let j=k0;j<k1;j++){const d=wr(a[j*6+8]/1e4-a[j*6+2]/1e4);if(Math.abs(d)<.6)s+=d}return s/((k1-k0)*P.dt)};
+    const w=rate(i)*(1-f)+rate(i+1)*f,lt=v>3?clamp(Math.atan(v*w/9.8/1.35),-.98,.98):0;LEAN+=(lt-LEAN)*Math.min(1,dt*5)}
   c.x=x;c.z=z;c.h=h;c.vx=Math.cos(dir)*v;c.vz=Math.sin(dir)*v;
   steer=(a[A+4]+(a[B+4]-a[A+4])*f)/1000;
   keys.brake=fl&1?1:0;keys.gas=fl&2?1:0;keys.hand=fl&4?1:0;NIT.on=!!(fl&8);NIT.t=NIT.on?NIT_T*.5:0;NIT.ready=VEH==='bike'?false:!NIT.on;
