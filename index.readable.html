@@ -371,6 +371,15 @@ body[data-mode=hard] #lbp .row{display:none}
 .dmaps b{padding:6px 8px;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dmaps button[aria-checked=true]{border-color:#f2c230;color:#fff;box-shadow:0 0 0 3px #f2c23030}
 .dlab{font-size:13px;color:#aeb7c6;letter-spacing:.06em}
+.dlaps{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.dlaps>button,.dlq button{font:inherit;font-weight:800;color:#fff;background:#151a26;border:2px solid #2c3342;border-radius:8px;cursor:pointer;min-width:40px;height:40px;font-size:20px}
+.dlaps input{flex:0 0 auto;width:72px;height:40px;padding:0 6px;text-align:center;font-size:20px;font-weight:800;color:#f2c230;-moz-appearance:textfield}
+.dlaps input::-webkit-inner-spin-button,.dlaps input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.dlaps>span{color:#cdd7e6;font-weight:700}
+.dlq{display:flex;gap:4px;font-style:normal;margin-left:6px}
+.dlq button{min-width:38px;height:34px;font-size:14px;color:#cdd7e6}
+.dlq button.on{border-color:#f2c230;color:#f2c230}
+.dlaps.lock{opacity:.45;pointer-events:none}
 .dlab b{color:#fff}
 .dcode{font:900 clamp(40px,10vh,64px)/1 ui-monospace,"SF Mono",Menlo,Consolas,monospace;letter-spacing:.3em;color:#f2c230;text-align:center;padding:14px 0 14px .3em;background:#070911;border:2px dashed #59627a;border-radius:8px;user-select:text;-webkit-user-select:text}
 .mname input.dcodein{text-align:center;letter-spacing:.5em;font-size:30px;padding-left:calc(14px + .5em)}
@@ -729,6 +738,8 @@ document.addEventListener("dblclick",e=>e.preventDefault(),{passive:false});</sc
     <div class="dview" id="dCreate" hidden>
       <span class="dlab">대결할 맵</span>
       <div class="dmaps" id="dMaps" role="radiogroup" aria-label="대결 맵"></div>
+      <span class="dlab">몇 바퀴 대결할까요? <b id="dLapsMax">(1~100바퀴)</b></span>
+      <div class="dlaps" id="dLapsRow"><button type="button" id="dLapsM" aria-label="1바퀴 줄이기">−</button><input id="dLapsIn" type="number" inputmode="numeric" min="1" max="100" value="3" aria-label="바퀴 수"><span>바퀴</span><button type="button" id="dLapsP" aria-label="1바퀴 늘리기">+</button><i class="dlq"><button type="button" data-l="1">1</button><button type="button" data-l="3">3</button><button type="button" data-l="5">5</button><button type="button" data-l="10">10</button><button type="button" data-l="100">100</button></i></div>
       <p class="dstat" id="dCStat"></p>
       <div class="mrow"><button type="button" class="mbtn ghost" id="dCreateBack">뒤로</button><button type="button" class="mbtn play" id="dMake">방 만들기</button></div>
     </div>
@@ -4844,7 +4855,10 @@ function smokeStep(dt){
 Object.keys(CARS).forEach(k=>texOf(CARS[k].hero));
 
 /* --- 로비 화면 --- */
-let dSel='seoul';
+let dSel='seoul',dLaps=DUEL_LAPS;
+/* 대결 바퀴 수 고르기 (1~100). 편도 맵(open)은 1번만 */
+function dLapsUI(){const op=!!(MAPS[dSel]&&MAPS[dSel].open);if(op)dLaps=1;dLaps=clamp(Math.round(+dLaps)||1,1,100);$('dLapsIn').value=dLaps;$('dLapsRow').classList.toggle('lock',op);$('dLapsMax').textContent=op?'(편도 맵이라 1번만 달려요)':'(1~100바퀴)';$('dLapsRow').querySelectorAll('.dlq button').forEach(b=>b.classList.toggle('on',+b.dataset.l===dLaps))}
+function dLapsDef(){dLaps=(MAPS[dSel]&&MAPS[dSel].laps)||DUEL_LAPS;dLapsUI()}
 function dView(v){['dPick','dCreate','dWait','dJoin'].forEach(i=>$(i).hidden=i!==v)}
 function dStat(id,txt,kind){
   const e=$(id);e.className='dstat'+(kind==='err'?' err':'');e.textContent='';
@@ -4853,7 +4867,7 @@ function dStat(id,txt,kind){
 }
 function duelLobby(){
   const bk=DVEH==='bike';$('dMaps').querySelectorAll('button').forEach(b=>{b.hidden=!!MAPS[b.dataset.map].bike!==bk});
-  if(!!MAPS[dSel].bike!==bk){dSel=bk?'coast':'seoul';$('dMaps').querySelectorAll('button').forEach(x=>x.setAttribute('aria-checked',x.dataset.map===dSel))}
+  if(!!MAPS[dSel].bike!==bk){dSel=bk?'coast':'seoul';$('dMaps').querySelectorAll('button').forEach(x=>x.setAttribute('aria-checked',x.dataset.map===dSel));dLapsDef()}
   D.state='lobby';$('mStep1').hidden=true;$('mStep2').hidden=true;$('mStep3').hidden=false;
   dView('dPick');setTimeout(()=>$('dGoCreate').focus(),30);
 }
@@ -4863,10 +4877,14 @@ function duelLobby(){
     const src=document.querySelector('.maps button[data-map="'+id+'"] img')||document.querySelector('#start .bmap[data-map="'+id+'"] img'),b=document.createElement('button');
     b.type='button';b.setAttribute('role','radio');b.dataset.map=id;b.setAttribute('aria-checked',id===dSel);
     const im=document.createElement('img');im.alt='';if(src)im.src=src.src;const t=document.createElement('b');t.textContent=MAPLABEL[id];
-    b.append(im,t);b.onclick=()=>{dSel=id;row.querySelectorAll('button').forEach(x=>x.setAttribute('aria-checked',x.dataset.map===id))};row.append(b);
+    b.append(im,t);b.onclick=()=>{dSel=id;row.querySelectorAll('button').forEach(x=>x.setAttribute('aria-checked',x.dataset.map===id));dLapsDef()};row.append(b);
   });
 })();
-$('dGoCreate').onclick=()=>{dView('dCreate');dStat('dCStat','');$('dMake').disabled=false};
+$('dGoCreate').onclick=()=>{dView('dCreate');dStat('dCStat','');$('dMake').disabled=false;dLapsUI()};
+$('dLapsM').onclick=()=>{dLaps--;dLapsUI()};$('dLapsP').onclick=()=>{dLaps++;dLapsUI()};
+$('dLapsIn').addEventListener('change',e=>{dLaps=e.target.value;dLapsUI()});
+$('dLapsIn').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();e.target.blur()}});
+$('dLapsRow').querySelectorAll('.dlq button').forEach(b=>b.onclick=()=>{dLaps=+b.dataset.l;dLapsUI()});
 $('dGoJoin').onclick=()=>{dView('dJoin');dStat('dJStat','');$('dEnter').disabled=false;$('dCodeIn').value='';setTimeout(()=>$('dCodeIn').focus(),30)};
 $('dPickBack').onclick=()=>{duelOff();$('mStep3').hidden=true;$('mStep1').hidden=false};
 $('dCreateBack').onclick=()=>dView('dPick');
@@ -4879,7 +4897,7 @@ $('dJoin').onsubmit=e=>{e.preventDefault();duelJoin()};
 async function duelCreate(){
   $('dMake').disabled=true;dStat('dCStat','서버에 연결하는 중…','spin');
   try{await sbLib()}catch(e){dStat('dCStat','연결하지 못했어요. 인터넷을 확인하고 다시 눌러 주세요.','err');$('dMake').disabled=false;return}
-  D.role='host';D.map=dSel;D.laps=(MAPS[dSel]&&MAPS[dSel].laps)||DUEL_LAPS;D.code=String(1000+Math.floor(Math.random()*9000));
+  D.role='host';D.map=dSel;dLaps=$('dLapsIn').value;dLapsUI();D.laps=dLaps;D.code=String(1000+Math.floor(Math.random()*9000));
   dView('dWait');$('dCode').textContent=D.code;$('dWaitMap').textContent=MAPLABEL[D.map];$('dWaitLaps').textContent=D.laps+'바퀴';
   dStat('dWStat','친구를 기다리는 중…','spin');
   duelChannel();
@@ -4952,14 +4970,14 @@ function onDuelMsg(m){
   if(m.k==='room'){
     if(D.role!=='guest'||D.oppId)return;
     clearTimeout(D.findT);D.oppId=m.from;D.oppName=cleanName(m.name)||'친구';D.oppReady=false;D.oppCar='gtr';
-    D.map=DUEL_MAPS.includes(m.map)?m.map:'seoul';D.laps=clamp(m.laps|0,1,9)||DUEL_LAPS;duelGarage();return;
+    D.map=DUEL_MAPS.includes(m.map)?m.map:'seoul';D.laps=MAPS[D.map].open?1:(clamp(m.laps|0,1,100)||DUEL_LAPS);duelGarage();return;
   }
   if(m.from!==D.oppId)return;
   switch(m.k){
     case 'car':if(CARS[m.car]||BIKES[m.car]){D.oppCar=m.car;m3dLoad(m.car)}D.oppReady=!!m.ready;setOppColor();duelInfo();if(D.role==='host')maybeGo();break;
     case 'go':if(D.role==='guest'&&D.state==='garage')duelCountdown();break;
     case 'p':oppPos(m);break;
-    case 'fin':if(!(m.ms>=5000&&m.ms<3600000))break;D.oppFin=m.ms|0;O.lap=D.laps;onOppFin();break;
+    case 'fin':if(!(m.ms>=5000&&m.ms<36000000))break;D.oppFin=m.ms|0;O.lap=D.laps;onOppFin();break;
     case 'bye':oppGone();break;
   }
 }
